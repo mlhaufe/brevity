@@ -1,0 +1,6 @@
+describe('Linked List test', () => {
+    const List = Data(({self, a}) => ({
+        Nil: {},
+        Cons: {head: a, tail: self}
+    }))
+})

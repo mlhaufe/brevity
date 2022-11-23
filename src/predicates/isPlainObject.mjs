@@ -1,0 +1,1 @@
+export const isPlainObject = (o) => typeof o == 'object' && o.constructor === Object

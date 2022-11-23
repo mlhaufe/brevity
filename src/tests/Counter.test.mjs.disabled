@@ -1,0 +1,15 @@
+describe('Counter Tests', () => {
+    const List = Data(({ self, a }) => ({
+        Nil: {},
+        Cons: { head: a, tail: self }
+    }))
+
+    const Counter = List.generate(({ self, value }) =>
+        value > 0
+            ? self.Con({ head: value, tail: self({ value: value - 1 }) })
+            : self.Nil
+    )
+
+    const three = Counter({ value: 3 })
+    // Cons({ head: 3, tail: Cons({ head: 2, tail: Cons({ head: 1, tail: Nil }) }) })
+})

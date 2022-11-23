@@ -1,0 +1,10 @@
+
+import { Data } from "../Data.mjs";
+
+describe('Peano tests', () => {
+    const Peano = Data(({self}) => ({
+        Z: {},
+        S: { pred: self }
+    }))
+
+})
