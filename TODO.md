@@ -82,3 +82,15 @@ type Data<T extends Record<string, Record<string, any>>> = {
             newtype List a = List { uncons ::  forall r. (a -> List a -> r) -> r -> r }
 
  */
+
+ ================
+
+ Notes
+ https://stackoverflow.com/questions/23855070/what-does-a-nontrivial-comonoid-look-like
+ https://en.wikipedia.org/wiki/Bialgebra
+ https://en.wikipedia.org/wiki/Universal_algebra
+ https://en.wikipedia.org/wiki/Anamorphism
+ https://en.wikipedia.org/wiki/F-coalgebra
+ https://en.wikipedia.org/wiki/Catamorphism
+ https://en.wikipedia.org/wiki/Initial_algebra
+ https://en.wikipedia.org/wiki/F-algebra
