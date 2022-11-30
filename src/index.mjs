@@ -88,7 +88,7 @@ class CoAlgebra extends CoMonoid {
 /////////////////////////////////////////////////////////////////////////
 class ExpAlgebra extends Algebra {
     Lit(value) { throw new Error('Not implemented') }
-    Add(left, right) { thrq new Error('Not implemented') }
+    Add(left, right) { throw new Error('Not implemented') }
 }
 
 
