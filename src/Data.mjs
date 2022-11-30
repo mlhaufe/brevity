@@ -5,81 +5,57 @@
  * @see <https://spdx.org/licenses/MIT.html>
  */
 
+import { AlgDataType, dataDecl, declNames } from "./AlgDataType.mjs"
+import { callable } from "./callable.mjs"
+import { defVariants } from "./defVariants.mjs"
 import { assert } from "./predicates/assert.mjs"
-import { isConstructor } from "./predicates/isConstructor.mjs"
+import { isLambda } from "./predicates/isLambda.mjs"
+import { isPlainObject } from "./predicates/isPlainObject.mjs"
+import { TypeParam } from "./TypeParam.mjs"
+import { TypeRecursion } from "./TypeRecursion.mjs"
 
-const isData = Symbol('isData')
+function defVariant(DataCons) { }
 
-/**
- * Defines a factory analogous to an Algebraic Data Type
- */
-export function Data(variants) {
-    function Data() { }
-    Data[isData] = true
+export function Data(decl) {
+    const DataCons = callable(class DataCons extends AlgDataType { })
 
-    Object.entries(variants).forEach(([varName, varBody]) => {
-        const varProps = Object.entries(varBody)
+    if (decl === undefined)
+        return Object.freeze(DataCons)
 
-        // empty objects are singletons
-        if (varProps.length === 0) {
-            Data[varName] = Object.seal(Object.create(Data.prototype))
-        } else {
-            // objects with properties become constructors
-            const C = Data[varName] = function (args) {
-                if (new.target !== C)
-                    return new C(args)
+    assert(
+        isPlainObject(decl) || isLambda(decl),
+        `Invalid variant definition. Object literal or lambda expected: Data(${decl})`
+    )
 
-                const argEntries = Object.entries(args),
-                    errExpected = `${varName}({${Object.keys(varBody)}})`,
-                    errProvided = `${varName}({${Object.keys(args)}})`
+    if (!isLambda(decl)) {
+        Object.entries(decl).forEach()
 
-                if (argEntries.length != varProps.length) {
-                    throw new Error(
-                        `Argument mismatch. Expected: ${errExpected}, provided: ${errProvided}`
-                    )
-                }
-                argEntries.forEach(([argName, argValue]) => {
-                    if (!(argName in varBody)) {
-                        throw new Error(
-                            `Unexpected argument '${argName}'. Expected: ${errExpected}, provided: ${errProvided}`
-                        )
-                    }
 
-                    this[argName] = argValue
-                })
+        // defVariants(decl, DataCons)
+        return Object.freeze(DataCons)
+    } else {
+        const names = decl.toString().split('=>')[0].match(/([a-z\d]+)/gi).sort();
+        assert(
+            names.includes('self'),
+            `Invalid lambda definition. Must include a reference to 'self'. Data(${decl})`
+        )
 
-                Object.assign(this, args)
-                Object.seal(this)
-            }
-            C.prototype = Object.create(Data.prototype)
-            C.prototype.constructor = C
+        const def = decl({
+            self: new TypeRecursion(),
+            ...names.filter(name => name != 'self').map(name => ({ name: new TypeParam(name) }))
+        })
 
-            varProps.forEach(([key, expected]) => {
-                let _priv = undefined
-                Object.defineProperty(C.prototype, key, {
-                    get() { return _priv },
-                    set(newValue) {
-                        if (expected[isData]) {
-                            assert(newValue instanceof expected, `Type mismatch`)
-                        } else if (isConstructor(newValue)) {
-                            // TODO: better error
-                            assert(newValue instanceof expected, `Type mismatch`)
-                        } else if (typeof expected == 'function') {
-                            // TODO: better error
-                            assert(expected(newValue), `Type mismatch.`)
-                        } else {
-                            throw new Error("Not implemented")
-                        }
+        assert(
+            isPlainObject(def),
+            `Invalid lambda definition. An object literal must be returned: Data(${decl})`
+        )
 
-                        _priv = newValue
-                    }
-                })
-            })
-
-            Object.freeze(C)
-            Object.freeze(C.prototype)
+        if (names.length == 1) {
+            defVariants(def, DataCons)
         }
-    })
 
-    return Object.freeze(Data)
+        DataCons[dataDecl] = def
+        DataCons[declNames] = names.filter(name => name != 'self')
+        return Object.freeze(DataCons)
+    }
 }

@@ -88,9 +88,7 @@ file:///C:/Users/micha/OneDrive%20-%20thenewobjective/Documents/Computer%20Scien
 <https://wiki.ralfbarkow.ch/view/prototype-based-programming>
 file:///C:/Users/micha/OneDrive%20-%20thenewobjective/Documents/Computer%20Science/Self%20Language/Attack%20of%20the%20Clones.pdf
 
-/*
-
-/////////////////////////////
+=========================================
 
 let product = List.reduce({
     Nil: 1,
@@ -240,7 +238,7 @@ const nodeData = data({
 })
 
 const serialize = nodeData.reduce({
-    Elem() { return `<${this.name} ${this.attrs.}></${this.name}>`},
+    Elem() { return `<${this.name} ${this.attrs}></${this.name}>`},
     Text() { return this.value }
 })
 
@@ -261,7 +259,10 @@ const factorial = Counter.merge(product)
 factorial(5) // 120
 */
 
-            data List a = Nil | Cons a (List a)
-            newtype List a = List { uncons ::  forall r. (a -> List a -> r) -> r -> r }
+data List a = Nil | Cons a (List a)
+newtype List a = List { uncons ::  forall r. (a -> List a -> r) -> r -> r }
 
  */
+
+// TODO: fold and unfold are possible against data and trait as they are algebras
+// aka  (Co)Monoids
