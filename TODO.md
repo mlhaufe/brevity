@@ -278,3 +278,6 @@ newtype List a = List { uncons ::  forall r. (a -> List a -> r) -> r -> r }
 
 // TODO: fold and unfold are possible against data and trait as they are algebras
 // aka  (Co)Monoids
+
+// Initial Algebra == Free Algebra == Free Object
+// <https://en.wikipedia.org/wiki/Free_object>

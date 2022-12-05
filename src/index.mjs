@@ -3,6 +3,21 @@
  */
 class Monoid {
     // Also called '𝟙', 'Unit', 'Identity'
+    static Empty() { throw new Error('Not implemented') }
+
+    // F x F -> F
+    // aka 'Combine', 'x'
+    static Merge(monoid) { throw new Error('Not implemented') }
+}
+
+// Note that this forms a monoid, so a fold should come for free.
+// So.... What would a Comonoid (CoAlgebra) look like?
+// Are "Algebras" good for Traits, and "CoAlgebras" good for Factories?
+// Would this then enable the niceties of the w3future article?
+/**
+ * An F-Algebra / Initial Algebra
+ */
+class Algebra extends Monoid {
     static Empty() {
         class Empty extends this { }
 
@@ -16,26 +31,12 @@ class Monoid {
 
         return Empty
     }
-    // F x F -> F
-    // aka 'Combine', 'x'
-    static Merge(monoid) {
 
-    }
-}
-
-// Note that this forms a monoid, so a fold should come for free.
-// So.... What would a Comonoid (CoAlgebra) look like?
-// Are "Algebras" good for Traits, and "CoAlgebras" good for Factories?
-// Would this then enable the niceties of the w3future article?
-/**
- * An F-Algebra / Initial Algebra
- */
-class Algebra extends Monoid {
 
     // merging Factories or Traits? or a combination?
 
     // need to drop the lifter
-    static Combine(Other, lifter) {
+    static Merge(Other, lifter) {
         class Combined extends this { }
 
         const left = new this(),
@@ -127,7 +128,7 @@ class ExpPrint extends ExpAlgebra {
 
 // merge traits. If you knew the algebras were traits, then the lifter is unneeded right?
 // unless the same trait exists already?
-const ExpEvalPrint = ExpEval.Combine(ExpPrint, (left, right) => ({
+const ExpEvalPrint = ExpEval.Merge(ExpPrint, (left, right) => ({
     eval: left.eval,
     print: right.print
 }))
