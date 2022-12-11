@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.1.4
+
+* package config updates
+
 ## v0.1.3
 
 * Fixed family polymorphism references
