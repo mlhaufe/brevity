@@ -1,10 +1,17 @@
 {
-  "name": "brevity",
+  "name": "@mlhaufe/brevity",
   "version": "0.1.0",
   "description": "A library for Feature-Oriented Programming",
-  "main": "dist/index.mjs",
+  "keywords": [
+    "object-algebra",
+    "feature-oriented-programming",
+    "expression-problem"
+  ],
+  "module": "dist/index.mjs",
   "type": "module",
   "scripts": {
+    "clean": "rimraf dist",
+    "dist": "copyfiles -u 1 src/index.mjs src/Algebra.mjs dist",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
   },
   "repository": {
@@ -17,9 +24,14 @@
     "url": "https://github.com/mlhaufe/brevity/issues"
   },
   "homepage": "https://github.com/mlhaufe/brevity#readme",
+  "files": [
+    "dist"
+  ],
   "devDependencies": {
     "@types/jest": "^29.2.3",
+    "copyfiles": "^2.4.1",
     "jest": "^29.3.1",
+    "rimraf": "^3.0.2",
     "webpack": "^5.75.0",
     "webpack-cli": "^5.0.0"
   }
