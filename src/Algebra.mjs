@@ -42,13 +42,13 @@ export class Algebra {
                 const ags = algebras.map(Alg => new Alg(...args))
 
                 return new Proxy(this, {
-                    get(target, name) {
+                    get(target, name, receiver) {
                         const value = Reflect.get(target, name)
                         return typeof value === 'function' && isCapitalized(name) ?
                             (...args) => {
-                                const result = value.apply(target, args),
+                                const result = value.apply(receiver, args),
                                     otherResults = ags.reduce(
-                                        (result, ags) => Object.assign(result, ags[name](...args)),
+                                        (result, ags) => Object.assign(result, ags[name].apply(receiver, args)),
                                         Object.create(null)
                                     )
                                 return Object.assign(result, otherResults)
