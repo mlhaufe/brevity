@@ -39,7 +39,6 @@ describe('List Algebra', () => {
             }
         }
         Cons(head, tail) {
-            // TODO: this reference is lost when merged
             const family = this
             return {
                 concat(list) {
@@ -70,8 +69,7 @@ describe('List Algebra', () => {
             l2 = list.Cons(4, list.Cons(5, list.Cons(6, list.Nil()))),
             l3 = l1.concat(l2)
 
-        // FIXME
-        //expect(l3.length()).toBe(6)
+        expect(l3.length()).toBe(6)
         expect(l3.head).toBe(1)
         expect(l3.tail.head).toBe(2)
         expect(l3.tail.tail.head).toBe(3)
