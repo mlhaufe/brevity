@@ -32,6 +32,55 @@ describe('List Algebra', () => {
         expect(cons.tail).toBeInstanceOf(Nil)
     })
 
+    class ListConcatTrait extends ListAlgebra {
+        Nil() {
+            return {
+                concat(list) { return list }
+            }
+        }
+        Cons(head, tail) {
+            // TODO: this reference is lost when merged
+            const family = this
+            return {
+                concat(list) {
+                    return family.Cons(head, tail.concat(list))
+                }
+            }
+        }
+    }
+
+    class ListLengthTrait extends ListAlgebra {
+        Nil() {
+            return {
+                length() { return 0 }
+            }
+        }
+        Cons(head, tail) {
+            return {
+                length() { return 1 + tail.length() }
+            }
+        }
+    }
+
+    test('List Concat', () => {
+        const List = ListFactory.Merge(ListConcatTrait, ListLengthTrait),
+            list = new List()
+        // [1, 2, 3] ++ [4, 5, 6] = [1, 2, 3, 4, 5, 6]
+        const l1 = list.Cons(1, list.Cons(2, list.Cons(3, list.Nil()))),
+            l2 = list.Cons(4, list.Cons(5, list.Cons(6, list.Nil()))),
+            l3 = l1.concat(l2)
+
+        // FIXME
+        //expect(l3.length()).toBe(6)
+        expect(l3.head).toBe(1)
+        expect(l3.tail.head).toBe(2)
+        expect(l3.tail.tail.head).toBe(3)
+        expect(l3.tail.tail.tail.head).toBe(4)
+        expect(l3.tail.tail.tail.tail.head).toBe(5)
+        expect(l3.tail.tail.tail.tail.tail.head).toBe(6)
+    })
+
+
     // TODO
     // const counter = ListFactory.unfold({
     //     Zero: (t) => { },
