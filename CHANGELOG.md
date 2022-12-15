@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.1.5
+
+* Including `dist` folder in repo to support direct installation from repo
+* Disabled GitHub publish workflow
+
 ## v0.1.4
 
 * package config updates
@@ -10,7 +15,7 @@
 
 ## v0.1.2
 
-* Replaced npm publish pipeline with github publish
+* Replaced npm publish pipeline with GitHub publish
 
 ## v0.1.1
 
