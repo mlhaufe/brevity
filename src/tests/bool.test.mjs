@@ -1,87 +1,48 @@
-import { Algebra } from "../index.mjs"
+import { Data, isData, typeName } from "../Data.mjs"
+import { Trait } from "../Trait.mjs"
 
-describe('Bool Algebra', () => {
+describe('Bool tests', () => {
+    const Bool = Data({ False: [], True: [] })
+    test('Bool Data', () => {
+        expect(Bool[isData]).toBe(true)
 
-    class BoolAlg extends Algebra {
-        False() { }
-        True() { }
-    }
+        const f = Bool.False,
+            t = Bool.True
 
-    class BoolData { }
-    class False extends BoolData { }
-    class True extends BoolData { }
-
-    class BoolFactory extends BoolAlg {
-        False() { return new False() }
-        True() { return new True() }
-    }
-
-    test('Bool Factory', () => {
-        const bf = new BoolFactory()
-
-        expect(bf.False()).toBeInstanceOf(False)
-        expect(bf.True()).toBeInstanceOf(True)
+        expect(f[typeName]).toBe('False')
+        expect(t[typeName]).toBe('True')
     })
 
-    class BoolAnd extends BoolAlg {
-        False() {
-            return { and(other) { return this } }
-        }
-        True() {
-            return { and(other) { return other } }
-        }
-    }
+    test('Bool traits', () => {
+        const f = Bool.False,
+            t = Bool.True
 
-    class BoolOr extends BoolAlg {
-        False() {
-            return { or(other) { return other } }
-        }
-        True() {
-            return { or(other) { return this } }
-        }
-    }
+        const and = Trait(Bool, {
+            False(left, _) { return left },
+            True(_, right) { return right }
+        })
 
-    class BoolNot extends BoolAlg {
-        False() {
-            return { not() { return new True() } }
-        }
-        True() {
-            return { not() { return new False() } }
-        }
-    }
+        expect(and(f, f)).toBe(f)
+        expect(and(f, t)).toBe(f)
+        expect(and(t, f)).toBe(f)
+        expect(and(t, t)).toBe(t)
 
-    test('Bool Traits', () => {
-        const ba = new BoolAnd(),
-            bo = new BoolOr(),
-            bn = new BoolNot()
+        const or = Trait(Bool, {
+            False(_, right) { return right },
+            True(left, _) { return left }
+        })
 
-        expect(ba.False().and).toBeInstanceOf(Function)
-        expect(ba.True().and).toBeInstanceOf(Function)
+        expect(or(f, f)).toBe(f)
+        expect(or(f, t)).toBe(t)
+        expect(or(t, f)).toBe(t)
+        expect(or(t, t)).toBe(t)
 
-        expect(bo.False().or).toBeInstanceOf(Function)
-        expect(bo.True().or).toBeInstanceOf(Function)
+        const not = Trait(Bool, {
+            False() { return Bool.True },
+            True() { return Bool.False }
+        })
 
-        expect(bn.False().not).toBeInstanceOf(Function)
-        expect(bn.True().not).toBeInstanceOf(Function)
-    })
-
-    test('Bool Merged', () => {
-        const Bool = BoolFactory.Merge(BoolAnd, BoolOr, BoolNot)
-
-        const b = new Bool()
-
-        expect(b.False().and(b.False())).toBeInstanceOf(False)
-        expect(b.False().and(b.True())).toBeInstanceOf(False)
-        expect(b.True().and(b.False())).toBeInstanceOf(False)
-        expect(b.True().and(b.True())).toBeInstanceOf(True)
-
-        expect(b.False().or(b.False())).toBeInstanceOf(False)
-        expect(b.False().or(b.True())).toBeInstanceOf(True)
-        expect(b.True().or(b.False())).toBeInstanceOf(True)
-        expect(b.True().or(b.True())).toBeInstanceOf(True)
-
-        expect(b.False().not()).toBeInstanceOf(True)
-        expect(b.True().not()).toBeInstanceOf(False)
-
+        expect(not(f)).toBe(t)
+        expect(not(t)).toBe(f)
     })
 })

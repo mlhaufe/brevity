@@ -8,6 +8,65 @@ Brevity is a library that enables Feature Oriented Programming (FOP) via Object 
 
 ## Object Algebras
 
+## Operations
+
+### Empty
+
+Converts the current algebra into an algrebra that returns empty objects.
+
+```js
+class ColorAlgebra extends Algebra {
+    Red() { }
+    Green() { }
+    Blue() { }
+}
+
+const ColorEmpty = ColorAlgebra.Empty(),
+    colorEmpty = new ColorEmpty()
+
+colorEmpty.Red() // Object.create(null)
+```
+
+### Merge
+
+Merges the current algebra with the provided algebras
+
+```js
+class ColorAlgebra extends Algebra {
+    Red() { }
+    Green() { }
+    Blue() { }
+}
+
+class ColorData { }
+class Red extends ColorData { }
+class Green extends ColorData { }
+class Blue extends ColorData { }
+
+class ColorFactory extends ColorAlgebra {
+    Red() { return new Red() }
+    Green() { return new Green() }
+    Blue() { return new Blue() }
+}
+
+class Printable extends ColorAlgebra {
+    Red() {
+        return { print() { return '#FF0000' } }
+    }
+    Green() {
+        return { print() { return '#00FF00' } }
+    }
+    Blue() {
+        return { print() { return '#0000FF' } }
+    }
+}
+
+const Color = ColorFactory.Merge(Printable),
+    color = new Color()
+
+color.Red().print() // '#FF0000'
+```
+
 ## Examples
 
 ### Boolean Algebra

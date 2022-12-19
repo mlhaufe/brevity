@@ -1,6 +1,0 @@
-describe('Xml Algebra', () => {
-    // TODO
-    // Haskell:
-    // data Attrs n v = Attr n v
-    // data Node  n v = Elem n (List (Attrs n v)) (List (Node n v)) | Text v
-})

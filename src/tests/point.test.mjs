@@ -1,70 +1,38 @@
-import { Algebra } from "../index.mjs"
+import { Data, isData, typeName } from "../Data.mjs"
+import { Trait } from "../Trait.mjs";
 
-describe('Point Algebra', () => {
-    class PointAlgebra extends Algebra {
-        Point2(x, y) { }
-        Point3(x, y, z) { }
-    }
+describe('Point tests', () => {
+    const Point = Data({ Point2: ['x', 'y'], Point3: ['x', 'y', 'z'] })
 
-    class PointData { }
-    class Point2 extends PointData {
-        constructor(x, y) {
-            super()
-            this.x = x
-            this.y = y
-        }
-    }
-    class Point3 extends PointData {
-        constructor(x, y, z) {
-            super()
-            this.x = x
-            this.y = y
-            this.z = z
-        }
-    }
+    test('Point Data', () => {
+        const Point = Data({ Point2: ['x', 'y'], Point3: ['x', 'y', 'z'] });
+        expect(Point[isData]).toBe(true);
 
-    class PointFactory extends PointAlgebra {
-        Point2(x, y) { return new Point2(x, y) }
-        Point3(x, y, z) { return new Point3(x, y, z) }
-    }
+        const p2 = Point.Point2({ x: 1, y: 2 });
+        expect(p2).toBeDefined();
+        expect(p2[typeName]).toBe('Point2');
+        expect(p2.x).toBe(1);
+        expect(p2.y).toBe(2);
+        expect(p2.z).toBeUndefined();
 
-    test('Point Factory', () => {
-        const pf = new PointFactory(),
-            p2 = pf.Point2(12, 3),
-            p3 = pf.Point3(98, 104, 66)
-
-        expect(p2).toBeInstanceOf(Point2)
-        expect(p3).toBeInstanceOf(Point3)
-        expect(p2.x).toBe(12)
-        expect(p2.y).toBe(3)
-        expect(p3.z).toBe(66)
+        const p3 = Point.Point3({ x: 3, y: 4, z: 5 });
+        expect(p3).toBeDefined();
+        expect(p3[typeName]).toBe('Point3');
+        expect(p3.x).toBe(3);
+        expect(p3.y).toBe(4);
+        expect(p3.z).toBe(5);
     })
 
-    class PointPrint extends PointAlgebra {
-        Point2(x, y) {
-            return {
-                toString() { return `(${x}, ${y})` }
-            }
-        }
-        Point3(x, y, z) {
-            return {
-                toString() { return `(${x}, ${y}, ${z})` }
-            }
-        }
-    }
+    const print = Trait(Point, {
+        Point2({ x, y }) { return `(${x}, ${y})` },
+        Point3({ x, y, z }) { return `(${x}, ${y}, ${z})` }
+    })
 
-    test('Combined Point', () => {
-        const Point = PointFactory.Merge(PointPrint),
-            point = new Point(),
-            p2 = point.Point2(12, 3),
-            p3 = point.Point3(98, 104, 66)
+    test('Point print', () => {
+        const p2 = Point.Point2({ x: 1, y: 2 });
+        expect(print(p2)).toBe('(1, 2)');
 
-        expect(p2).toBeInstanceOf(Point2)
-        expect(p3).toBeInstanceOf(Point3)
-        expect(p2.x).toBe(12)
-        expect(p2.y).toBe(3)
-        expect(p3.z).toBe(66)
-        expect(p2.toString()).toBe('(12, 3)')
-        expect(p3.toString()).toBe('(98, 104, 66)')
+        const p3 = Point.Point3({ x: 3, y: 4, z: 5 });
+        expect(print(p3)).toBe('(3, 4, 5)');
     })
 })

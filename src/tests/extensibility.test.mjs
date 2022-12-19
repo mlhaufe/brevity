@@ -1,313 +1,248 @@
-import { Algebra } from "../index.mjs"
+import { Data } from "../Data.mjs"
+import { Trait } from "../Trait.mjs"
 
-// <https://www.cs.utexas.edu/~wcook/Drafts/2012/ecoop2012.pdf>
 describe('Extensibility for the Masses', () => {
-    class IntAlg extends Algebra {
-        Lit(value) { }
-        Add(left, right) { }
-    }
+    const IntExp = Data({ Lit: ['value'], Add: ['left', 'right'] })
 
-    class ExpData { }
-    class Lit extends ExpData {
-        constructor(value) {
-            super()
-            this.value = value
+    const intPrint = Trait(IntExp, {
+        Lit({ value }) {
+            return value.toString()
+        },
+        Add({ left, right }) {
+            return `(${intPrint(left)} + ${intPrint(right)})`
         }
-    }
-    class Add extends ExpData {
-        constructor(left, right) {
-            super()
-            this.left = left
-            this.right = right
-        }
-    }
-
-    class IntFactory extends IntAlg {
-        Lit(value) { return new Lit(value) }
-        Add(left, right) { return new Add(left, right) }
-    }
-
-    test('IntFactory', () => {
-        const factory = new IntFactory()
-
-        const exp = factory.Add(
-            factory.Lit(1),
-            factory.Add(
-                factory.Lit(2),
-                factory.Lit(3)
-            )
-        )
-
-        expect(exp).toEqual(new Add(
-            new Lit(1),
-            new Add(
-                new Lit(2),
-                new Lit(3)
-            )
-        ))
     })
 
-    class IntPrint extends IntAlg {
-        Lit(value) {
-            return { print() { return value.toString() } }
-        }
-        Add(left, right) {
-            return { print() { return `${left.print()} + ${right.print()}` } }
-        }
-    }
-
-    class IntEval extends IntAlg {
-        Lit(value) {
-            return { eval() { return value } }
-        }
-        Add(left, right) {
-            return { eval() { return left.eval() + right.eval() } }
-        }
-    }
-
-    test('Merge of IntFactory, IntPrint, IntEval', () => {
-        const Int = IntFactory.Merge(IntPrint, IntEval)
-        const ipe = new Int()
-
-        const exp = ipe.Add(
-            ipe.Lit(1),
-            ipe.Add(
-                ipe.Lit(2),
-                ipe.Lit(3)
-            )
-        )
-
-        expect(exp.print()).toEqual('1 + 2 + 3')
-        expect(exp.eval()).toEqual(6)
+    const intEval = Trait(IntExp, {
+        Lit({ value }) { return value },
+        Add({ left, right }) { return intEval(left) + intEval(right) }
     })
 
-    class IntBoolAlg extends IntAlg {
-        Bool(value) { }
-        Iff(pred, truePart, falsePart) { }
-    }
+    test('IntExp', () => {
+        const exp = IntExp.Add({
+            left: IntExp.Lit({ value: 1 }),
+            right: IntExp.Add({
+                left: IntExp.Lit({ value: 2 }),
+                right: IntExp.Lit({ value: 3 })
+            })
+        })
 
-    class Bool extends ExpData {
-        constructor(value) {
-            super()
-            this.value = value
-        }
-    }
-    class Iff extends ExpData {
-        constructor(pred, truePart, falsePart) {
-            super()
-            this.pred = pred
-            this.truePart = truePart
-            this.falsePart = falsePart
-        }
-    }
-
-    class IntBoolFactory extends IntFactory {
-        Bool(value) { return new Bool(value) }
-        Iff(pred, truePart, falsePart) { return new Iff(pred, truePart, falsePart) }
-    }
-
-    test('IntBoolFactory', () => {
-        const ibf = new IntBoolFactory()
-
-        const exp = ibf.Add(
-            ibf.Lit(1),
-            ibf.Iff(
-                ibf.Bool(true),
-                ibf.Lit(2),
-                ibf.Lit(3)
-            )
-        )
-
-        expect(exp).toEqual(new Add(
-            new Lit(1),
-            new Iff(
-                new Bool(true),
-                new Lit(2),
-                new Lit(3)
-            )
-        ))
+        expect(intPrint(exp)).toBe('(1 + (2 + 3))')
+        expect(intEval(exp)).toBe(6)
     })
 
-    class IntBoolPrint extends IntPrint {
-        Bool(value) {
-            return { print() { return value.toString() } }
-        }
-        Iff(pred, truePart, falsePart) {
-            return {
-                print() {
-                    return `if(${pred.print()}) { ${truePart.print()} } else { ${falsePart.print()} }`
-                }
-            }
-        }
-    }
+    const IntBoolExp = Data(IntExp, { Bool: ['value'], Iff: ['pred', 'ifTrue', 'ifFalse'] })
 
-    class IntBoolEval extends IntEval {
-        Bool(value) {
-            return { eval() { return value } }
-        }
-        Iff(pred, truePart, falsePart) {
-            return {
-                eval() {
-                    return pred.eval() ? truePart.eval() : falsePart.eval()
-                }
-            }
-        }
-    }
+    test('IntBoolExp Data', () => {
+        expect(IntBoolExp.Lit).toBeDefined()
+        expect(IntBoolExp.Add).toBeDefined()
+        expect(IntBoolExp.Bool).toBeDefined()
+        expect(IntBoolExp.Iff).toBeDefined()
 
-    test('Merge of IntBoolFactory, IntBoolPrint, IntBoolEval', () => {
-        const Int = IntBoolFactory.Merge(IntBoolPrint, IntBoolEval)
-        const ibpe = new Int()
+        // if (true) 1 else 0
+        const exp = IntBoolExp.Iff({
+            pred: IntBoolExp.Bool({ value: true }),
+            ifTrue: IntBoolExp.Lit({ value: 1 }),
+            ifFalse: IntBoolExp.Lit({ value: 0 })
+        })
 
-        // 1 + if(true) { 2 } else { 3 }
-        const exp = ibpe.Add(
-            ibpe.Lit(1),
-            ibpe.Iff(
-                ibpe.Bool(true),
-                ibpe.Lit(2),
-                ibpe.Lit(3)
-            )
-        )
-
-        expect(exp.print()).toEqual('1 + if(true) { 2 } else { 3 }')
-        expect(exp.eval()).toEqual(3)
+        expect(exp.pred.value).toBe(true)
+        expect(exp.ifTrue.value).toBe(1)
+        expect(exp.ifFalse.value).toBe(0)
     })
 
-    class StmtAlg extends IntBoolAlg {
-        Var(name) { }
-        Assign(name, exp) { }
-        Expr(value) { }
-        Comp(left, right) { }
-    }
+    const intBoolPrint = Trait(IntBoolExp, intPrint, {
+        Bool({ value }) { return value.toString() },
+        Iff({ pred, ifTrue, ifFalse }) {
+            return `(${intBoolPrint(pred)} ? ${intBoolPrint(ifTrue)} : ${intBoolPrint(ifFalse)})`
+        }
+    });
 
-    class Var extends ExpData {
-        constructor(scope, name) {
-            super()
-            this.scope = scope
-            this.name = name
-        }
-    }
-    class Assign extends ExpData {
-        constructor(scope, name, exp) {
-            super()
-            this.scope = scope
-            this.name = name
-            this.exp = exp
-        }
-    }
-    class Expr extends ExpData {
-        constructor(value) {
-            super()
-            this.value = value
-        }
-    }
-    class Comp extends ExpData {
-        constructor(left, right) {
-            super()
-            this.left = left
-            this.right = right
-        }
-    }
+    test('intBoolPrint', () => {
+        // if (true) 1 else 0
+        const exp = IntBoolExp.Iff({
+            pred: IntBoolExp.Bool({ value: true }),
+            ifTrue: IntBoolExp.Lit({ value: 1 }),
+            ifFalse: IntBoolExp.Lit({ value: 2 })
+        })
 
-    class StmtFactory extends IntBoolFactory {
-        map = new Map()
+        expect(intBoolPrint(exp)).toBe('(true ? 1 : 2)')
+    })
 
-        Var(name) {
-            return new Var(this.map, name)
+    const intBoolEval = Trait(IntBoolExp, intEval, {
+        Bool({ value }) { return value },
+        Iff({ pred, ifTrue, ifFalse }) {
+            return intBoolEval(pred) ? intBoolEval(ifTrue) : intBoolEval(ifFalse)
         }
-        Assign(name, exp) {
-            return new Assign(this.map, name, exp)
-        }
-        Comp(left, right) {
-            return new Comp(left, right)
-        }
-        Expr(value) {
-            return new Expr(value)
-        }
-    }
+    })
 
-    class StmtPrint extends IntBoolPrint {
-        Var(name) {
-            return { print() { return name } }
-        }
-        Assign(name, exp) {
-            return { print() { return `${name} = ${exp.print()}` } }
-        }
-        Expr(value) {
-            return { print() { return value.print() } }
-        }
-        Comp(left, right) {
-            return {
-                print() {
-                    return `${left.print()}; ${right.print()}`
-                }
-            }
-        }
-    }
+    test('intBoolEval', () => {
+        // if (true) 1 else 0
+        const exp = IntBoolExp.Iff({
+            pred: IntBoolExp.Bool({ value: true }),
+            ifTrue: IntBoolExp.Lit({ value: 1 }),
+            ifFalse: IntBoolExp.Lit({ value: 2 })
+        })
 
-    class StmtEval extends IntBoolEval {
-        Var(name) {
-            return { eval() { return this.scope.get(name) } }
-        }
-        Assign(name, exp) {
-            return {
-                eval() {
-                    return this.scope.set(name, exp.eval()).get(name)
-                }
-            }
-        }
-        Expr(value) {
-            return { eval() { return value.eval() } }
-        }
-        Comp(left, right) {
-            return {
-                eval() {
-                    left.eval()
-                    return right.eval()
-                }
-            }
-        }
-    }
+        expect(intBoolEval(exp)).toBe(1)
+    })
 
-    const Stmt = StmtFactory.Merge(StmtPrint, StmtEval)
+    const StmtExp = Data(IntBoolExp, {
+        Assign: ['scope', 'name', 'value'],
+        Expr: ['value'],
+        Seq: ['first', 'second'],
+        Var: ['scope', 'name']
+    })
 
-    test('StmtBuilder', () => {
-        const s = new Stmt()
+    test('StmtExp Data', () => {
+        expect(StmtExp.Lit).toBeDefined()
+        expect(StmtExp.Add).toBeDefined()
+        expect(StmtExp.Bool).toBeDefined()
+        expect(StmtExp.Iff).toBeDefined()
+        expect(StmtExp.Assign).toBeDefined()
+        expect(StmtExp.Expr).toBeDefined()
+        expect(StmtExp.Seq).toBeDefined()
+        expect(StmtExp.Var).toBeDefined()
 
-        // x = 3 + 4
-        const stmt = s.Assign('x', s.Add(s.Lit(3), s.Lit(4)))
+        const scope = new Map()
+        scope.set('x', 1)
+        scope.set('y', 2)
 
-        expect(stmt.eval()).toBe(7);
+        // x = y + 1
+        const exp = StmtExp.Assign({
+            scope,
+            name: 'x',
+            value: StmtExp.Add({
+                left: StmtExp.Var({ scope, name: 'y' }),
+                right: StmtExp.Lit({ value: 1 })
+            })
+        })
 
-        // x
-        const v = s.Var('x')
-        expect(v.eval()).toBe(7)
+        expect(exp.scope).toBe(scope)
+        expect(exp.name).toBe('x')
+        expect(exp.value.left.name).toBe('y')
+        expect(exp.value.right.value).toBe(1)
+    })
 
-        // x = 11; 3 + 4
-        const stmt2 = s.Comp(
-            s.Assign('x', s.Lit(11)),
-            s.Expr(s.Add(s.Lit(3), s.Lit(4)))
-        )
+    const stmtPrint = Trait(StmtExp, intBoolPrint, {
+        Assign({ name, value }) { return `${name} = ${stmtPrint(value)}` },
+        Expr({ value }) { return stmtPrint(value) },
+        Seq({ first, second }) { return `${stmtPrint(first)}; ${stmtPrint(second)}` },
+        Var({ name }) { return name }
+    })
 
-        expect(stmt2.eval()).toBe(7)
-        expect(stmt2.print()).toBe('x = 11; 3 + 4')
-        expect(v.eval()).toBe(11)
+    test('stmtPrint', () => {
+        const scope = new Map()
+        scope.set('x', 1)
+        scope.set('y', 2)
 
-        const v2 = s.Var('x')
-        expect(v2.eval()).toBe(11)
+        // x = y + 1
+        const exp = StmtExp.Assign({
+            scope,
+            name: 'x',
+            value: StmtExp.Add({
+                left: StmtExp.Var({ scope, name: 'y' }),
+                right: StmtExp.Lit({ value: 1 })
+            })
+        })
 
-        // x = 3 + 4; if (true) { x = 9 + 2 } else { x = 3 + 4 }; x + 1
-        const stmt3 = s.Comp(
-            s.Assign('x', s.Add(s.Lit(3), s.Lit(4))),
-            s.Comp(
-                s.Iff(
-                    s.Bool(true),
-                    s.Assign('x', s.Add(s.Lit(9), s.Lit(2))),
-                    s.Assign('x', s.Add(s.Lit(3), s.Lit(4)))
-                ),
-                s.Expr(s.Add(s.Var('x'), s.Lit(1)))
-            )
-        )
+        expect(stmtPrint(exp)).toBe('x = (y + 1)')
 
-        expect(stmt3.eval()).toBe(12)
+        // x = y + 1; x = x + 1
+        const exp2 = StmtExp.Seq({
+            first: exp,
+            second: StmtExp.Assign({
+                scope,
+                name: 'x',
+                value: StmtExp.Add({
+                    left: StmtExp.Var({ scope, name: 'x' }),
+                    right: StmtExp.Lit({ value: 1 })
+                })
+            })
+        })
+
+        expect(stmtPrint(exp2)).toBe('x = (y + 1); x = (x + 1)')
+    })
+
+    const stmtEval = Trait(StmtExp, intBoolEval, {
+        Assign({ scope, name, value }) {
+            return scope.set(name, stmtEval({ value })).get(name)
+        },
+        Expr({ value }) { return stmtEval(value) },
+        Seq({ first, second }) {
+            stmtEval(first)
+            return stmtEval(second)
+        },
+        Var({ scope, name }) { return scope.get(name) }
+    })
+
+    test('stmtEval', () => {
+        const scope = new Map()
+        scope.set('x', 1)
+        scope.set('y', 2)
+
+        // x = y + 1
+        const exp = StmtExp.Assign({
+            scope,
+            name: 'x',
+            value: StmtExp.Add({
+                left: StmtExp.Var({ scope, name: 'y' }),
+                right: StmtExp.Lit({ value: 1 })
+            })
+        })
+
+        expect(stmtEval(exp)).toBe(3)
+        expect(scope.get('x')).toBe(3)
+
+        // x = y + 1; x = x + 1
+        const exp2 = StmtExp.Seq({
+            first: exp,
+            second: StmtExp.Assign({
+                scope,
+                name: 'x',
+                value: StmtExp.Add({
+                    left: StmtExp.Var({ scope, name: 'x' }),
+                    right: StmtExp.Lit({ value: 1 })
+                })
+            })
+        })
+
+        expect(stmtEval(exp2)).toBe(4)
+        expect(scope.get('x')).toBe(4)
+
+        // x = 3 + 4; if (true) { x = 9 + 2 } else { x = 3 + 1 };
+        const exp3 = StmtExp.Seq({
+            first: StmtExp.Assign({
+                scope,
+                name: 'x',
+                value: StmtExp.Add({
+                    left: StmtExp.Lit({ value: 3 }),
+                    right: StmtExp.Lit({ value: 4 })
+                })
+            }),
+            second: StmtExp.Expr({
+                value: StmtExp.Iff({
+                    pred: StmtExp.Bool({ value: true }),
+                    ifTrue: StmtExp.Assign({
+                        scope,
+                        name: 'x',
+                        value: StmtExp.Add({
+                            left: StmtExp.Lit({ value: 9 }),
+                            right: StmtExp.Lit({ value: 2 })
+                        })
+                    }),
+                    ifFalse: StmtExp.Assign({
+                        scope,
+                        name: 'x',
+                        value: StmtExp.Add({
+                            left: StmtExp.Lit({ value: 3 }),
+                            right: StmtExp.Lit({ value: 1 })
+                        })
+                    })
+                })
+            })
+        })
+
+        expect(stmtEval(exp3)).toBe(11)
     })
 })

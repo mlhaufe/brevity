@@ -9,6 +9,10 @@ const getMethodNames = (obj, methodNames = new Set()) => {
 const isCapitalized = (str) => str[0] === str[0].toUpperCase() && str[0] !== str[0].toLowerCase()
 
 export class Algebra {
+    /**
+     * Converts the current algebra into an algrebra that returns empty objects
+     * @returns {Algebra} an empty algebra
+     */
     static Empty() {
         return class Empty extends this {
             constructor(...args) {
@@ -25,6 +29,11 @@ export class Algebra {
         }
     }
 
+    /**
+     * Merges the current algebra with the provided algebras
+     * @param  {...Algebra} algebras 
+     * @returns  {Algebra} an algebra that merges the results of the given algebras
+     */
     static Merge(...algebras) {
         const selfNames = [...getMethodNames(this.prototype)].filter(isCapitalized)
         selfNames.forEach(name => {

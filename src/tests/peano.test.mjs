@@ -1,35 +1,44 @@
-import { Algebra } from "../index.mjs"
+import { Data } from "../Data.mjs";
+import { Trait } from "../Trait.mjs";
 
-describe('Peano Algebra', () => {
-    class PeanoAlgebra extends Algebra {
-        Zero() { }
-        Succ(pred) { }
-    }
+describe('Peano tests', () => {
+    const Peano = Data({ Zero: [], Succ: ['pred'] });
 
-    class PeanoData { }
-    class Zero extends PeanoData { }
-    class Succ extends PeanoData {
-        constructor(pred) {
-            super()
-            this.pred = pred
-        }
-    }
+    test('Peano Data', () => {
+        const zero = Peano.Zero,
+            one = Peano.Succ({ pred: zero }),
+            two = Peano.Succ({ pred: one }),
+            three = Peano.Succ({ pred: two });
 
-    class PeanoFactory extends PeanoAlgebra {
-        Zero() { return new Zero() }
-        Succ(pred) { return new Succ(pred) }
-    }
+        expect(zero).toBe(Peano.Zero);
+        expect(one.pred).toBe(zero);
+        expect(two.pred).toBe(one);
+        expect(three.pred).toBe(two);
+    });
 
-    test('Peano Factory', () => {
-        const pf = new PeanoFactory(),
-            zero = pf.Zero(),
-            one = pf.Succ(zero),
-            two = pf.Succ(one)
+    test('Bad Peano definition', () => {
+        expect(() => Data({ Zero: [], Succ: ['pred', 'pred'] })).toThrow();
 
-        expect(zero).toBeInstanceOf(Zero)
-        expect(one).toBeInstanceOf(Succ)
-        expect(two).toBeInstanceOf(PeanoData)
-        expect(two.pred).toBe(one)
-        expect(one.pred).toBe(zero)
+        const zero = Peano.Zero,
+            one = Peano.Succ({ pred: zero });
+
+        expect(() => Peano.Succ(zero)).toThrow();
     })
-})
+
+    const value = Trait(Peano, {
+        Zero() { return 0 },
+        Succ({ pred }) { return 1 + value(pred) }
+    })
+
+    test('Peano Value Trait', () => {
+        const zero = Peano.Zero,
+            one = Peano.Succ({ pred: zero }),
+            two = Peano.Succ({ pred: one }),
+            three = Peano.Succ({ pred: two })
+
+        expect(value(zero)).toBe(0)
+        expect(value(one)).toBe(1)
+        expect(value(two)).toBe(2)
+        expect(value(three)).toBe(3)
+    })
+});
