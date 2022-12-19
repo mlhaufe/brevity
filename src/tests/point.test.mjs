@@ -23,7 +23,7 @@ describe('Point tests', () => {
         expect(p3.z).toBe(5);
     })
 
-    const print = Trait(Point, {
+    const print = Trait({
         Point2({ x, y }) { return `(${x}, ${y})` },
         Point3({ x, y, z }) { return `(${x}, ${y}, ${z})` }
     })

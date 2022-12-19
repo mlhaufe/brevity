@@ -22,7 +22,7 @@ describe('Shape tests', () => {
         expect(rectangle.height).toBe(3);
     })
 
-    const area = Trait(Shape, {
+    const area = Trait({
         Circle({ radius }) { return Math.PI * radius * radius },
         Rectangle({ width, height }) { return width * height }
     })

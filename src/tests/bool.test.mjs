@@ -17,7 +17,7 @@ describe('Bool tests', () => {
         const f = Bool.False,
             t = Bool.True
 
-        const and = Trait(Bool, {
+        const and = Trait({
             False(left, _) { return left },
             True(_, right) { return right }
         })
@@ -27,7 +27,7 @@ describe('Bool tests', () => {
         expect(and(t, f)).toBe(f)
         expect(and(t, t)).toBe(t)
 
-        const or = Trait(Bool, {
+        const or = Trait({
             False(_, right) { return right },
             True(left, _) { return left }
         })
@@ -37,7 +37,7 @@ describe('Bool tests', () => {
         expect(or(t, f)).toBe(t)
         expect(or(t, t)).toBe(t)
 
-        const not = Trait(Bool, {
+        const not = Trait({
             False() { return Bool.True },
             True() { return Bool.False }
         })

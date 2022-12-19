@@ -12,7 +12,7 @@ describe('Color tests', () => {
         expect(red.Red).toBeUndefined();
     })
 
-    const print = Trait(Color, {
+    const print = Trait({
         Red() { return '#FF0000' },
         Green() { return '#00FF00' },
         Blue() { return '#0000FF' }

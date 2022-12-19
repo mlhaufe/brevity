@@ -4,7 +4,7 @@ import { Trait } from "../Trait.mjs"
 describe('Extensibility for the Masses', () => {
     const IntExp = Data({ Lit: ['value'], Add: ['left', 'right'] })
 
-    const intPrint = Trait(IntExp, {
+    const intPrint = Trait({
         Lit({ value }) {
             return value.toString()
         },
@@ -13,7 +13,7 @@ describe('Extensibility for the Masses', () => {
         }
     })
 
-    const intEval = Trait(IntExp, {
+    const intEval = Trait({
         Lit({ value }) { return value },
         Add({ left, right }) { return intEval(left) + intEval(right) }
     })
@@ -51,7 +51,7 @@ describe('Extensibility for the Masses', () => {
         expect(exp.ifFalse.value).toBe(0)
     })
 
-    const intBoolPrint = Trait(IntBoolExp, intPrint, {
+    const intBoolPrint = Trait(intPrint, {
         Bool({ value }) { return value.toString() },
         Iff({ pred, ifTrue, ifFalse }) {
             return `(${intBoolPrint(pred)} ? ${intBoolPrint(ifTrue)} : ${intBoolPrint(ifFalse)})`
@@ -69,7 +69,7 @@ describe('Extensibility for the Masses', () => {
         expect(intBoolPrint(exp)).toBe('(true ? 1 : 2)')
     })
 
-    const intBoolEval = Trait(IntBoolExp, intEval, {
+    const intBoolEval = Trait(intEval, {
         Bool({ value }) { return value },
         Iff({ pred, ifTrue, ifFalse }) {
             return intBoolEval(pred) ? intBoolEval(ifTrue) : intBoolEval(ifFalse)
@@ -124,7 +124,7 @@ describe('Extensibility for the Masses', () => {
         expect(exp.value.right.value).toBe(1)
     })
 
-    const stmtPrint = Trait(StmtExp, intBoolPrint, {
+    const stmtPrint = Trait(intBoolPrint, {
         Assign({ name, value }) { return `${name} = ${stmtPrint(value)}` },
         Expr({ value }) { return stmtPrint(value) },
         Seq({ first, second }) { return `${stmtPrint(first)}; ${stmtPrint(second)}` },
@@ -164,7 +164,7 @@ describe('Extensibility for the Masses', () => {
         expect(stmtPrint(exp2)).toBe('x = (y + 1); x = (x + 1)')
     })
 
-    const stmtEval = Trait(StmtExp, intBoolEval, {
+    const stmtEval = Trait(intBoolEval, {
         Assign({ scope, name, value }) {
             return scope.set(name, stmtEval({ value })).get(name)
         },

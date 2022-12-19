@@ -12,7 +12,7 @@ describe('Tree Tests', () => {
         expect(tree.right.value).toBe(2);
     })
 
-    const print = Trait(Tree, {
+    const print = Trait({
         Leaf({ value }) { return `${value}` },
         Branch({ left, right }) { return `(${print(left)}, ${print(right)})` }
     })

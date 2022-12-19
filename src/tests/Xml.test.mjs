@@ -77,7 +77,7 @@ describe('Simplified Xml Tests', () => {
         expect(h1.children[0].text).toBe('Hello World!');
     })
 
-    const print = Trait(Node, {
+    const print = Trait({
         Element: ({ name, attrs, children }) => {
             const attrsText = attrs.map(({ name, value }) => ` ${name}="${value}"`).join('');
             const childrenText = children.map(child => print(child)).join('');

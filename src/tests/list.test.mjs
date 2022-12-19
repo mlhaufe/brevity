@@ -14,7 +14,7 @@ describe('List tests', () => {
         expect(cons.tail).toBe(List.Nil)
     })
 
-    const concat = Trait(List, {
+    const concat = Trait({
         Nil({ }, ys) { return ys },
         Cons({ head, tail }, ys) {
             return List.Cons({ head, tail: concat(tail, ys) })
@@ -39,7 +39,7 @@ describe('List tests', () => {
 
     });
 
-    const length = Trait(List, {
+    const length = Trait({
         Nil() { return 0 },
         Cons({ head, tail }) { return 1 + length(tail) }
     });

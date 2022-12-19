@@ -25,7 +25,7 @@ describe('Peano tests', () => {
         expect(() => Peano.Succ(zero)).toThrow();
     })
 
-    const value = Trait(Peano, {
+    const value = Trait({
         Zero() { return 0 },
         Succ({ pred }) { return 1 + value(pred) }
     })

@@ -21,13 +21,8 @@ const callableProxyHandler = {
 
 /**
  * 
- * @param {*} Data 
- * @param {*} traits 
- * @returns 
- * @throws {TypeError} if data is not a Data declaration
  * @throws {TypeError} if traits is not an object literal
  * @throws {TypeError} if any trait is not a function
- * @throws {TypeError} if any trait targets a member that is not a member of the data
  * @example
  * const Color = Data({ Red: [], Green: [], Blue: [] })
  * const print = Trait(Color, {
@@ -48,12 +43,9 @@ const callableProxyHandler = {
  * print(list) // [1, [2, []]]
  * 
  */
-// Trait(Data, { ... })
-// Trait(Data, baseTrait, { ... })
-export function Trait(Data, baseTrait, traits) {
-    if (!Data[isData])
-        throw new TypeError(`data must be a Data declaration: ${Data}`);
-
+// Trait({ ... })
+// Trait(baseTrait, { ... })
+export function Trait(baseTrait, traits) {
     let localTraits = () => { } // The object must remain callable.
     if (baseTrait && traits) {
         if (!baseTrait[isTrait])
@@ -75,8 +67,6 @@ export function Trait(Data, baseTrait, traits) {
     for (const [name, trait] of Object.entries(localTraits)) {
         if (typeof trait !== 'function')
             throw new TypeError(`trait must be a function: ${name}`);
-        if (!(name in Data))
-            throw new TypeError(`trait must target a member of the data: ${name}`);
     }
 
     return new Proxy(localTraits, callableProxyHandler)
