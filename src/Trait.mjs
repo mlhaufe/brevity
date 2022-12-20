@@ -1,4 +1,4 @@
-import { isData, typeName } from './Data.mjs';
+//import { typeName } from './Data.mjs';
 
 const isTrait = Symbol('isTrait'),
     apply = Symbol('apply');
@@ -25,7 +25,7 @@ const callableProxyHandler = {
  * @throws {TypeError} if any trait is not a function
  * @example
  * const Color = Data({ Red: [], Green: [], Blue: [] })
- * const print = Trait(Color, {
+ * const print = Trait({
  *     Red(){ return '#FF0000'},
  *     Green(){ return '#00FF00'},
  *     Blue(){ return '#0000FF'}
@@ -34,7 +34,7 @@ const callableProxyHandler = {
  * console.log(print(color)) // #FF0000
  * 
  * const List = Data({ Nil: [], Cons: ['head', 'tail'] })
- * const print = Trait(List, {
+ * const print = Trait({
  *     Nil(){ return '[]' },
  *     Cons({ head, tail }){ return `[${head}, ${print(tail)}]` }
  * })
