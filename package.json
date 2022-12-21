@@ -1,6 +1,6 @@
 {
     "name": "@mlhaufe/brevity",
-    "version": "0.2.0",
+    "version": "0.2.1",
     "description": "A library for Feature-Oriented Programming",
     "keywords": [
         "object-algebra",
@@ -11,7 +11,7 @@
     "type": "module",
     "scripts": {
         "clean": "rimraf dist",
-        "dist": "copyfiles -u 1 src/index.mjs src/Algebra.mjs dist",
+        "dist": "copyfiles -u 1 src/*.mjs dist",
         "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
     },
     "repository": {

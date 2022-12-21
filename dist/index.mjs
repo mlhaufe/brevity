@@ -1,1 +1,2 @@
-export { Algebra } from './Algebra.mjs'
+export { Data } from './Data.mjs';
+export { Trait } from './Trait.mjs';

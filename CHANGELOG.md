@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.2.1
+
+- Fixed `dist` script
+
 ## v0.2.0
 
 - Replaced Object Algebra approach with an alternative
