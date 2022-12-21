@@ -1,193 +1,191 @@
 # Brevity
 
-Brevity is a library that enables Feature Oriented Programming (FOP) via Object Algebras
+Brevity is a library that enables Feature Oriented Programming (FOP) and solves the expression problem
+in a manner that makes data and operation declarations trivial to define and compose.
 
 ## Installation
 
-## The Expression Problem
-
-## Object Algebras
-
-## Operations
-
-### Empty
-
-Converts the current algebra into an algrebra that returns empty objects.
-
-```js
-class ColorAlgebra extends Algebra {
-    Red() { }
-    Green() { }
-    Blue() { }
-}
-
-const ColorEmpty = ColorAlgebra.Empty(),
-    colorEmpty = new ColorEmpty()
-
-colorEmpty.Red() // Object.create(null)
+```text
+npm install github:mlhaufe/brevity#v0.2.1
 ```
 
-### Merge
+## The Expression Problem
 
-Merges the current algebra with the provided algebras
+### Description
+
+The expression problem is a term used in computer science to describe a particular design problem that arises when a programming language or system provides ways to extend the system in two separate, but related, ways. The two ways in which the system can be extended are:
+
+Adding new data types: This involves defining new data types and adding operations on them.
+
+Adding new operations: This involves defining new operations that can be applied to existing data types.
+
+The expression problem arises when it is not possible to add new data types and new operations in a way that is both easy to use and efficient. In particular, it can be difficult to add new operations if the system is not designed to accommodate them, and it can be difficult to add new data types if the system does not provide sufficient support for them.
+
+### Functional
+
+Here is an example of the problem in the functional paradigm:
+
+```ts
+// data declaration
+type Exp =
+    { tag: 'Lit', value: number } |
+    { tag: 'Add', left: Exp, right: Exp }
+
+// operations
+let evaluate = (exp: Exp) =>
+    exp.tag === 'Lit' ? exp.value :
+    evaluate(exp.left) + evaluate(exp.right)
+
+let printExp = (exp: Exp) => 
+    exp.tag === 'Lit' ? `${exp.value}` :
+    `${printExp(exp.left)} + ${printExp(exp.right)}`
+```
+
+Adding a new operation `isValue(exp)` is trivial in this paradigm. Just define a new function:
+
+```ts
+let isValue = (exp: Exp) => exp.tag === 'Lit';
+```
+
+Adding a new data type `{ tag: 'Add', left: Exp, right: Exp }` is not easy though.
+All existing operations have to be modified to support the new data type.
+
+### Object-Oriented
+
+In the Object-oriented paradigm the dual problem exists:
+
+```ts
+abstract class Exp {
+    abstract print(): string
+    abstract evaluate(): number
+}
+
+class Lit extends Exp {
+    // data
+    constructor(readonly value: number) { super() }
+
+    //operations
+    evaluate(): number {
+        return this.value
+    }
+    print(): string {
+        return `${this.value}`
+    }
+}
+
+class Add implements Exp {
+    // data
+    constructor(readonly left: Exp, readonly right: Exp) { }
+
+    // operations
+    evaluate(): number {
+        return this.left.evaluate() + this.right.evaluate()
+    }
+    print(): string {
+        return `${this.left.print()}, + ${this.right.print()}`
+    }
+}
+```
+
+Adding a new Data type: `Mul(left, right)` is easy to do in OO style, just create a new class.
+
+```ts
+class Mul implements Exp {
+    // data
+    constructor(readonly left: Exp, readonly right: Exp) { }
+
+    // operations
+    evaluate(): number {
+        return this.left.evaluate() * this.right.evaluate()
+    }
+    print(): string {
+        return `${this.left.print()} * ${this.right.print()}`
+    }
+}
+```
+
+Trying to add a new operation `Exp.isValue()` is not easy though.
+All existing classes must be modified to add the new operation
+
+### Solutions
+
+There are several approaches to solving the expression problem,
+[From Object Algebras to Finally Tagless Interpreters](https://oleksandrmanzyuk.wordpress.com/2014/06/18/from-object-algebras-to-finally-tagless-interpreters-2/). The current library Brevity is another approach.
+
+Here is how the above would be approached:
 
 ```js
-class ColorAlgebra extends Algebra {
-    Red() { }
-    Green() { }
-    Blue() { }
-}
+// data declaration
+const Exp = Data({ Lit: ['value'], Add: ['left', 'right']})
 
-class ColorData { }
-class Red extends ColorData { }
-class Green extends ColorData { }
-class Blue extends ColorData { }
-
-class ColorFactory extends ColorAlgebra {
-    Red() { return new Red() }
-    Green() { return new Green() }
-    Blue() { return new Blue() }
-}
-
-class Printable extends ColorAlgebra {
-    Red() {
-        return { print() { return '#FF0000' } }
+// operations
+const evaluate = Trait({
+    Lit({value}){ return value },
+    Add({left, right}){
+         return this[apply](left) + this[apply](right)
     }
-    Green() {
-        return { print() { return '#00FF00' } }
-    }
-    Blue() {
-        return { print() { return '#0000FF' } }
-    }
-}
+})
 
-const Color = ColorFactory.Merge(Printable),
-    color = new Color()
+const print = Trait({
+    Lit({value}) { return `${value}` },
+    Add({left, right}) {
+        return `${this[apply](left)} + ${this[apply](right)}`
+    }
+})
+```
 
-color.Red().print() // '#FF0000'
+Usage:
+
+```js
+const {Add, Lit} = Exp
+
+// 1 + 3
+const add = Add({left: Lit({value: 1}, right: Lit({value: 3}))})
+
+evaluate(add) // 4
+print(add) // "1 + 3"
+```
+
+Adding a new data type `Mul` is as simple as extending the base data type `Exp`:
+
+```js
+const MulExp = Data(Exp, { Mul: ['left','right']})
+```
+
+To extend `evaluate` and `print` to the new data declaration, simply extend the existing traits:
+
+```js
+const evalMul = Trait(evaluate, {
+    Mul({left,right}){ return this[apply](left) * this[apply](right) }
+})
+
+const printMul = Trait(print, {
+    Mul({left,right}){ return `${this[apply](left)} * ${this[apply](right)}` }
+})
+```
+
+Adding a new operation for all data declarations thus far `isValue`:
+
+```js
+const isValue = Trait({
+    Lit({value}) { return true },
+    Add({left,right}) { return false },
+    Mul({left,right}){ return false}
+})
 ```
 
 ## Examples
 
-### Boolean Algebra
+Additional examples are available in the 'tests' folder.
 
-Declare the Algebra:
+## Future Work
 
-```js
-class BoolAlg extends Algebra {
-    False() { }
-    True() { }
-}
-```
-
-Declare data and associated factory:
-
-```js
-class BoolData { }
-class False extends BoolData { }
-class True extends BoolData { }
-
-class BoolFactory extends BoolAlg {
-    False() { return new False() }
-    True() { return new True() }
-}
-```
-
-Declare traits:
-
-```js
-class BoolAnd extends BoolAlg {
-    False() {
-        return { and(other) { return this } }
-    }
-    True() {
-        return { and(other) { return other } }
-    }
-}
-
-class BoolOr extends BoolAlg {
-    False() {
-        return { or(other) { return other } }
-    }
-    True() {
-        return { or(other) { return this } }
-    }
-}
-
-class BoolNot extends BoolAlg {
-    False() {
-        return { not() { return new True() } }
-    }
-    True() {
-        return { not() { return new False() } }
-    }
-}
-```
-
-Merge into single declaration and use:
-
-```js
-const Bool = BoolFactory.Merge(BoolAnd, BoolOr, BoolNot),
-      b = new Bool()
-
-b.False().and(b.False()) // b.True()
-b.True().or(b.False()) // b.False()
-b.False().not() // b.True()
-```
-
-### Color Algebra
-
-Declare Algebra:
-
-```js
-class ColorAlgebra extends Algebra {
-    Red() { }
-    Green() { }
-    Blue() { }
-}
-```
-
-Declare data and associate factory:
-
-```js
-class ColorData { }
-class Red extends ColorData { }
-class Green extends ColorData { }
-class Blue extends ColorData { }
-
-class ColorFactory extends ColorAlgebra {
-    Red() { return new Red() }
-    Green() { return new Green() }
-    Blue() { return new Blue() }
-}
-```
-
-Declare trait:
-
-```js
-class Printable extends ColorAlgebra {
-    Red() {
-        return { print() { return '#FF0000' } }
-    }
-    Green() {
-        return { print() { return '#00FF00' } }
-    }
-    Blue() {
-        return { print() { return '#0000FF' } }
-    }
-}
-```
-
-Combine and use:
-
-```js
-const Color = ColorFactory.Merge(Printable),
-    const color = new Color()
-
-color.Red() instanceof Red // true
-color.Red() instanceof ColorData // true
-
-color.Red().print() // '#FF0000'
-```
+- A TypeScript version is in progress
+- Utility traits are being investigated. (fold, unfold, and combinations thereof)
 
 ## References and Further Reading
+
+- [Expression Problem - Wikipedia](https://en.wikipedia.org/wiki/Expression_problem)
+- [From Object Algebras to Finally Tagless Interpreters - Oleksandr Manzyuk](https://oleksandrmanzyuk.wordpress.com/2014/06/18/from-object-algebras-to-finally-tagless-interpreters-2/)
+- [Extensibility for the Masses - Bruno C. d. S. Oliveira and William R. Cook](https://www.cs.utexas.edu/~wcook/Drafts/2012/ecoop2012.pdf)
+- [Algebraic Data Types in JavaScript - Sjoerd Visscher](http://w3future.com/weblog/stories/2008/06/16/adtinjs.xml)

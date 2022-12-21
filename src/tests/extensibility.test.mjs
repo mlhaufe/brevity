@@ -69,8 +69,6 @@ describe('Extensibility for the Masses', () => {
         })
 
         expect(intBoolPrint(exp)).toBe('(true ? 1 : 2)')
-
-        const fooTrait = Trait()
     })
 
     const intBoolEval = Trait(intEval, {

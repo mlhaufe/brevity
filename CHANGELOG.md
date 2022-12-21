@@ -3,6 +3,11 @@
 ## v0.2.1
 
 - Fixed `dist` script
+- Updated README.md
+- Exporting `apply` symbol
+- Bugfix of Trait overloading
+- Fixed extensibility unit tests
+- Created arithmetic unit tests
 
 ## v0.2.0
 

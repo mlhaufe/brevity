@@ -78,16 +78,14 @@ export function Trait(...args) {
         if (typeof traits !== 'object' || Array.isArray(traits))
             throw new TypeError('traits must be an object literal');
         Reflect.setPrototypeOf(localTraits, baseTrait)
-        Object.assign(localTraits, traits);
-    } else if (baseTrait && !traits) {
-        if (typeof baseTrait !== 'object' || Array.isArray(baseTrait))
+    } else if (!baseTrait && traits) {
+        if (typeof traits !== 'object' || Array.isArray(traits))
             throw new TypeError('traits must be an object literal');
         Reflect.setPrototypeOf(localTraits, protoTrait)
-        Object.assign(localTraits, baseTrait);
     } else {
         throw new TypeError('Trait must be called with at least 2 arguments')
     }
-
+    Object.assign(localTraits, traits);
     for (const [name, trait] of Object.entries(localTraits)) {
         if (typeof trait !== 'function')
             throw new TypeError(`trait must be a function: ${name}`);
