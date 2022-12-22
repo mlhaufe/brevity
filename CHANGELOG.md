@@ -6,6 +6,7 @@
 - Added `all` option to `Trait`
 - Exposed `isData` and `isSingleton` symbols
 - Removed dead code
+- Updated license
 
 ## v0.2.1
 

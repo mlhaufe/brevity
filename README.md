@@ -273,9 +273,9 @@ All existing classes must be modified to add the new operation
 ### Solutions
 
 There are several approaches to solving the expression problem,
-[From Object Algebras to Finally Tagless Interpreters](https://oleksandrmanzyuk.wordpress.com/2014/06/18/from-object-algebras-to-finally-tagless-interpreters-2/). The current library Brevity is another approach.
+[From Object Algebras to Finally Tagless Interpreters](https://oleksandrmanzyuk.wordpress.com/2014/06/18/from-object-algebras-to-finally-tagless-interpreters-2/).
 
-Here is how the above would be approached:
+Here is how the above would be approached with this library:
 
 ```js
 // data declaration
