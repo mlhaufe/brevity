@@ -6,8 +6,171 @@ in a manner that makes data and operation declarations trivial to define and com
 ## Installation
 
 ```text
-npm install github:mlhaufe/brevity#v0.2.1
+npm install github:mlhaufe/brevity#v0.2.2
 ```
+
+## Data
+
+### Enumerated data
+
+Enumerations can be declared similar to how you would in a functional language:
+
+```js
+const Color = Data({ Red: [], Green: [], Blue: [] });
+```
+
+Variants without properties are considered singletons:
+
+```js
+const red = Color.Red,
+    red2 = Color.Red
+
+red === red2
+```
+
+Each variant can have properties. These propertied become named parameters of each constructor:
+
+```js
+const Point = Data({ Point2: ['x', 'y'], Point3: ['x', 'y', 'z'] })
+
+const p2 = Point.Point2({x: 3, y: 2}),
+      p3 = Point.Point3({x: 12, y: 37, z: 54})
+
+p2.x === 3
+p2.y === 2
+```
+
+### Recursive Data
+
+Recursive data can be defined as follows:
+
+```js
+const Peano = Data({ Zero: [], Succ: ['pred'] });
+
+const zero = Peano.Zero,
+      one = Peano.Succ({ pred: zero }),
+      two = Peano.Succ({ pred: one }),
+      three = Peano.Succ({ pred: two });
+
+const List = Data({ Nil: [], Cons: ['head', 'tail'] });
+
+const { Cons, Nil } = List;
+// [1, 2, 3]
+const xs = Cons({ head: 1, tail: Cons({ head: 2, tail: Cons({ head: 3, tail: Nil }) }) }),
+```
+
+### Extending Data
+
+Data declarations can be extended by passing the base declaration as the first argument:
+
+```js
+const IntExp = Data({ Lit: ['value'], Add: ['left', 'right'] })
+
+const IntBoolExp = Data(IntExp, { Bool: ['value'], Iff: ['pred', 'ifTrue', 'ifFalse'] })
+
+const {Add, Lit, Bool, Iff}
+// if (true) 1 else 1 + 3
+const exp = Iff({
+    pred: Bool({ value: true }),
+    ifTrue: Lit({ value: 1 }),
+    ifFalse: Add({left: Lit({value: 1}, right: Lit({value: 3}))})
+})
+```
+
+## Traits
+
+A `Trait` associates operations with data declarations and supports pattern matching.
+
+```js
+const print = Trait({
+    Red() { return '#FF0000' },
+    Green() { return '#00FF00' },
+    Blue() { return '#0000FF' }
+})
+
+print(Color.Red) // '#FF0000'
+```
+
+The trait `print` is a function that can then be applied to data instances.
+
+```js
+const concat = Trait({
+    Nil({ }, ys) { return ys },
+    Cons({ head, tail }, ys) {
+        return List.Cons({ head, tail: concat(tail, ys) })
+    }
+})
+
+// [1, 2]
+const xs = Cons({ head: 1, tail: Cons({ head: 2, tail: Nil }) }),
+    // [3, 4]   
+    ys = Cons({ head: 3, tail: Cons({ head: 4, tail: Nil }) }),
+    // xs ++ ys == [1, 2, 3, 4]
+    zs = concat(xs, ys);
+```
+
+### All
+
+If the same operation should be applied to all data variants, then the `all` symbol can be used:
+
+```js
+const operation = Trait({
+    [all](target){ return JSON.stringify(target) }
+})
+```
+
+### Extending Traits
+
+Like the `Data` declaration one `Trait` can extend another:
+
+```js
+const baseTrait = Trait({
+    Foo(){ ... }
+})
+
+const subTrait = Trait(baseTrait, {
+    Bar() { ... }
+})
+```
+
+`subtrait` can now be applied to both `Foo` and `Bar` instances.
+
+### Open Recursion
+
+A trait may need to be applied to data definitions that have not yet been defined. A solution to this problem
+is [Open Recursion](http://journal.stuffwithstuff.com/2013/08/26/what-is-open-recursion/). In OOP,
+this is provided by the variable `this` or similar. In a Featured-Oriented approach like this library a
+different mechanism is needed as the recursion happens across a data family and its independently defined traits.
+
+Instead of `this`, the `apply` symbol is used:
+
+```js
+const IntExp = Data({ Lit: ['value'], Add: ['left', 'right'] })
+
+const intPrint = Trait({
+    Lit({ value }) {
+        return value.toString()
+    },
+    Add({ left, right }) {
+        return `(${this[apply](left)} + ${this[apply](right)})`
+    }
+})
+
+const IntBoolExp = Data(IntExp, { Bool: ['value'], Iff: ['pred', 'ifTrue', 'ifFalse'] })
+
+const intBoolPrint = Trait(intPrint, {
+    Bool({ value }) { return value.toString() },
+    Iff({ pred, ifTrue, ifFalse }) {
+        return `(${this[apply](pred)} ? ${this[apply](ifTrue)} : ${this[apply](ifFalse)})`
+    }
+})
+```
+
+Above `this[apply]` is called instead of `intPrint` or `intBoolPrint`. This is necessary as an
+expression can be constructed arbitrarily. For instance, if `Add.left` was a `Bool` then `intPrint`
+would fail as there is no definition for that pattern. Additionally, data and traits could be extended
+indefinitely, such as by adding `Mul` and `intMulPrint` and so on. Given that you don't know and shouldn't
+care about such extensions, relying on open recursion is key.
 
 ## The Expression Problem
 
@@ -173,10 +336,6 @@ const isValue = Trait({
     Mul({left,right}){ return false}
 })
 ```
-
-## Examples
-
-Additional examples are available in the 'tests' folder.
 
 ## Future Work
 

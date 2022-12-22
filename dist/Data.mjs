@@ -45,8 +45,7 @@ function def(types) {
 
 export const typeName = Symbol('typeName'),
     isData = Symbol('isData'),
-    isSingleton = Symbol('isSingleton'),
-    toString = Symbol('toString');
+    isSingleton = Symbol('isSingleton');
 
 /**
  * Data types with named parameters and immutable objects.

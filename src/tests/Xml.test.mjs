@@ -1,9 +1,11 @@
 import { Data } from "../Data.mjs"
-import { Trait } from "../Trait.mjs";
+import { Trait, all } from "../Trait.mjs";
 
 describe('Simplified Xml Tests', () => {
     const Attrs = Data({ Attr: ['name', 'value'] });
     const Node = Data({ Element: ['name', 'attrs', 'children'], Text: ['text'] });
+    const { Attr } = Attrs,
+        { Element, Text } = Node;
     // <html lang="en">
     //   <head>
     //     <title>Hello World!</title>
@@ -12,24 +14,24 @@ describe('Simplified Xml Tests', () => {
     //     <h1>Hello World!</h1>
     //   </body>
     // </html>
-    const html = Node.Element({
-        name: 'html', attrs: [Attrs.Attr({ name: 'lang', value: 'en' })],
+    const html = Element({
+        name: 'html', attrs: [Attr({ name: 'lang', value: 'en' })],
         children: [
-            Node.Element({
+            Element({
                 name: 'head', attrs: [],
                 children: [
-                    Node.Element({
+                    Element({
                         name: 'title', attrs: [],
-                        children: [Node.Text({ text: 'Hello World!' })]
+                        children: [Text({ text: 'Hello World!' })]
                     })
                 ]
             }),
-            Node.Element({
+            Element({
                 name: 'body', attrs: [],
                 children: [
-                    Node.Element({
+                    Element({
                         name: 'h1', attrs: [],
-                        children: [Node.Text({ text: 'Hello World!' })]
+                        children: [Text({ text: 'Hello World!' })]
                     })
                 ]
             })
@@ -90,5 +92,29 @@ describe('Simplified Xml Tests', () => {
         expect(print(html)).toBe(
             '<html lang="en"><head><title>Hello World!</title></head><body><h1>Hello World!</h1></body></html>'
         );
+    })
+
+    //<xml>
+    //  <a href='https://brave.com'>Be Brave</a>
+    //  <a href="https://archive.org">Internet Archive</a>
+    //</xml>
+    const xml = Element({
+        name: 'xml', attrs: [],
+        children: [
+            Element({
+                name: 'a', attrs: [Attr({ name: 'href', value: 'https://brave.com' })],
+                children: [Text({ text: 'Be Brave' })]
+            })
+        ]
+    });
+
+    const nodeName = Trait({
+        [all]({ name }) { return name }
+    })
+
+    test('nodeName', () => {
+        expect(nodeName(xml)).toBe('xml');
+        expect(nodeName(xml.children[0])).toBe('a');
+        expect(nodeName(xml.children[0].attrs[0])).toBe('href');
     })
 })

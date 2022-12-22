@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.2.2
+
+- Updated README.md
+- Added `all` option to `Trait`
+- Exposed `isData` and `isSingleton` symbols
+- Removed dead code
+
 ## v0.2.1
 
 - Fixed `dist` script
