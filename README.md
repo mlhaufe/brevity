@@ -1,6 +1,6 @@
 # Brevity
 
-Brevity is a library that enables Feature Oriented Programming (FOP) and solves the expression problem
+Brevity is a library that enables [Feature-Oriented Programming (FOP)](https://en.wikipedia.org/wiki/Feature-oriented_programming) and solves the expression problem
 in a manner that makes data and operation declarations trivial to define and compose.
 
 ## Installation
@@ -28,7 +28,7 @@ const red = Color.Red,
 red === red2
 ```
 
-Each variant can have properties. These propertied become named parameters of each constructor:
+Each variant can have properties. These properties become named parameters of each constructor:
 
 ```js
 const Point = Data({ Point2: ['x', 'y'], Point3: ['x', 'y', 'z'] })
