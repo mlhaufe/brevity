@@ -84,7 +84,7 @@ describe('Arithmetic', () => {
     })
 
     const printMul = Trait(print, {
-        Mul({ left, right }) { return `${this[apply](left)} * ${this[apply](right)}` }
+        Mul({ left, right }: { left: }) { return `${printMul(left)} * ${printMul(right)}` }
     })
 
     test('printMul', () => {

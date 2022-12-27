@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.0
+
+- Converted to TypeScript
+
 ## v0.2.2
 
 - Updated README.md
