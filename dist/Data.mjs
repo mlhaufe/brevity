@@ -21,7 +21,9 @@ function def(variants) {
         }
         // if the type has no parameters, it is a singleton
         if (params.length === 0) {
-            variants[name] = Object.freeze({ [typeName]: name, [isSingleton]: true });
+            variants[name] = Object.freeze(
+                Object.assign(Object.create(null), ({ [typeName]: name, [isSingleton]: true }))
+            )
         } else {
             // otherwise each type becomes a constructor
             variants[name] = function (...args) {

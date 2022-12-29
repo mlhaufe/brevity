@@ -14,7 +14,7 @@ npm install github:mlhaufe/brevity
 A specific version:
 
 ```text
-npm install github:mlhaufe/brevity#v0.2.4
+npm install github:mlhaufe/brevity#v0.2.5
 ```
 
 ## Data

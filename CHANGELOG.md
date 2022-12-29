@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.2.5
+
+- Bugfix of singleton Data variants to no longer extend `Object.prototype`
+
 ## v0.2.4
 
 - Bugfix of single parameter Data calls to differentiate object literals from object params
