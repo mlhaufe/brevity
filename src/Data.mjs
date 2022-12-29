@@ -1,13 +1,12 @@
 // tests if a value is an object literal
-const isObject = obj => typeof obj === 'object' && obj !== null && !Array.isArray(obj);
+const isObjectLiteral = obj => obj !== null && Object.getPrototypeOf(obj) === Object.prototype;
 // tests if a string is capitalized
 const isCapitalized = str => typeof str === 'string' && str.match(/^[A-Z][A-Za-z0-9]*$/);
 // tests if a string is camelCase
 const isCamelCase = str => typeof str === 'string' && str.match(/^[a-z][A-Za-z0-9]*$/);
 
-
 function def(variants) {
-    if (!isObject(variants))
+    if (!isObjectLiteral(variants))
         throw new TypeError('variants declaration must be an object literal');
 
     for (const [name, params] of Object.entries(variants)) {
@@ -29,7 +28,7 @@ function def(variants) {
                 const obj = Object.create(variants[name].prototype);
 
                 const objArg = args[0];
-                if (args.length === 1 && isObject(objArg)) {
+                if (args.length === 1 && isObjectLiteral(objArg)) {
                     if (Object.keys(objArg).length > params.length)
                         throw new TypeError(`too many parameters. expected: ${name}: ${params}, got: ${name}: ${Object.keys(objArg)}`);
                     for (const param of params) {

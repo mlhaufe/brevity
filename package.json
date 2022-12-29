@@ -1,6 +1,6 @@
 {
     "name": "@mlhaufe/brevity",
-    "version": "0.2.3",
+    "version": "0.2.4",
     "description": "A library for Feature-Oriented Programming",
     "keywords": [
         "object-algebra",

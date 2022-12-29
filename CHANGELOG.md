@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.2.4
+
+- Bugfix of single parameter Data calls to differentiate object literals from object params
+
 ## v0.2.3
 
 - Data variants can now be called with positional parameters
