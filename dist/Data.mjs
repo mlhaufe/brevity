@@ -1,46 +1,57 @@
-function def(types) {
-    if (typeof types !== 'object' || types === null || Array.isArray(types)) {
-        throw new TypeError('types must be an object literal');
-    }
-    for (const [name, params] of Object.entries(types)) {
-        // each type name must be capitalized
-        if (typeof name !== 'string' || !name.match(/^[A-Z][A-Za-z0-9]*$/)) {
-            throw new TypeError(`type name must be capitalized: ${name}`);
-        }
-        // each type must be an array of camelCase strings
-        if (!Array.isArray(params) || params.some(param => typeof param !== 'string' || !param.match(/^[a-z][A-Za-z0-9]*$/))) {
-            throw new TypeError(`type parameters must be camelCase strings: ${name}`);
-        }
-        // each parameter must be unique
+// tests if a value is an object literal
+const isObject = obj => typeof obj === 'object' && obj !== null && !Array.isArray(obj);
+// tests if a string is capitalized
+const isCapitalized = str => typeof str === 'string' && str.match(/^[A-Z][A-Za-z0-9]*$/);
+// tests if a string is camelCase
+const isCamelCase = str => typeof str === 'string' && str.match(/^[a-z][A-Za-z0-9]*$/);
+
+
+function def(variants) {
+    if (!isObject(variants))
+        throw new TypeError('variants declaration must be an object literal');
+
+    for (const [name, params] of Object.entries(variants)) {
+        if (!isCapitalized(name))
+            throw new TypeError(`variant name must be capitalized: ${name}`);
+        if (!Array.isArray(params))
+            throw new TypeError(`variant properties must be an array: ${name}`);
+        if (!params.every(isCamelCase))
+            throw new TypeError(`variant properties must be camelCase strings: ${name}: ${params}`);
         if (new Set(params).size !== params.length) {
-            throw new TypeError(`type parameters must be unique: ${name}`);
+            throw new TypeError(`type parameters must be unique: ${name}: ${params}`);
         }
         // if the type has no parameters, it is a singleton
         if (params.length === 0) {
-            types[name] = Object.freeze({ [typeName]: name, [isSingleton]: true });
+            variants[name] = Object.freeze({ [typeName]: name, [isSingleton]: true });
         } else {
-            // otherwise each type becomes a constructor with named parameters
-            types[name] = function (args) {
-                const obj = Object.create(types[name].prototype);
+            // otherwise each type becomes a constructor
+            variants[name] = function (...args) {
+                const obj = Object.create(variants[name].prototype);
 
-                // every parameter must be in the args
-                for (const param of params) {
-                    if (!(param in args)) {
-                        throw new TypeError(`missing parameter: ${param}`);
+                const objArg = args[0];
+                if (args.length === 1 && isObject(objArg)) {
+                    if (Object.keys(objArg).length > params.length)
+                        throw new TypeError(`too many parameters. expected: ${name}: ${params}, got: ${name}: ${Object.keys(objArg)}`);
+                    for (const param of params) {
+                        if (!(param in objArg))
+                            throw new TypeError(`missing parameter: ${param}`);
+                        obj[param] = objArg[param];
                     }
+                } else if (args.length === params.length) {
+                    args.forEach((arg, i) => obj[params[i]] = arg);
+                } else {
+                    throw new TypeError(`wrong number of parameters: ${name}: ${params}`);
                 }
 
-                Object.assign(obj, args, { [typeName]: name, [isSingleton]: false });
-
-                // each type is immutable
                 return Object.freeze(obj);
             }
+            variants[name].prototype = Object.freeze({ [typeName]: name, [isSingleton]: false });
         }
     }
     // each type is tagged with a symbol
-    types[isData] = true;
+    variants[isData] = true;
     // the type declaration is immutable
-    return Object.freeze(types);
+    return Object.freeze(variants);
 }
 
 export const typeName = Symbol('typeName'),
@@ -49,7 +60,7 @@ export const typeName = Symbol('typeName'),
 
 /**
  * Data types with named parameters and immutable objects.
- * @param {Object} types
+ * @param {Object} variants
  * @returns {Object}
  * @example
  * const Color = Data({ Red: [], Green: [], Blue: [] }),
@@ -70,14 +81,14 @@ export const typeName = Symbol('typeName'),
  *      red = ExtendedColor.Red,
  *      yellow = ExtendedColor.Yellow;
  */
-export function Data(Base, types) {
+export function Data(Base, variants) {
     let data
-    if (Base && types) {
+    if (Base && variants) {
         if (!Base[isData])
             throw new TypeError('Base must be a Data type');
-        data = Object.assign({}, Base, def(types));
+        data = Object.assign({}, Base, def(variants));
     }
-    else if (Base && !types) {
+    else if (Base && !variants) {
         data = def(Base);
     }
     else {

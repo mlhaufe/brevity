@@ -5,8 +5,16 @@ in a manner that makes data and operation declarations trivial to define and com
 
 ## Installation
 
+The latest version:
+
 ```text
-npm install github:mlhaufe/brevity#v0.2.2
+npm install github:mlhaufe/brevity
+```
+
+A specific version:
+
+```text
+npm install github:mlhaufe/brevity#v0.2.3
 ```
 
 ## Data
@@ -31,10 +39,21 @@ red === red2
 Each variant can have properties. These properties become named parameters of each constructor:
 
 ```js
-const Point = Data({ Point2: ['x', 'y'], Point3: ['x', 'y', 'z'] })
+const Point = Data({ Point2: ['x', 'y'], Point3: ['x', 'y', 'z'] }),
+    {Point2, Point3} = Point
 
-const p2 = Point.Point2({x: 3, y: 2}),
-      p3 = Point.Point3({x: 12, y: 37, z: 54})
+const p2 = Point2({x: 3, y: 2}),
+      p3 = Point3({x: 12, y: 37, z: 54})
+
+p2.x === 3
+p2.y === 2
+```
+
+Positional parameters are also supported:
+
+```js
+const p2 = Point2(3, 2),
+      p3 = Point3(12, 37, 54)
 
 p2.x === 3
 p2.y === 2
@@ -52,11 +71,11 @@ const zero = Peano.Zero,
       two = Peano.Succ({ pred: one }),
       three = Peano.Succ({ pred: two });
 
-const List = Data({ Nil: [], Cons: ['head', 'tail'] });
+const List = Data({ Nil: [], Cons: ['head', 'tail'] }),
+    { Cons, Nil } = List;
 
-const { Cons, Nil } = List;
 // [1, 2, 3]
-const xs = Cons({ head: 1, tail: Cons({ head: 2, tail: Cons({ head: 3, tail: Nil }) }) }),
+const xs = Cons(1, Cons(2, Cons(3, Nil))),
 ```
 
 ### Extending Data
@@ -66,9 +85,9 @@ Data declarations can be extended by passing the base declaration as the first a
 ```js
 const IntExp = Data({ Lit: ['value'], Add: ['left', 'right'] })
 
-const IntBoolExp = Data(IntExp, { Bool: ['value'], Iff: ['pred', 'ifTrue', 'ifFalse'] })
+const IntBoolExp = Data(IntExp, { Bool: ['value'], Iff: ['pred', 'ifTrue', 'ifFalse'] }),
+    {Add, Lit, Bool, Iff} = IntBoolExp
 
-const {Add, Lit, Bool, Iff}
 // if (true) 1 else 1 + 3
 const exp = Iff({
     pred: Bool({ value: true }),
@@ -102,9 +121,9 @@ const concat = Trait({
 })
 
 // [1, 2]
-const xs = Cons({ head: 1, tail: Cons({ head: 2, tail: Nil }) }),
+const xs = Cons(1, Cons(2, Nil)),
     // [3, 4]   
-    ys = Cons({ head: 3, tail: Cons({ head: 4, tail: Nil }) }),
+    ys = Cons(3, Cons(4, Nil)),
     // xs ++ ys == [1, 2, 3, 4]
     zs = concat(xs, ys);
 ```
@@ -303,7 +322,7 @@ Usage:
 const {Add, Lit} = Exp
 
 // 1 + 3
-const add = Add({left: Lit({value: 1}, right: Lit({value: 3}))})
+const add = Add(Lit(1), Lit(3))
 
 evaluate(add) // 4
 print(add) // "1 + 3"

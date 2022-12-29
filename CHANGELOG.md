@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.2.3
+
+- Data variants can now be called with positional parameters
+- Updated README
+
 ## v0.2.2
 
 - Updated README.md
