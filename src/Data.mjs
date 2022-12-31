@@ -36,10 +36,18 @@ function def(variants) {
                     for (const param of params) {
                         if (!(param in objArg))
                             throw new TypeError(`missing parameter: ${param}`);
-                        obj[param] = objArg[param];
+                        if (typeof objArg[param] === 'function')
+                            Object.defineProperty(obj, param, { get: objArg[param], enumerable: true });
+                        else
+                            obj[param] = objArg[param];
                     }
                 } else if (args.length === params.length) {
-                    args.forEach((arg, i) => obj[params[i]] = arg);
+                    args.forEach((arg, i) => {
+                        if (typeof arg === 'function')
+                            Object.defineProperty(obj, params[i], { get: arg, enumerable: true });
+                        else
+                            obj[params[i]] = arg;
+                    })
                 } else {
                     throw new TypeError(`wrong number of parameters: ${name}: ${params}`);
                 }

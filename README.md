@@ -59,6 +59,25 @@ p2.x === 3
 p2.y === 2
 ```
 
+### `typeName` symbol
+
+Each data variant has a `[typename]` field which provides the name of the variant:
+
+```js
+const Color = Data({ Red: [], Green: [], Blue: [] });
+
+Color.Red[typeName] === 'Red'
+
+const Point = Data({ Point2: ['x', 'y'], Point3: ['x', 'y', 'z'] }),
+    {Point2, Point3} = Point
+
+const p2 = Point2(12, 3),
+      p3 = Point3(184, 13, 56)
+
+p2[typeName] === 'Point2'
+p3[typeName] === 'Point3'
+```
+
 ### Recursive Data
 
 Recursive data can be defined as follows:
@@ -96,6 +115,45 @@ const exp = Iff({
 })
 ```
 
+### Lazy fields
+
+`Data` supports lazy fields via passing a function to the instance which becomes a getter for that field:
+
+```js
+const Person = Data({
+    Employee: ['firstName', 'lastName', 'fullName']
+})
+
+const p = Person.Employee({
+    firstName: 'John',
+    lastName: 'Doe',
+    // becomes a getter
+    fullName: () => `${p.firstName} ${p.lastName}`
+})
+
+p.fullName === 'John Doe'
+```
+
+This can also be used for self-referential structures:
+
+```js
+const Lang = Data({
+    Alt: ['left', 'right'],
+    Cat: ['first', 'second'],
+    Char: ['value'],
+    Empty: [],
+}),
+    { Alt, Empty, Cat, Char } = Lang
+
+// balanced parentheses grammar
+// S = S ( S ) ∪ ε
+const S = Alt(Cat(() => S, Cat(Char('('), Cat(() => S, Char(')')))), Empty)
+
+S[typeName] === 'Alt'
+S.left[typeName] === 'Cat'
+S.left.first === S
+```
+
 ## Traits
 
 A `Trait` associates operations with data declarations and supports pattern matching.
@@ -128,9 +186,9 @@ const xs = Cons(1, Cons(2, Nil)),
     zs = concat(xs, ys);
 ```
 
-### All
+### `all` symbol
 
-If the same operation should be applied to all data variants, then the `all` symbol can be used:
+If the same operation should be applied to all variants, then the `all` symbol can be used:
 
 ```js
 const operation = Trait({
@@ -190,6 +248,19 @@ expression can be constructed arbitrarily. For instance, if `Add.left` was a `Bo
 would fail as there is no definition for that pattern. Additionally, data and traits could be extended
 indefinitely, such as by adding `Mul` and `intMulPrint` and so on. Given that you don't know and shouldn't
 care about such extensions, relying on open recursion is key.
+
+### Calling 'super'
+
+There may be cases that you need to call the parent trait in the context of the current. This can be accomplished as follows:
+
+```js
+const someTrait = Trait(parentTrait, {
+    Foo(self) {
+        // ...
+        parentTrait[apply].call(this, self)
+    }
+})
+```
 
 ## The Expression Problem
 

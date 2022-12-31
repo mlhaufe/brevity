@@ -1,5 +1,24 @@
 # Changelog
 
+## v0.3.0
+
+- `Data` now supports lazy fields:
+
+```js
+const Person = Data({
+    Employee: ['firstName', 'lastName', 'fullName']
+})
+
+const p = Person.Employee({
+    firstName: 'John',
+    lastName: 'Doe',
+    // becomes a getter
+    fullName: () => `${p.firstName} ${p.lastName}`
+})
+
+p.fullName === 'John Doe'
+```
+
 ## v0.2.5
 
 - Bugfix of singleton Data variants to no longer extend `Object.prototype`
