@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.3.0
+## v0.4.0
 
 - `Data` now supports lazy fields:
 
@@ -18,6 +18,8 @@ const p = Person.Employee({
 
 p.fullName === 'John Doe'
 ```
+
+- Added `memoFix` for managing self recursive traits
 
 ## v0.2.5
 

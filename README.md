@@ -262,6 +262,82 @@ const someTrait = Trait(parentTrait, {
 })
 ```
 
+### Breaking infinite recursion with `memoFix`
+
+With the ability to define [self-referential fields](#lazy-fields), it's necessary to be able to
+define traits that won't become stuck in infinite recursion when those fields are accessed. The `memoFix`
+trait solves this problem.
+
+Given the following contrived trait you can see that it will blow the stack when called:
+
+```js
+const omega = new Trait({
+    [apply](x) { return this[apply](x); }
+})
+
+omega('x') // new Error('Maximum call stack size exceeded')
+```
+
+By utilizing `memoFix` we can replace this error with a [least-fixed-point](https://en.wikipedia.org/wiki/Least_fixed_point):
+
+```js
+const omegaFix = memoFix(omega, 'bottom');
+
+omegaFix('x') === 'bottom'
+```
+
+The `bottom` argument can also be a function which will be called with the respective arguments to determine
+what the bottom value should be:
+
+```js
+const foo = Trait({
+    [apply](x) {
+        if (x <= 3) {
+            return 1 + this[apply](x + 1);
+        } else {
+            return this[apply](x);
+        }
+    }
+})
+
+foo(1) // new Error('Maximum call stack size exceeded')
+
+const fooFix = memoFix(foo, (x) => x ** 2)
+
+fooFix(1) === 19
+fooFix(2) === 18
+fooFix(3) === 17
+fooFix(4) === 16
+
+```
+
+The `memoFix` trait memoizes (caches) calls. If the same arguments are encountered a
+second time, then the previously computed value is returned. The least-fixed-point (bottom value) is the
+initial entry in this cache. So the added benefit of this trait is not just for tying-the-recursive-knot, but
+for improving performance:
+
+```js
+const fib = new Trait({
+    [apply](n) {
+        return n < 2 ? n : this[apply](n - 1) + this[apply](n - 2);
+    }
+})
+
+const fibFix = memoFix(fib);
+
+let start, end;
+
+start = performance.now();
+fib(40);
+end = performance.now();
+const time = end - start; // ~4333ms
+
+start = performance.now();
+fibFix(40);
+end = performance.now();
+const memoTime = end - start; // ~5ms
+```
+
 ## The Expression Problem
 
 ### Description
