@@ -5,8 +5,16 @@ in a manner that makes data and operation declarations trivial to define and com
 
 ## Installation
 
+The latest version:
+
 ```text
-npm install github:mlhaufe/brevity#v0.2.2
+npm install github:mlhaufe/brevity
+```
+
+A specific version:
+
+```text
+npm install github:mlhaufe/brevity#v0.4.0
 ```
 
 ## Data
@@ -31,13 +39,43 @@ red === red2
 Each variant can have properties. These properties become named parameters of each constructor:
 
 ```js
-const Point = Data({ Point2: ['x', 'y'], Point3: ['x', 'y', 'z'] })
+const Point = Data({ Point2: ['x', 'y'], Point3: ['x', 'y', 'z'] }),
+    {Point2, Point3} = Point
 
-const p2 = Point.Point2({x: 3, y: 2}),
-      p3 = Point.Point3({x: 12, y: 37, z: 54})
+const p2 = Point2({x: 3, y: 2}),
+      p3 = Point3({x: 12, y: 37, z: 54})
 
 p2.x === 3
 p2.y === 2
+```
+
+Positional parameters are also supported:
+
+```js
+const p2 = Point2(3, 2),
+      p3 = Point3(12, 37, 54)
+
+p2.x === 3
+p2.y === 2
+```
+
+### `typeName` symbol
+
+Each data variant has a `[typename]` field which provides the name of the variant:
+
+```js
+const Color = Data({ Red: [], Green: [], Blue: [] });
+
+Color.Red[typeName] === 'Red'
+
+const Point = Data({ Point2: ['x', 'y'], Point3: ['x', 'y', 'z'] }),
+    {Point2, Point3} = Point
+
+const p2 = Point2(12, 3),
+      p3 = Point3(184, 13, 56)
+
+p2[typeName] === 'Point2'
+p3[typeName] === 'Point3'
 ```
 
 ### Recursive Data
@@ -52,11 +90,11 @@ const zero = Peano.Zero,
       two = Peano.Succ({ pred: one }),
       three = Peano.Succ({ pred: two });
 
-const List = Data({ Nil: [], Cons: ['head', 'tail'] });
+const List = Data({ Nil: [], Cons: ['head', 'tail'] }),
+    { Cons, Nil } = List;
 
-const { Cons, Nil } = List;
 // [1, 2, 3]
-const xs = Cons({ head: 1, tail: Cons({ head: 2, tail: Cons({ head: 3, tail: Nil }) }) }),
+const xs = Cons(1, Cons(2, Cons(3, Nil))),
 ```
 
 ### Extending Data
@@ -66,15 +104,54 @@ Data declarations can be extended by passing the base declaration as the first a
 ```js
 const IntExp = Data({ Lit: ['value'], Add: ['left', 'right'] })
 
-const IntBoolExp = Data(IntExp, { Bool: ['value'], Iff: ['pred', 'ifTrue', 'ifFalse'] })
+const IntBoolExp = Data(IntExp, { Bool: ['value'], Iff: ['pred', 'ifTrue', 'ifFalse'] }),
+    {Add, Lit, Bool, Iff} = IntBoolExp
 
-const {Add, Lit, Bool, Iff}
 // if (true) 1 else 1 + 3
 const exp = Iff({
     pred: Bool({ value: true }),
     ifTrue: Lit({ value: 1 }),
     ifFalse: Add({left: Lit({value: 1}, right: Lit({value: 3}))})
 })
+```
+
+### Lazy fields
+
+`Data` supports lazy fields via passing a function to the instance which becomes a getter for that field:
+
+```js
+const Person = Data({
+    Employee: ['firstName', 'lastName', 'fullName']
+})
+
+const p = Person.Employee({
+    firstName: 'John',
+    lastName: 'Doe',
+    // becomes a getter
+    fullName: () => `${p.firstName} ${p.lastName}`
+})
+
+p.fullName === 'John Doe'
+```
+
+This can also be used for self-referential structures:
+
+```js
+const Lang = Data({
+    Alt: ['left', 'right'],
+    Cat: ['first', 'second'],
+    Char: ['value'],
+    Empty: [],
+}),
+    { Alt, Empty, Cat, Char } = Lang
+
+// balanced parentheses grammar
+// S = S ( S ) ∪ ε
+const S = Alt(Cat(() => S, Cat(Char('('), Cat(() => S, Char(')')))), Empty)
+
+S[typeName] === 'Alt'
+S.left[typeName] === 'Cat'
+S.left.first === S
 ```
 
 ## Traits
@@ -102,16 +179,16 @@ const concat = Trait({
 })
 
 // [1, 2]
-const xs = Cons({ head: 1, tail: Cons({ head: 2, tail: Nil }) }),
+const xs = Cons(1, Cons(2, Nil)),
     // [3, 4]   
-    ys = Cons({ head: 3, tail: Cons({ head: 4, tail: Nil }) }),
+    ys = Cons(3, Cons(4, Nil)),
     // xs ++ ys == [1, 2, 3, 4]
     zs = concat(xs, ys);
 ```
 
-### All
+### `all` symbol
 
-If the same operation should be applied to all data variants, then the `all` symbol can be used:
+If the same operation should be applied to all variants, then the `all` symbol can be used:
 
 ```js
 const operation = Trait({
@@ -171,6 +248,95 @@ expression can be constructed arbitrarily. For instance, if `Add.left` was a `Bo
 would fail as there is no definition for that pattern. Additionally, data and traits could be extended
 indefinitely, such as by adding `Mul` and `intMulPrint` and so on. Given that you don't know and shouldn't
 care about such extensions, relying on open recursion is key.
+
+### Calling 'super'
+
+There may be cases that you need to call the parent trait in the context of the current. This can be accomplished as follows:
+
+```js
+const someTrait = Trait(parentTrait, {
+    Foo(self) {
+        // ...
+        parentTrait[apply].call(this, self)
+    }
+})
+```
+
+### Breaking infinite recursion with `memoFix`
+
+With the ability to define [self-referential fields](#lazy-fields), it's necessary to be able to
+define traits that won't become stuck in infinite recursion when those fields are accessed. The `memoFix`
+trait solves this problem.
+
+Given the following contrived trait you can see that it will blow the stack when called:
+
+```js
+const omega = new Trait({
+    [apply](x) { return this[apply](x); }
+})
+
+omega('x') // new Error('Maximum call stack size exceeded')
+```
+
+By utilizing `memoFix` we can replace this error with a [least-fixed-point](https://en.wikipedia.org/wiki/Least_fixed_point):
+
+```js
+const omegaFix = memoFix(omega, 'bottom');
+
+omegaFix('x') === 'bottom'
+```
+
+The `bottom` argument can also be a function which will be called with the respective arguments to determine
+what the bottom value should be:
+
+```js
+const foo = Trait({
+    [apply](x) {
+        if (x <= 3) {
+            return 1 + this[apply](x + 1);
+        } else {
+            return this[apply](x);
+        }
+    }
+})
+
+foo(1) // new Error('Maximum call stack size exceeded')
+
+const fooFix = memoFix(foo, (x) => x ** 2)
+
+fooFix(1) === 19
+fooFix(2) === 18
+fooFix(3) === 17
+fooFix(4) === 16
+
+```
+
+The `memoFix` trait memoizes (caches) calls. If the same arguments are encountered a
+second time, then the previously computed value is returned. The least-fixed-point (bottom value) is the
+initial entry in this cache. So the added benefit of this trait is not just for tying-the-recursive-knot, but
+for improving performance:
+
+```js
+const fib = new Trait({
+    [apply](n) {
+        return n < 2 ? n : this[apply](n - 1) + this[apply](n - 2);
+    }
+})
+
+const fibFix = memoFix(fib);
+
+let start, end;
+
+start = performance.now();
+fib(40);
+end = performance.now();
+const time = end - start; // ~4333ms
+
+start = performance.now();
+fibFix(40);
+end = performance.now();
+const memoTime = end - start; // ~5ms
+```
 
 ## The Expression Problem
 
@@ -303,7 +469,7 @@ Usage:
 const {Add, Lit} = Exp
 
 // 1 + 3
-const add = Add({left: Lit({value: 1}, right: Lit({value: 3}))})
+const add = Add(Lit(1), Lit(3))
 
 evaluate(add) // 4
 print(add) // "1 + 3"

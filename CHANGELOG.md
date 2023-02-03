@@ -1,8 +1,38 @@
 # Changelog
 
-## 0.3.0
+## v0.4.0
 
-- Converted to TypeScript
+- `Data` now supports lazy fields:
+
+```js
+const Person = Data({
+    Employee: ['firstName', 'lastName', 'fullName']
+})
+
+const p = Person.Employee({
+    firstName: 'John',
+    lastName: 'Doe',
+    // becomes a getter
+    fullName: () => `${p.firstName} ${p.lastName}`
+})
+
+p.fullName === 'John Doe'
+```
+
+- Added `memoFix` for managing self recursive traits
+
+## v0.2.5
+
+- Bugfix of singleton Data variants to no longer extend `Object.prototype`
+
+## v0.2.4
+
+- Bugfix of single parameter Data calls to differentiate object literals from object params
+
+## v0.2.3
+
+- Data variants can now be called with positional parameters
+- Updated README
 
 ## v0.2.2
 

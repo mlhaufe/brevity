@@ -2,7 +2,8 @@ import { Data, Trait, apply } from '../index.mjs'
 
 describe('Arithmetic', () => {
     // data declaration
-    const Exp = Data({ Lit: ['value'], Add: ['left', 'right'] })
+    const Exp = Data({ Lit: ['value'], Add: ['left', 'right'] }),
+        { Add, Lit } = Exp
 
     // operations
     const evaluate = Trait({
@@ -12,17 +13,74 @@ describe('Arithmetic', () => {
         }
     })
 
-    test('evaluate', () => {
+    test('named parameters', () => {
+        expect(Exp.Lit).toBeDefined()
+        expect(Exp.Add).toBeDefined()
+
         // 1 + (2 + 3)
         const exp = Exp.Add({
-            left: Exp.Lit({ value: 1 }),
+            left: Exp.Lit(1),
             right: Exp.Add({
-                left: Exp.Lit({ value: 2 }),
-                right: Exp.Lit({ value: 3 })
+                left: Exp.Lit(2),
+                right: Exp.Lit(3)
+            })
+        })
+
+        expect(exp.left.value).toBe(1)
+        expect(exp.right.left.value).toBe(2)
+        expect(exp.right.right.value).toBe(3)
+    })
+
+    test('extra parameters throw', () => {
+        expect(() => Exp.Add({ left: Exp.Lit(1), right: Exp.Lit(2), extra: 3 })).toThrow()
+    })
+
+    test('missing parameters throw', () => {
+        expect(() => Exp.Add({ left: Exp.Lit(1) })).toThrow()
+    })
+
+    test('positional parameters', () => {
+        // 1 + (2 + 3)
+        const exp = Exp.Add(
+            Exp.Lit(1),
+            Exp.Add(
+                Exp.Lit(2),
+                Exp.Lit(3)
+            )
+        )
+
+        expect(exp.left.value).toBe(1)
+        expect(exp.right.left.value).toBe(2)
+        expect(exp.right.right.value).toBe(3)
+    })
+
+    test('wrong number of parameters throw', () => {
+        expect(() => Exp.Add(Exp.Lit(1))).toThrow()
+        expect(() => Exp.Add(Exp.Lit(1), Exp.Lit(2), Exp.Lit(3))).toThrow()
+    })
+
+    test('evaluate', () => {
+        // 1 + (2 + 3)
+        const exp = Add({
+            left: Lit({ value: 1 }),
+            right: Add({
+                left: Lit({ value: 2 }),
+                right: Lit({ value: 3 })
             })
         })
 
         expect(evaluate(exp)).toBe(6)
+
+        // 1 + (2 + 3) + 4
+        // with positional parameters
+        const exp2 = Add(
+            Add(Lit(1),
+                Add(Lit(2), Lit(3))
+            ),
+            Lit(4)
+        )
+
+        expect(evaluate(exp2)).toBe(10)
     })
 
     const print = Trait({
@@ -34,18 +92,30 @@ describe('Arithmetic', () => {
 
     test('print', () => {
         // 1 + (2 + 3)
-        const exp = Exp.Add({
-            left: Exp.Lit({ value: 1 }),
-            right: Exp.Add({
-                left: Exp.Lit({ value: 2 }),
-                right: Exp.Lit({ value: 3 })
+        const exp = Add({
+            left: Lit({ value: 1 }),
+            right: Add({
+                left: Lit({ value: 2 }),
+                right: Lit({ value: 3 })
             })
         })
 
         expect(print(exp)).toBe('1 + 2 + 3')
+
+        // 1 + (2 + 3) + 4
+        // with positional parameters
+        const exp2 = Add(
+            Add(Lit(1),
+                Add(Lit(2), Lit(3))
+            ),
+            Lit(4)
+        )
+
+        expect(print(exp2)).toBe('1 + 2 + 3 + 4')
     })
 
-    const MulExp = Data(Exp, { Mul: ['left', 'right'] })
+    const MulExp = Data(Exp, { Mul: ['left', 'right'] }),
+        { Mul } = MulExp
 
     test('MulExp Data', () => {
         expect(MulExp.Lit).toBeDefined()
@@ -54,10 +124,10 @@ describe('Arithmetic', () => {
 
         // 1 + (2 * 3)
         const exp = MulExp.Add({
-            left: MulExp.Lit({ value: 1 }),
+            left: MulExp.Lit(1),
             right: MulExp.Mul({
-                left: MulExp.Lit({ value: 2 }),
-                right: MulExp.Lit({ value: 3 })
+                left: MulExp.Lit(2),
+                right: MulExp.Lit(3)
             })
         })
 

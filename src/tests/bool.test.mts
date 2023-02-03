@@ -3,6 +3,7 @@ import { Trait } from "../Trait.mjs"
 
 describe('Bool tests', () => {
     const Bool = Data({ False: [], True: [] })
+
     test('Bool Data', () => {
         expect(Bool[isData]).toBe(true)
 

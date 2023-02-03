@@ -11,8 +11,6 @@ describe('Peano tests', () => {
     });
     test('Bad Peano definition', () => {
         expect(() => Data({ Zero: [], Succ: ['pred', 'pred'] })).toThrow();
-        const zero = Peano.Zero, one = Peano.Succ({ pred: zero });
-        expect(() => Peano.Succ(zero)).toThrow();
     });
     const value = Trait({
         Zero() { return 0; },
