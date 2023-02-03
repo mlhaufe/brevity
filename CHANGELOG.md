@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.4.1
+
+- Updated dependencies
+- Enabled immutability of data variant fields. Variants are still sealed.
+
 ## v0.4.0
 
 - `Data` now supports lazy fields:

@@ -52,7 +52,7 @@ function def(variants) {
                     throw new TypeError(`wrong number of parameters: ${name}: ${params}`);
                 }
 
-                return Object.freeze(obj);
+                return Object.seal(obj);
             }
             variants[name].prototype = Object.freeze({ [typeName]: name, [isSingleton]: false });
         }
