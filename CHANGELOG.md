@@ -1,9 +1,15 @@
 # Changelog
 
+## v0.5.0
+
+- Added webpack build
+- Added source mapping
+- Added missing mutability test
+
 ## v0.4.1
 
 - Updated dependencies
-- Enabled immutability of data variant fields. Variants are still sealed.
+- Enabled mutability of data variant fields. Variants are still sealed.
 
 ## v0.4.0
 
