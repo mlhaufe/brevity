@@ -5,6 +5,7 @@ const __filename = url.fileURLToPath(import.meta.url),
     __dirname = path.dirname(__filename);
 
 export default {
+    devtool: 'source-map',
     entry: './src/index.mjs',
     experiments: {
         outputModule: true

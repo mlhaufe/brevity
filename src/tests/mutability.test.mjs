@@ -35,4 +35,12 @@ describe('Mutability', () => {
         expect(() => p.x = 3).not.toThrow(TypeError)
         expect(p.x).toBe(3)
     })
+
+    test('Assigning a function to a Data variant property should become a getter', () => {
+        const Point = Data({ Point2: ['x', 'y'] })
+        const p = Point.Point2({ x: 1, y: 2 })
+
+        p.x = () => 3
+        expect(p.x()).toBe(3)
+    })
 })
