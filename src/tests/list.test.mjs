@@ -1,5 +1,4 @@
-import { Data } from "../Data.mjs";
-import { Trait } from "../Trait.mjs";
+import { Data, Trait } from "../index.mjs";
 
 describe('List tests', () => {
     const List = Data({ Nil: [], Cons: ['head', 'tail'] });

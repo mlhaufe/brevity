@@ -1,9 +1,10 @@
-// tests if a value is an object literal
+import { BoxedMultiKeyMap } from "./BoxedMultiKeyMap.mjs";
+
 const isObjectLiteral = obj => obj !== null && Object.getPrototypeOf(obj) === Object.prototype;
-// tests if a string is capitalized
 const isCapitalized = str => typeof str === 'string' && str.match(/^[A-Z][A-Za-z0-9]*$/);
-// tests if a string is camelCase
 const isCamelCase = str => typeof str === 'string' && str.match(/^[a-z][A-Za-z0-9]*$/);
+
+const pool = Symbol('pool');
 
 function def(variants) {
     if (!isObjectLiteral(variants))
@@ -22,48 +23,72 @@ function def(variants) {
         // if the type has no parameters, it is a singleton
         if (params.length === 0) {
             variants[name] = Object.freeze(
-                Object.assign(Object.create(null), ({ [typeName]: name, [isSingleton]: true }))
+                Object.assign(Object.create(null), ({ [variantName]: name, [isSingleton]: true }))
             )
         } else {
             // otherwise each type becomes a constructor
-            variants[name] = function (...args) {
-                const obj = Object.create(variants[name].prototype);
+            const self = variants[name] = function (...args) {
+                const normalizedArgs = [];
 
-                const objArg = args[0];
-                if (args.length === 1 && isObjectLiteral(objArg)) {
-                    if (Object.keys(objArg).length > params.length)
-                        throw new TypeError(`too many parameters. expected: ${name}: ${params}, got: ${name}: ${Object.keys(objArg)}`);
-                    for (const param of params) {
-                        if (!(param in objArg))
-                            throw new TypeError(`missing parameter: ${param}`);
-                        if (typeof objArg[param] === 'function')
-                            Object.defineProperty(obj, param, { get: objArg[param], enumerable: true });
-                        else
-                            obj[param] = objArg[param];
+                if (params.length === 1) {
+                    if (args.length === 1) {
+                        const arg = args[0];
+                        if (!isObjectLiteral(arg)) {
+                            normalizedArgs.push(arg);
+                        } else {
+                            // if the object has the correct property, use it
+                            if (params[0] in arg) {
+                                normalizedArgs.push(arg[params[0]]);
+                            } else {
+                                // pass the object as is
+                                normalizedArgs.push(arg);
+                            }
+                        }
                     }
-                } else if (args.length === params.length) {
-                    args.forEach((arg, i) => {
-                        if (typeof arg === 'function')
-                            Object.defineProperty(obj, params[i], { get: arg, enumerable: true });
-                        else
-                            obj[params[i]] = arg;
-                    })
                 } else {
-                    throw new TypeError(`wrong number of parameters: ${name}: ${params}`);
+                    if (args.length === 1) {
+                        const objArg = args[0];
+                        if (!isObjectLiteral(objArg))
+                            throw new TypeError(`Wrong number of arguments. expected: ${name}(${params}), got: ${name}(${args})`);
+                        if (Object.keys(objArg).length != params.length)
+                            throw new TypeError(`Wrong number of parameters. Expected: ${name}(${params}), got: ${name}(${Object.keys(objArg)})`);
+
+                        for (const param of params) {
+                            if (!(param in objArg))
+                                throw new TypeError(`Missing parameter: ${param}`);
+                            normalizedArgs.push(objArg[param]);
+                        }
+                    } else if (args.length === params.length) {
+                        normalizedArgs.push(...args);
+                    } else {
+                        throw new TypeError(`Wrong number of arguments. expected: ${name}(${params}), got: ${name}(${args})`);
+                    }
                 }
 
-                return Object.seal(obj);
+                let obj = self[pool].get(...normalizedArgs);
+                if (obj) return obj;
+                obj = Object.create(self.prototype);
+                params.forEach((param, i) => {
+                    if (typeof normalizedArgs[i] === 'function')
+                        Object.defineProperty(obj, param, { get: normalizedArgs[i], enumerable: true });
+                    else
+                        obj[param] = normalizedArgs[i];
+                });
+                self[pool].set(...[...normalizedArgs, obj]);
+
+                return Object.freeze(obj);
             }
-            variants[name].prototype = Object.freeze({ [typeName]: name, [isSingleton]: false });
+            self[pool] = new BoxedMultiKeyMap();
+            self.prototype = Object.freeze({ [variantName]: name, [isSingleton]: false });
         }
     }
-    // each type is tagged with a symbol
+
     variants[isData] = true;
-    // the type declaration is immutable
+
     return Object.freeze(variants);
 }
 
-export const typeName = Symbol('typeName'),
+export const variantName = Symbol('variantName'),
     isData = Symbol('isData'),
     isSingleton = Symbol('isSingleton');
 

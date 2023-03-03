@@ -1,4 +1,4 @@
-import { typeName } from './Data.mjs';
+import { variantName } from './Data.mjs';
 
 export const isTrait = Symbol('isTrait'),
     all = Symbol('all'),
@@ -7,10 +7,11 @@ export const isTrait = Symbol('isTrait'),
 const protoTrait = () => { }
 protoTrait[isTrait] = true;
 protoTrait[apply] = function (instance, ...args) {
-    const name = instance[typeName],
+    const name = typeof instance === 'object' && instance !== null && variantName in instance ? instance[variantName] : all,
         fn = this[name] ?? this[all];
     if (!fn)
-        throw new TypeError(`no trait defined for ${name}`)
+        throw new TypeError(`no trait defined for [all]`)
+
     return fn.call(this, instance, ...args)
 }
 

@@ -59,14 +59,14 @@ p2.x === 3
 p2.y === 2
 ```
 
-### `typeName` symbol
+### `variantName` symbol
 
-Each data variant has a `[typename]` field which provides the name of the variant:
+Each data variant has a `[variantName]` field which provides the name of the variant:
 
 ```js
 const Color = Data({ Red: [], Green: [], Blue: [] });
 
-Color.Red[typeName] === 'Red'
+Color.Red[variantName] === 'Red'
 
 const Point = Data({ Point2: ['x', 'y'], Point3: ['x', 'y', 'z'] }),
     {Point2, Point3} = Point
@@ -74,8 +74,8 @@ const Point = Data({ Point2: ['x', 'y'], Point3: ['x', 'y', 'z'] }),
 const p2 = Point2(12, 3),
       p3 = Point3(184, 13, 56)
 
-p2[typeName] === 'Point2'
-p3[typeName] === 'Point3'
+p2[variantName] === 'Point2'
+p3[variantName] === 'Point3'
 ```
 
 ### Recursive Data
@@ -149,9 +149,71 @@ const Lang = Data({
 // S = S ( S ) ∪ ε
 const S = Alt(Cat(() => S, Cat(Char('('), Cat(() => S, Char(')')))), Empty)
 
-S[typeName] === 'Alt'
-S.left[typeName] === 'Cat'
+S[variantName] === 'Alt'
+S.left[variantName] === 'Cat'
 S.left.first === S
+```
+
+### Equality
+
+As mentioned above, variants without properties are considered singletons:
+
+```js
+const red = Color.Red,
+    red2 = Color.Red
+
+red === red2
+```
+
+Which is what allows strict equality comparisons.
+
+Non-singleton variants also support strict equality comparisons:
+
+```js
+const Point = Data({ Point2: ['x', 'y'], Point3: ['x','y','z'] }),
+    {Point2, Point3}
+
+Point3(1,2,3) === Point3({x:1,y:2,z:3}) // true
+```
+
+This enabled via [object-pooling](https://en.wikipedia.org/wiki/Object_pool_pattern) in a WeakMap behind the scenes.
+
+Besides the convenience of the above, this also enables use of variant declarations in native JavaScript collections
+directly like Array, Map, Set, etc.
+
+```js
+const Point = Data({ Point2: ['x', 'y'], Point3: ['x', 'y', 'z'] }),
+    { Point2, Point3 } = Point;
+
+const pArray = [Point2(1, 2), Point3(1, 2, 3)];
+
+pArray.includes(Point2(1, 2)) // true
+pArray.includes(Point2({ x: 1, y: 2 })) //true
+pArray.includes(Point3(1, 2, 3)) // true
+pArray.includes(Point3({ x: 1, y: 2, z: 3 })) // true
+pArray.includes(Point2(1, 3)) // false
+pArray.includes(Point3(1, 2, 4)) // false
+
+const pSet = new Set([Point2(1, 2), Point3(1, 2, 3)]);
+
+pSet.has(Point2(1, 2)) // true
+pSet.has(Point2({ x: 1, y: 2 })) // true
+pSet.has(Point3(1, 2, 3)) // true
+pSet.has(Point3({ x: 1, y: 2, z: 3 })) // true
+pSet.has(Point2(1, 3)) // false
+pSet.has(Point3(1, 2, 4)) // false
+
+const pMap = new Map([
+    [Point2(1, 2), 1],
+    [Point3(1, 2, 3), 2]
+]);
+
+pMap.has(Point2(1, 2)) // true
+pMap.has(Point2({ x: 1, y: 2 })) // true
+pMap.has(Point3(1, 2, 3)) // true
+pMap.has(Point3({ x: 1, y: 2, z: 3 })) // true
+pMap.has(Point2(1, 3)) // false
+pMap.has(Point3(1, 2, 4)) // false
 ```
 
 ## Traits

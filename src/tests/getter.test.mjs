@@ -1,4 +1,4 @@
-import { Data, typeName } from "../Data.mjs"
+import { Data, variantName } from "../index.mjs"
 
 describe('Getter field tests', () => {
     test('Data with computed property names', () => {
@@ -29,15 +29,15 @@ describe('Getter field tests', () => {
         const S = Alt(Cat(() => S, Cat(Char('('), Cat(() => S, Char(')')))), Empty)
 
         expect(S).toBeDefined()
-        expect(S[typeName]).toBe('Alt')
+        expect(S[variantName]).toBe('Alt')
         expect(S.left).toBeDefined()
-        expect(S.left[typeName]).toBe('Cat')
+        expect(S.left[variantName]).toBe('Cat')
 
         expect(S.left.first).toBeDefined()
         expect(S.left.first).toBe(S)
-        expect(S.left.first[typeName]).toBe('Alt')
+        expect(S.left.first[variantName]).toBe('Alt')
 
         expect(S.right).toBeDefined()
-        expect(S.right[typeName]).toBe('Empty')
+        expect(S.right[variantName]).toBe('Empty')
     })
 })

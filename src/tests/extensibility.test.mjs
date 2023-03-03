@@ -1,5 +1,4 @@
-import { Data } from "../Data.mjs"
-import { Trait, apply } from "../Trait.mjs"
+import { Data, Trait, apply } from "../index.mjs"
 
 describe('Extensibility for the Masses', () => {
     const IntExp = Data({ Lit: ['value'], Add: ['left', 'right'] })

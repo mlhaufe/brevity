@@ -1,4 +1,4 @@
-import MultiKeyMap from "@final-hill/multi-key-map"
+import { BoxedMultiKeyMap } from "./BoxedMultiKeyMap.mjs";
 import { Trait, apply } from "./Trait.mjs";
 
 const visited = Symbol('visited');
@@ -9,7 +9,7 @@ const visited = Symbol('visited');
  * @returns {Trait} The extended trait
  */
 export const memoFix = (trait, bottom) => Trait(trait, {
-    [visited]: new MultiKeyMap(),
+    [visited]: new BoxedMultiKeyMap(),
     [apply](...args) {
         const v = this[visited];
         if (!v.has(...args)) {

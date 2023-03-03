@@ -1,5 +1,4 @@
-import { Data } from "../Data.mjs";
-import { Trait } from "../Trait.mjs";
+import { Data, Trait } from "../index.mjs";
 
 describe('Peano tests', () => {
     const Peano = Data({ Zero: [], Succ: ['pred'] });

@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.6.0
+
+- Renamed `typeName` symbol to `variantName`
+- Exposed `variantName` and `isTrait` symbols
+- Data variants are reverted back to immutable.
+- Non-singleton Data variants now utilize object pooling so that `Point3(1,2,3) === Point3({x:1,y:2,z:3})`
+- Removed `@final-hill/multi-key-map` dependency
+
 ## v0.5.0
 
 - Added webpack build
