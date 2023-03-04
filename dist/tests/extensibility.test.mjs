@@ -1,4 +1,4 @@
-import { Data } from "../Data.mjs";
+import { Data } from "../Data.old.mjs";
 import { Trait, apply } from "../Trait.mjs";
 describe('Extensibility for the Masses', () => {
     const IntExp = Data({ Lit: ['value'], Add: ['left', 'right'] });
@@ -214,3 +214,4 @@ describe('Extensibility for the Masses', () => {
         expect(stmtEval(exp3)).toBe(11);
     });
 });
+//# sourceMappingURL=extensibility.test.mjs.map

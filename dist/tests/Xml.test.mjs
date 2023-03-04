@@ -1,4 +1,4 @@
-import { Data } from "../Data.mjs";
+import { Data } from "../Data.old.mjs";
 import { Trait, all } from "../Trait.mjs";
 describe('Simplified Xml Tests', () => {
     const Attrs = Data({ Attr: ['name', 'value'] });
@@ -104,3 +104,4 @@ describe('Simplified Xml Tests', () => {
         expect(nodeName(xml.children[0].attrs[0])).toBe('href');
     });
 });
+//# sourceMappingURL=Xml.test.mjs.map

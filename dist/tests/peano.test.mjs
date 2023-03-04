@@ -1,4 +1,4 @@
-import { Data } from "../Data.mjs";
+import { Data } from "../Data.old.mjs";
 import { Trait } from "../Trait.mjs";
 describe('Peano tests', () => {
     const Peano = Data({ Zero: [], Succ: ['pred'] });
@@ -24,3 +24,4 @@ describe('Peano tests', () => {
         expect(value(three)).toBe(3);
     });
 });
+//# sourceMappingURL=peano.test.mjs.map

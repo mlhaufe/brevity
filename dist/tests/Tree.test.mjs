@@ -1,4 +1,4 @@
-import { Data } from "../Data.mjs";
+import { Data } from "../Data.old.mjs";
 import { Trait } from "../Trait.mjs";
 describe('Tree Tests', () => {
     const Tree = Data({ Leaf: ['value'], Branch: ['left', 'right'] });
@@ -21,3 +21,4 @@ describe('Tree Tests', () => {
         expect(print(tree2)).toBe('(3, (4, 5))');
     });
 });
+//# sourceMappingURL=Tree.test.mjs.map

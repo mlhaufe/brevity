@@ -33,3 +33,4 @@ export function Trait(...args) {
     }
     return localTraits;
 }
+//# sourceMappingURL=Trait.mjs.map

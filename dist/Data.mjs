@@ -1,42 +1,66 @@
-function _def(types) {
-    const typeDef = Object.create(null);
-    for (const [name, params] of Object.entries(types)) {
-        if (typeof name !== 'string' || !name.match(/^[A-Z][A-Za-z0-9]*$/))
-            throw new TypeError(`Name must be capitalized: ${name}`);
-        if (!Array.isArray(params) || params.some(param => typeof param !== 'string' || !param.match(/^[a-z][A-Za-z0-9]*$/)))
-            throw new TypeError(`Properties must be camelCase strings: ${name}`);
-        if (new Set(params).size !== params.length)
-            throw new TypeError(`type parameters must be unique: ${name}`);
+import { isObjectLiteral } from "./isObjectLiteral.mjs";
+export const isData = Symbol('isData'), isSingleton = Symbol('isSingleton'), variantName = Symbol('variantName');
+function def(variants) {
+    const result = Object.create(null);
+    for (const [name, params] of Object.entries(variants)) {
+        if (new Set(params).size !== params.length) {
+            throw new TypeError(`type parameters must be unique: ${name}: ${params}`);
+        }
         // if the type has no parameters, it is a singleton
         if (params.length === 0) {
-            typeDef[name] = Object.freeze({ name, [isSingleton]: true });
+            Object.assign(result, {
+                [name]: Object.freeze({ [variantName]: name, [isSingleton]: true })
+            });
         }
         else {
-            // otherwise each type becomes a constructor with named parameters
-            typeDef[name] = function (args) {
-                const obj = Object.create(types[name].prototype);
-                // every parameter must be in the args
-                for (const param of params) {
-                    if (!(param in args)) {
-                        throw new TypeError(`missing parameter: ${param}`);
+            // otherwise each type becomes a constructor
+            result[name] = function (...args) {
+                const obj = Object.create(result[name].prototype);
+                const objArg = args[0];
+                if (args.length === 1 && isObjectLiteral(objArg)) {
+                    if (Object.keys(objArg).length > params.length)
+                        throw new TypeError(`too many parameters. expected: ${name}: ${params}, got: ${name}: ${Object.keys(objArg)}`);
+                    for (const param of params) {
+                        if (!(param in objArg))
+                            throw new TypeError(`missing parameter: ${param}`);
+                        if (typeof objArg[param] === 'function')
+                            Object.defineProperty(obj, param, { get: objArg[param], enumerable: true });
+                        else
+                            obj[param] = objArg[param];
                     }
                 }
-                Object.assign(obj, args);
-                // each type is immutable
-                return Object.freeze(obj);
+                else if (args.length === params.length) {
+                    args.forEach((arg, i) => {
+                        if (typeof arg === 'function')
+                            Object.defineProperty(obj, params[i], { get: arg, enumerable: true });
+                        else
+                            obj[params[i]] = arg;
+                    });
+                }
+                else {
+                    throw new TypeError(`wrong number of parameters: ${name}: ${params}`);
+                }
+                return Object.seal(obj);
             };
-            typeDef[name][isSingleton] = false;
+            result[name].prototype = Object.freeze({ [variantName]: name, [isSingleton]: false });
         }
     }
-    return Object.freeze(typeDef);
+    Object.assign(result, { [isData]: true });
+    return Object.freeze(result);
 }
-export const isData = Symbol('isData'), isSingleton = Symbol('isSingleton');
-export function Data(Base, types) {
+export function Data(Base, variants) {
     let data;
-    if (Base && types)
-        data = Object.assign({}, Base, _def(types));
-    else
-        data = _def(Base);
-    data[isData] = true;
+    if (Base && variants) {
+        if (!Base[isData])
+            throw new TypeError('Base must be a Data type');
+        data = Object.assign(Object.create(null), Base, def(variants));
+    }
+    else if (Base && !variants) {
+        data = def(Base);
+    }
+    else {
+        throw new TypeError('Data requires at least one argument');
+    }
     return Object.freeze(data);
 }
+//# sourceMappingURL=Data.mjs.map

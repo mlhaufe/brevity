@@ -1,5 +1,4 @@
-import { Data, isData, typeName } from "../Data.mjs"
-import { Trait } from "../Trait.mjs";
+import { Data, isData, variantName, Trait } from "../index.mjs"
 
 describe('Color tests', () => {
     const Color = Data({ Red: [], Green: [], Blue: [] });
@@ -8,7 +7,8 @@ describe('Color tests', () => {
         expect(Color[isData]).toBe(true);
         const red = Color.Red;
         expect(red).toBeDefined();
-        expect(red[typeName]).toBe('Red');
+        expect(red[variantName]).toBe('Red');
+        // @ts-expect-error
         expect(red.Red).toBeUndefined();
     })
 

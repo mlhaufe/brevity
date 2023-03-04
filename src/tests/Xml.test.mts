@@ -1,5 +1,4 @@
-import { Data } from "../Data.mjs"
-import { Trait, all } from "../Trait.mjs";
+import { Datam Trait, all } from "../index.mjs"
 
 describe('Simplified Xml Tests', () => {
     const Attrs = Data({ Attr: ['name', 'value'] });

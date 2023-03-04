@@ -1,4 +1,4 @@
-import { Data } from "../Data.mjs";
+import { Data } from "../Data.old.mjs";
 import { Trait } from "../Trait.mjs";
 describe('List tests', () => {
     const List = Data({ Nil: [], Cons: ['head', 'tail'] });
@@ -41,3 +41,4 @@ describe('List tests', () => {
         expect(length(xs)).toBe(3);
     });
 });
+//# sourceMappingURL=list.test.mjs.map

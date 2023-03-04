@@ -1,17 +1,17 @@
-import { Data, isData, typeName } from "../Data.mjs";
+import { Data, isData, variantName } from "../Data.old.mjs";
 import { Trait } from "../Trait.mjs";
 describe('Shape tests', () => {
     const Shape = Data({ Circle: ['radius'], Rectangle: ['width', 'height'] });
     test('Shape Data', () => {
         expect(Shape[isData]).toBe(true);
         const circle = Shape.Circle({ radius: 1 });
-        expect(circle[typeName]).toBe('Circle');
+        expect(circle[variantName]).toBe('Circle');
         expect(circle).toBeDefined();
         expect(circle.radius).toBe(1);
         expect(circle.width).toBeUndefined();
         expect(circle.height).toBeUndefined();
         const rectangle = Shape.Rectangle({ width: 2, height: 3 });
-        expect(rectangle[typeName]).toBe('Rectangle');
+        expect(rectangle[variantName]).toBe('Rectangle');
         expect(rectangle).toBeDefined();
         expect(rectangle.radius).toBeUndefined();
         expect(rectangle.width).toBe(2);
@@ -28,3 +28,4 @@ describe('Shape tests', () => {
         expect(area(rectangle)).toBe(6);
     });
 });
+//# sourceMappingURL=Shape.test.mjs.map

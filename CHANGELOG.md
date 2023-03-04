@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.6.0
+
+- Converted project from JavaScript to TypeScript
+- Renamed `typeName` symbol to `variantName`
+
+## v0.5.0
+
+- Added webpack build
+- Added source mapping
+- Added missing mutability test
+
+## v0.4.1
+
+- Updated dependencies
+- Enabled mutability of data variant fields. Variants are still sealed.
+
 ## v0.4.0
 
 - `Data` now supports lazy fields:

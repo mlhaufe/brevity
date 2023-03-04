@@ -1,12 +1,11 @@
-import { Data, isData, typeName } from "../Data.mjs";
-import { Trait } from "../Trait.mjs";
+import { Data, isData, variantName, Trait } from "../index.mjs";
 describe('Color tests', () => {
     const Color = Data({ Red: [], Green: [], Blue: [] });
     test('Color Data', () => {
         expect(Color[isData]).toBe(true);
         const red = Color.Red;
         expect(red).toBeDefined();
-        expect(red[typeName]).toBe('Red');
+        expect(red[variantName]).toBe('Red');
         expect(red.Red).toBeUndefined();
     });
     const print = Trait({
@@ -20,3 +19,4 @@ describe('Color tests', () => {
         expect(print(Color.Blue)).toBe('#0000FF');
     });
 });
+//# sourceMappingURL=color.test.mjs.map

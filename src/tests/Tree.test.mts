@@ -1,5 +1,4 @@
-import { Data } from "../Data.mjs"
-import { Trait } from "../Trait.mjs"
+import { Data, Trait } from "../index.mjs"
 
 describe('Tree Tests', () => {
     const Tree = Data({ Leaf: ['value'], Branch: ['left', 'right'] })

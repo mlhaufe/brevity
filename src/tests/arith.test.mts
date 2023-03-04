@@ -1,9 +1,31 @@
-import { Data, Trait, apply } from '../index.mjs'
+import { Data, Trait, apply, isSingleton } from '../index.mjs'
 
 describe('Arithmetic', () => {
     // data declaration
     const Exp = Data({ Lit: ['value'], Add: ['left', 'right'] }),
         { Add, Lit } = Exp
+
+    test('Type checking parameters', () => {
+        expect(Lit[isSingleton]).toBe(false)
+        expect(Add[isSingleton]).toBe(false)
+
+        expect(() => Lit({ value: 1 })).not.toThrow()
+        expect(() => Lit(1)).not.toThrow()
+        // FIXME: without more type info a single parameter is not enough to infer the type
+        // since 'any' is a valid type for the first parameter.
+        // @ts-expect-error
+        Lit({ value: 1, foo: 2, bar: 3 })
+        // @ts-expect-error
+        Lit(1, 2)
+
+        expect(() => Add({ left: Lit({ value: 1 }), right: Lit({ value: 2 }) })).not.toThrow()
+        expect(() => Add(Lit(1), Lit(2))).not.toThrow()
+        // @ts-expect-error
+        Add({ left: Lit({ value: 1 }), right: Lit({ value: 2 }), extra: 3 })
+        // @ts-expect-error
+        Add(Lit(1), Lit(2), Lit(3))
+    })
+
 
     // operations
     const evaluate = Trait({

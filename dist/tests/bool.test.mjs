@@ -1,5 +1,4 @@
-import { Data, isData } from "../Data.mjs";
-import { Trait } from "../Trait.mjs";
+import { Data, isData, Trait } from "../index.mjs";
 describe('Bool tests', () => {
     const Bool = Data({ False: [], True: [] });
     test('Bool Data', () => {
@@ -34,3 +33,4 @@ describe('Bool tests', () => {
         expect(not(t)).toBe(f);
     });
 });
+//# sourceMappingURL=bool.test.mjs.map

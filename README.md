@@ -59,14 +59,14 @@ p2.x === 3
 p2.y === 2
 ```
 
-### `typeName` symbol
+### `variantName` symbol
 
-Each data variant has a `[typename]` field which provides the name of the variant:
+Each data variant has a `[variantName]` field which provides the name of the variant:
 
 ```js
 const Color = Data({ Red: [], Green: [], Blue: [] });
 
-Color.Red[typeName] === 'Red'
+Color.Red[variantName] === 'Red'
 
 const Point = Data({ Point2: ['x', 'y'], Point3: ['x', 'y', 'z'] }),
     {Point2, Point3} = Point
@@ -74,8 +74,8 @@ const Point = Data({ Point2: ['x', 'y'], Point3: ['x', 'y', 'z'] }),
 const p2 = Point2(12, 3),
       p3 = Point3(184, 13, 56)
 
-p2[typeName] === 'Point2'
-p3[typeName] === 'Point3'
+p2[variantName] === 'Point2'
+p3[variantName] === 'Point3'
 ```
 
 ### Recursive Data
@@ -149,8 +149,8 @@ const Lang = Data({
 // S = S ( S ) ∪ ε
 const S = Alt(Cat(() => S, Cat(Char('('), Cat(() => S, Char(')')))), Empty)
 
-S[typeName] === 'Alt'
-S.left[typeName] === 'Cat'
+S[variantName] === 'Alt'
+S.left[variantName] === 'Cat'
 S.left.first === S
 ```
 
