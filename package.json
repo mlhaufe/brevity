@@ -1,11 +1,11 @@
 {
     "name": "@mlhaufe/brevity",
-    "version": "0.6.1",
+    "version": "0.6.2",
     "description": "A library for Feature-Oriented Programming",
     "keywords": [
-        "object-algebra",
-        "feature-oriented-programming",
-        "expression-problem"
+        "Object Algebra",
+        "Feature Oriented Programming",
+        "Expression Problem"
     ],
     "module": "dist/index.mjs",
     "type": "module",

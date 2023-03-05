@@ -3,6 +3,7 @@
 ## v0.6.2
 
 - Updated `README.md` to reflect npm usage.
+- Updated package keywords
 
 ## v0.6.1
 
