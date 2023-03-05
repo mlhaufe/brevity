@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.6.2
+
+- Updated `README.md` to reflect npm usage.
+
+## v0.6.1
+
+- Created npm package
+
 ## v0.6.0
 
 - Renamed `typeName` symbol to `variantName`

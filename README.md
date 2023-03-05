@@ -7,14 +7,31 @@ in a manner that makes data and operation declarations trivial to define and com
 
 The latest version:
 
-```text
-npm install github:mlhaufe/brevity
+```powershell
+npm install @mlhaufe/brevity
 ```
 
 A specific version:
 
-```text
-npm install github:mlhaufe/brevity#v0.4.0
+```powershell
+npm install @mlhaufe/brevity@x.x.x
+```
+
+For direct use in a browser (no build step):
+
+```html
+<script type="importmap">
+{
+  "imports": {
+    "@mlhaufe/brevity": "https://unpkg.com/@mlhaufe/brevity/index.mjs",
+  }
+}
+</script>
+<script type="module">
+  import {Data} from '@mlhaufe/brevity';
+
+  console.log(typeof Data); // 'function'
+</script>
 ```
 
 ## Data
