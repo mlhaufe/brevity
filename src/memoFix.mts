@@ -1,5 +1,5 @@
-import MultiKeyMap from "@final-hill/multi-key-map"
-import { Trait, apply } from "./Trait.mjs";
+import { BoxedMultiKeyMap } from "./BoxedMultiKeyMap.mjs";
+import { Trait, apply } from "./Trait.mts.disabled";
 
 const visited = Symbol('visited');
 /**
@@ -8,9 +8,9 @@ const visited = Symbol('visited');
  * @param bottom The bottom element of the least fixed point
  * @returns {Trait} The extended trait
  */
-export const memoFix = (trait: typeof Trait, bottom: any | (() => any)) => Trait(trait, {
-    [visited]: new MultiKeyMap(),
-    [apply](...args: any[]) {
+export const memoFix = (trait, bottom) => Trait(trait, {
+    [visited]: new BoxedMultiKeyMap(),
+    [apply](...args) {
         const v = this[visited];
         if (!v.has(...args)) {
             v.set(...args, typeof bottom === 'function' ? bottom(...args) : bottom);

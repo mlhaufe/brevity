@@ -1,0 +1,84 @@
+import { variantName } from './Data.mjs';
+
+export const isTrait = Symbol('isTrait'),
+    all = Symbol('all'),
+    apply = Symbol('apply');
+
+// ref: <https://stackoverflow.com/questions/74917137/how-do-i-define-a-typescript-type-that-will-reduce-a-record-of-functions-to-an?noredirect=1#comment132216538_74917137>
+export type TraitMethods<T, U> = { [K in keyof T]: (data: any, ...args: any[]) => U }
+export type TraitFn<T> = (({ [K in keyof T]-?: (x: T[K]) => void }[keyof T] extends
+    (this: TraitFn<T>, x: infer I) => void ? I : never))
+    & { [isTrait]: boolean, [all]: TraitFn<T>, [apply]: TraitFn<T> }
+
+const protoTrait: TraitFn<any> = (() => { })
+Reflect.set(protoTrait, isTrait, true)
+Reflect.set(protoTrait, apply, function (this: TraitFn<any>, instance: any, ...args: any[]) {
+    const name = typeof instance === 'object' && instance !== null && variantName in instance ? instance[variantName] : all,
+        fn = this[name] ?? this[all];
+    if (!fn)
+        throw new TypeError(`no trait defined for [all]`)
+
+    return fn.call(this, instance, ...args)
+})
+
+/**
+ * Defines a trait for a data declaration.
+ * const traitFn = Trait(traits)
+ * const result = traitFn(dataInstance, ...args)
+ * @overload
+ * @param {object} traits The traits to define.
+ * @throws {TypeError} if traits is not an object literal
+ * @throws {TypeError} if any trait is not a function
+ * @returns {function} a trait
+ * @example
+ * const List = Data({ Nil: [], Cons: ['head', 'tail'] })
+ * const length = Trait({
+ *     Nil() { return 0 },
+ *     Cons({ head, tail }) { return 1 + length(tail) }
+ * });
+ * const { Nil, Cons } = List
+ * // [1, 2, 3]
+ * const xs = Cons({ head: 1, tail: Cons({ head: 2, tail: Cons({ head: 3, tail: Nil }) }) });
+ * length(xs) // => 3
+ */
+
+/**
+ * Defines a trait for a data declaration that extends another trait.
+ * const traitFn = Trait(baseTrait, traits)
+ * const result = traitFn(dataInstance, ...args)
+ * @overload
+ * @param baseTrait The trait to extend.
+ * @param traits The traits to define.
+ * @throws {TypeError} if baseTrait is not a trait
+ * @throws {TypeError} if traits is not an object literal
+ * @throws {TypeError} if any trait is not a function
+ * @return The trait
+ */
+export function Trait<B extends TraitFn<any>, T extends TraitMethods<T, U>, U>(base: B, trait: T): B & TraitFn<T>;
+export function Trait<T extends TraitMethods<T, U>, U>(traits: T): TraitFn<T>;
+export function Trait<B extends TraitFn<any>, T extends TraitMethods<T, U>, U>(...args: any[]): B & TraitFn<T> {
+    const { baseTrait, traits } = args.length === 1 ?
+        { baseTrait: undefined, traits: args[0] } : { baseTrait: args[0], traits: args[1] }
+    let localTraits: any = (...args: any[]) => localTraits[apply](...args)
+
+    if (baseTrait && traits) {
+        if (!baseTrait[isTrait])
+            throw new TypeError(`baseTrait must be a Trait: ${baseTrait}`)
+        if (typeof traits !== 'object' || Array.isArray(traits))
+            throw new TypeError('traits must be an object literal');
+        Reflect.setPrototypeOf(localTraits, baseTrait)
+    } else if (!baseTrait && traits) {
+        if (typeof traits !== 'object' || Array.isArray(traits))
+            throw new TypeError('traits must be an object literal');
+        Reflect.setPrototypeOf(localTraits, protoTrait)
+    } else {
+        throw new TypeError('Trait must be called with at least 2 arguments')
+    }
+    Object.assign(localTraits, traits);
+    for (const [name, trait] of Object.entries(localTraits)) {
+        if (typeof trait !== 'function')
+            throw new TypeError(`trait must be a function: ${name}`);
+    }
+
+    return localTraits
+}

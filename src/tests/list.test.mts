@@ -35,7 +35,6 @@ describe('List tests', () => {
         expect(zs.tail.tail.tail.head).toBe(4)
         expect(zs.tail.tail.tail.tail.head).toBe(5)
         expect(zs.tail.tail.tail.tail.tail.head).toBe(6)
-
     });
 
     const length = Trait({

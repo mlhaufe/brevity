@@ -7,14 +7,31 @@ in a manner that makes data and operation declarations trivial to define and com
 
 The latest version:
 
-```text
-npm install github:mlhaufe/brevity
+```powershell
+npm install @mlhaufe/brevity
 ```
 
 A specific version:
 
-```text
-npm install github:mlhaufe/brevity#v0.4.0
+```powershell
+npm install @mlhaufe/brevity@x.x.x
+```
+
+For direct use in a browser (no build step):
+
+```html
+<script type="importmap">
+{
+  "imports": {
+    "@mlhaufe/brevity": "https://unpkg.com/@mlhaufe/brevity/index.mjs",
+  }
+}
+</script>
+<script type="module">
+  import {Data} from '@mlhaufe/brevity';
+
+  console.log(typeof Data); // 'function'
+</script>
 ```
 
 ## Data
@@ -152,6 +169,68 @@ const S = Alt(Cat(() => S, Cat(Char('('), Cat(() => S, Char(')')))), Empty)
 S[variantName] === 'Alt'
 S.left[variantName] === 'Cat'
 S.left.first === S
+```
+
+### Equality
+
+As mentioned above, variants without properties are considered singletons:
+
+```js
+const red = Color.Red,
+    red2 = Color.Red
+
+red === red2
+```
+
+Which is what allows strict equality comparisons.
+
+Non-singleton variants also support strict equality comparisons:
+
+```js
+const Point = Data({ Point2: ['x', 'y'], Point3: ['x','y','z'] }),
+    {Point2, Point3}
+
+Point3(1,2,3) === Point3({x:1,y:2,z:3}) // true
+```
+
+This enabled via [object-pooling](https://en.wikipedia.org/wiki/Object_pool_pattern) in a WeakMap behind the scenes.
+
+Besides the convenience of the above, this also enables use of variant declarations in native JavaScript collections
+directly like Array, Map, Set, etc.
+
+```js
+const Point = Data({ Point2: ['x', 'y'], Point3: ['x', 'y', 'z'] }),
+    { Point2, Point3 } = Point;
+
+const pArray = [Point2(1, 2), Point3(1, 2, 3)];
+
+pArray.includes(Point2(1, 2)) // true
+pArray.includes(Point2({ x: 1, y: 2 })) //true
+pArray.includes(Point3(1, 2, 3)) // true
+pArray.includes(Point3({ x: 1, y: 2, z: 3 })) // true
+pArray.includes(Point2(1, 3)) // false
+pArray.includes(Point3(1, 2, 4)) // false
+
+const pSet = new Set([Point2(1, 2), Point3(1, 2, 3)]);
+
+pSet.has(Point2(1, 2)) // true
+pSet.has(Point2({ x: 1, y: 2 })) // true
+pSet.has(Point3(1, 2, 3)) // true
+pSet.has(Point3({ x: 1, y: 2, z: 3 })) // true
+pSet.has(Point2(1, 3)) // false
+pSet.has(Point3(1, 2, 4)) // false
+
+const pMap = new Map([
+    [Point2(1, 2), 1],
+    [Point3(1, 2, 3), 2]
+]);
+
+pMap.has(Point2(1, 2)) // true
+pMap.has(Point2({ x: 1, y: 2 })) // true
+pMap.has(Point3(1, 2, 3)) // true
+pMap.has(Point3({ x: 1, y: 2, z: 3 })) // true
+pMap.has(Point2(1, 3)) // false
+pMap.has(Point3(1, 2, 4)) // false
 ```
 
 ## Traits

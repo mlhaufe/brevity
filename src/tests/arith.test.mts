@@ -2,10 +2,11 @@ import { Data, Trait, apply, isSingleton } from '../index.mjs'
 
 describe('Arithmetic', () => {
     // data declaration
-    const Exp = Data({ Lit: ['value'], Add: ['left', 'right'] }),
-        { Add, Lit } = Exp
+    const Exp = Data({ Lit: ['value'], Add: ['left', 'right'] })
 
     test('Type checking parameters', () => {
+        const { Add, Lit } = Exp
+
         expect(Lit[isSingleton]).toBe(false)
         expect(Add[isSingleton]).toBe(false)
 
@@ -16,16 +17,19 @@ describe('Arithmetic', () => {
         // @ts-expect-error
         Lit({ value: 1, foo: 2, bar: 3 })
         // @ts-expect-error
-        Lit(1, 2)
+        Lit(1, 2) // TODO: this should throw and not just be a type error
 
         expect(() => Add({ left: Lit({ value: 1 }), right: Lit({ value: 2 }) })).not.toThrow()
         expect(() => Add(Lit(1), Lit(2))).not.toThrow()
-        // @ts-expect-error
-        Add({ left: Lit({ value: 1 }), right: Lit({ value: 2 }), extra: 3 })
+        Add({
+            left: Lit({ value: 1 }),
+            right: Lit({ value: 2 }),
+            // @ts-expect-error
+            extra: 3
+        })
         // @ts-expect-error
         Add(Lit(1), Lit(2), Lit(3))
     })
-
 
     // operations
     const evaluate = Trait({
@@ -36,52 +40,11 @@ describe('Arithmetic', () => {
     })
 
     test('named parameters', () => {
-        expect(Exp.Lit).toBeDefined()
-        expect(Exp.Add).toBeDefined()
+        const { Add, Lit } = Exp
 
-        // 1 + (2 + 3)
-        const exp = Exp.Add({
-            left: Exp.Lit(1),
-            right: Exp.Add({
-                left: Exp.Lit(2),
-                right: Exp.Lit(3)
-            })
-        })
+        expect(Lit).toBeDefined()
+        expect(Add).toBeDefined()
 
-        expect(exp.left.value).toBe(1)
-        expect(exp.right.left.value).toBe(2)
-        expect(exp.right.right.value).toBe(3)
-    })
-
-    test('extra parameters throw', () => {
-        expect(() => Exp.Add({ left: Exp.Lit(1), right: Exp.Lit(2), extra: 3 })).toThrow()
-    })
-
-    test('missing parameters throw', () => {
-        expect(() => Exp.Add({ left: Exp.Lit(1) })).toThrow()
-    })
-
-    test('positional parameters', () => {
-        // 1 + (2 + 3)
-        const exp = Exp.Add(
-            Exp.Lit(1),
-            Exp.Add(
-                Exp.Lit(2),
-                Exp.Lit(3)
-            )
-        )
-
-        expect(exp.left.value).toBe(1)
-        expect(exp.right.left.value).toBe(2)
-        expect(exp.right.right.value).toBe(3)
-    })
-
-    test('wrong number of parameters throw', () => {
-        expect(() => Exp.Add(Exp.Lit(1))).toThrow()
-        expect(() => Exp.Add(Exp.Lit(1), Exp.Lit(2), Exp.Lit(3))).toThrow()
-    })
-
-    test('evaluate', () => {
         // 1 + (2 + 3)
         const exp = Add({
             left: Lit({ value: 1 }),
@@ -91,12 +54,66 @@ describe('Arithmetic', () => {
             })
         })
 
+        expect(exp.left.value).toBe(1)
+        expect(exp.right.left.value).toBe(2)
+        expect(exp.right.right.value).toBe(3)
+    })
+
+    test('extra parameters throw', () => {
+        const { Add, Lit } = Exp
+        expect(() => Add({
+            left: Lit(1),
+            right: Lit(2),
+            //@ts-expect-error
+            extra: 3
+        })).toThrow()
+    })
+
+    test('missing parameters throw', () => {
+        // @ts-expect-error
+        expect(() => Exp.Add({ left: Exp.Lit(1) })).toThrow()
+    })
+
+    test('positional parameters', () => {
+        const { Add, Lit } = Exp
+        // 1 + (2 + 3)
+        const exp = Add(
+            Lit(1),
+            Add(Lit(2), Lit(3))
+        )
+
+        expect(exp.left.value).toBe(1)
+        expect(exp.right.left.value).toBe(2)
+        expect(exp.right.right.value).toBe(3)
+    })
+
+    test('wrong number of parameters throw', () => {
+        const { Add, Lit } = Exp
+        // @ts-expect-error
+        expect(() => Add(Lit(1))).toThrow()
+        expect(() => Add(
+            Lit(1),
+            Lit(2),
+            //@ts-expect-error
+            Lit(3))
+        ).toThrow()
+    })
+
+    test('evaluate', () => {
+        const { Add, Lit } = Exp
+        // 1 + (2 + 3)
+        const exp = Add(
+            Lit(1),
+            Add(Lit(2), Lit(3))
+        )
+
         expect(evaluate(exp)).toBe(6)
 
         // 1 + (2 + 3) + 4
         // with positional parameters
         const exp2 = Add(
-            Add(Lit(1),
+            Add(
+                Lit(1),
                 Add(Lit(2), Lit(3))
             ),
             Lit(4)
@@ -113,21 +130,20 @@ describe('Arithmetic', () => {
     })
 
     test('print', () => {
+        const { Add, Lit } = Exp
         // 1 + (2 + 3)
-        const exp = Add({
-            left: Lit({ value: 1 }),
-            right: Add({
-                left: Lit({ value: 2 }),
-                right: Lit({ value: 3 })
-            })
-        })
+        const exp = Add(
+            Lit(1),
+            Add(Lit(2), Lit(3))
+        )
 
         expect(print(exp)).toBe('1 + 2 + 3')
 
         // 1 + (2 + 3) + 4
         // with positional parameters
         const exp2 = Add(
-            Add(Lit(1),
+            Add(
+                Lit(1),
                 Add(Lit(2), Lit(3))
             ),
             Lit(4)
@@ -136,22 +152,20 @@ describe('Arithmetic', () => {
         expect(print(exp2)).toBe('1 + 2 + 3 + 4')
     })
 
-    const MulExp = Data(Exp, { Mul: ['left', 'right'] }),
-        { Mul } = MulExp
+    const MulExp = Data(Exp, { Mul: ['left', 'right'] })
 
     test('MulExp Data', () => {
-        expect(MulExp.Lit).toBeDefined()
-        expect(MulExp.Add).toBeDefined()
-        expect(MulExp.Mul).toBeDefined()
+        const { Add, Lit, Mul } = MulExp
+
+        expect(Lit).toBeDefined()
+        expect(Add).toBeDefined()
+        expect(Mul).toBeDefined()
 
         // 1 + (2 * 3)
-        const exp = MulExp.Add({
-            left: MulExp.Lit(1),
-            right: MulExp.Mul({
-                left: MulExp.Lit(2),
-                right: MulExp.Lit(3)
-            })
-        })
+        const exp = Add(
+            Lit(1),
+            Mul(Lit(2), Lit(3))
+        )
 
         expect(exp.left.value).toBe(1)
         expect(exp.right.left.value).toBe(2)
@@ -163,31 +177,27 @@ describe('Arithmetic', () => {
     })
 
     test('evalMul', () => {
+        const { Add, Lit, Mul } = MulExp
         // 1 + (2 * 3)
-        const exp = MulExp.Add({
-            left: MulExp.Lit({ value: 1 }),
-            right: MulExp.Mul({
-                left: MulExp.Lit({ value: 2 }),
-                right: MulExp.Lit({ value: 3 })
-            })
-        })
+        const exp = Add(
+            Lit(1),
+            Mul(Lit(2), Lit(3))
+        )
 
         expect(evalMul(exp)).toBe(7)
     })
 
     const printMul = Trait(print, {
-        Mul({ left, right }: { left: }) { return `${printMul(left)} * ${printMul(right)}` }
+        Mul({ left, right }) { return `${printMul(left)} * ${printMul(right)}` }
     })
 
     test('printMul', () => {
+        const { Add, Lit, Mul } = MulExp
         // 1 + (2 * 3)
-        const exp = MulExp.Add({
-            left: MulExp.Lit({ value: 1 }),
-            right: MulExp.Mul({
-                left: MulExp.Lit({ value: 2 }),
-                right: MulExp.Lit({ value: 3 })
-            })
-        })
+        const exp = Add(
+            Lit(1),
+            Mul(Lit(2), Lit(3))
+        )
 
         expect(printMul(exp)).toBe('1 + 2 * 3')
     })
@@ -199,14 +209,12 @@ describe('Arithmetic', () => {
     })
 
     test('isValue', () => {
+        const { Add, Lit, Mul } = MulExp
         // 1 + (2 * 3)
-        const exp = MulExp.Add({
-            left: MulExp.Lit({ value: 1 }),
-            right: MulExp.Mul({
-                left: MulExp.Lit({ value: 2 }),
-                right: MulExp.Lit({ value: 3 })
-            })
-        })
+        const exp = Add(
+            Lit(1),
+            Mul(Lit(2), Lit(3))
+        )
 
         expect(isValue(exp)).toBe(false)
         expect(isValue(exp.left)).toBe(true)

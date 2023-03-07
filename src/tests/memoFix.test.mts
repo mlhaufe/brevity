@@ -1,5 +1,4 @@
-import { memoFix } from '../memoFix.mjs'
-import { Trait, apply } from '../index.mjs'
+import { memoFix, Trait, apply } from '../index.mjs'
 
 describe('least fixed point', () => {
     test('returning bottom on infinite recursion', () => {

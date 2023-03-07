@@ -3,7 +3,7 @@
 # top-most EditorConfig file
 root = true
 
-[*.{ts,json,config}]
+[*.{js,mjs,ts,mts,json,config}]
 charset = utf-8
 end_of_line = crlf
 indent_size = 4
