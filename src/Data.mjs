@@ -1,134 +1,103 @@
 import { BoxedMultiKeyMap } from "./BoxedMultiKeyMap.mjs";
+import { isObjectLiteral } from "./isObjectLiteral.mjs";
+import { assert } from "./assert.mjs";
+import { implies } from "./implies.mjs";
+import { extend } from "./index.mjs";
 
-const isObjectLiteral = obj => obj !== null && Object.getPrototypeOf(obj) === Object.prototype;
-const isCapitalized = str => typeof str === 'string' && str.match(/^[A-Z][A-Za-z0-9]*$/);
-const isCamelCase = str => typeof str === 'string' && str.match(/^[a-z][A-Za-z0-9]*$/);
+const isCapitalized = str => typeof str === 'string' && str.match(/^[A-Z][A-Za-z0-9]*/),
+    isCamelCase = str => typeof str === 'string' && str.match(/^[a-z][A-Za-z0-9]*/),
+    pool = Symbol('pool');
 
-const pool = Symbol('pool');
-
-function def(variants) {
-    if (!isObjectLiteral(variants))
-        throw new TypeError('variants declaration must be an object literal');
-
-    for (const [name, params] of Object.entries(variants)) {
-        if (!isCapitalized(name))
-            throw new TypeError(`variant name must be capitalized: ${name}`);
-        if (!Array.isArray(params))
-            throw new TypeError(`variant properties must be an array: ${name}`);
-        if (!params.every(isCamelCase))
-            throw new TypeError(`variant properties must be camelCase strings: ${name}: ${params}`);
-        if (new Set(params).size !== params.length) {
-            throw new TypeError(`type parameters must be unique: ${name}: ${params}`);
-        }
-        // if the type has no parameters, it is a singleton
-        if (params.length === 0) {
-            variants[name] = Object.freeze(
-                Object.assign(Object.create(null), ({ [variantName]: name, [isSingleton]: true }))
-            )
-        } else {
-            // otherwise each type becomes a constructor
-            const self = variants[name] = function (...args) {
-                const normalizedArgs = [];
-
-                if (params.length === 1) {
-                    if (args.length === 1) {
-                        const arg = args[0];
-                        if (!isObjectLiteral(arg)) {
-                            normalizedArgs.push(arg);
-                        } else {
-                            // if the object has the correct property, use it
-                            if (params[0] in arg) {
-                                normalizedArgs.push(arg[params[0]]);
-                            } else {
-                                // pass the object as is
-                                normalizedArgs.push(arg);
-                            }
-                        }
-                    }
-                } else {
-                    if (args.length === 1) {
-                        const objArg = args[0];
-                        if (!isObjectLiteral(objArg))
-                            throw new TypeError(`Wrong number of arguments. expected: ${name}(${params}), got: ${name}(${args})`);
-                        if (Object.keys(objArg).length != params.length)
-                            throw new TypeError(`Wrong number of parameters. Expected: ${name}(${params}), got: ${name}(${Object.keys(objArg)})`);
-
-                        for (const param of params) {
-                            if (!(param in objArg))
-                                throw new TypeError(`Missing parameter: ${param}`);
-                            normalizedArgs.push(objArg[param]);
-                        }
-                    } else if (args.length === params.length) {
-                        normalizedArgs.push(...args);
-                    } else {
-                        throw new TypeError(`Wrong number of arguments. expected: ${name}(${params}), got: ${name}(${args})`);
-                    }
-                }
-
-                let obj = self[pool].get(...normalizedArgs);
-                if (obj) return obj;
-                obj = Object.create(self.prototype);
-                params.forEach((param, i) => {
-                    if (typeof normalizedArgs[i] === 'function')
-                        Object.defineProperty(obj, param, { get: normalizedArgs[i], enumerable: true });
-                    else
-                        obj[param] = normalizedArgs[i];
-                });
-                self[pool].set(...[...normalizedArgs, obj]);
-
-                return Object.freeze(obj);
-            }
-            self[pool] = new BoxedMultiKeyMap();
-            self.prototype = Object.freeze({ [variantName]: name, [isSingleton]: false });
-        }
-    }
-
-    variants[isData] = true;
-
-    return Object.freeze(variants);
-}
-
-export const variantName = Symbol('variantName'),
+export const variant = Symbol('variant'),
     isData = Symbol('isData'),
     isSingleton = Symbol('isSingleton');
 
-/**
- * Data types with named parameters and immutable objects.
- * @param {Object} variants
- * @returns {Object}
- * @example
- * const Color = Data({ Red: [], Green: [], Blue: [] }),
- *       red = Color.Red;
- *
- * const Point = Data({ Point2: ['x', 'y'], Point3: ['x', 'y', 'z'] }),
- *       p2 = Point.Point2({ x: 1, y: 2 }),
- *       p3 = Point.Point3({ x: 1, y: 2, z: 3 });
- *
- * const List = Data({ Nil: [], Cons: ['head', 'tail'] }),
- *       list = List.Cons({ head: 1, tail: List.Cons({ head: 2, tail: List.Nil }) });
+function variantConstructor(params, name) {
+    function self(...args) {
+        const normalizedArgs = [];
 
- * const Peano = Data({ Zero: [], Succ: ['pred'] }),
- *       zero = Peano.Zero,
- *       succ = Peano.Succ({ pred: Peano.Zero });
- * 
- * const ExtendedColor = Data(Color, { Yellow: [], Magenta: [], Cyan: [] }),
- *      red = ExtendedColor.Red,
- *      yellow = ExtendedColor.Yellow;
- */
-export function Data(Base, variants) {
-    let data
-    if (Base && variants) {
-        if (!Base[isData])
-            throw new TypeError('Base must be a Data type');
-        data = Object.assign({}, Base, def(variants));
-    }
-    else if (Base && !variants) {
-        data = def(Base);
-    }
-    else {
-        throw new TypeError('Data requires at least one argument');
-    }
+        if (params.length === 1) {
+            if (args.length === 1) {
+                const arg = args[0];
+                if (!isObjectLiteral(arg))
+                    normalizedArgs.push(arg);
+                else
+                    normalizedArgs.push(params[0] in arg ? arg[params[0]] : arg);
+            }
+        } else {
+            if (args.length === 1) {
+                const objArg = args[0];
+                assert(isObjectLiteral(objArg),
+                    `Wrong number of arguments. expected: ${name}(${params}), got: ${name}(${args})`);
 
-    return Object.freeze(data);
+                assert(Object.keys(objArg).length === params.length,
+                    `Wrong number of parameters. Expected: ${name}(${params}), got: ${name}(${Object.keys(objArg)})`);
+
+                for (const param of params) {
+                    assert(param in objArg, `Missing parameter: ${param}`);
+                    normalizedArgs.push(objArg[param]);
+                }
+            } else if (args.length === params.length) {
+                normalizedArgs.push(...args);
+            } else {
+                throw new TypeError(`Wrong number of arguments. expected: ${name}(${params}), got: ${name}(${args})`);
+            }
+        }
+
+        let obj = self[pool].get(...normalizedArgs);
+        if (obj) return obj;
+        obj = Object.create(self.prototype);
+        params.forEach((param, i) => {
+            if (typeof normalizedArgs[i] === 'function')
+                Object.defineProperty(obj, param, { get: normalizedArgs[i], enumerable: true });
+            else
+                obj[param] = normalizedArgs[i];
+        });
+        self[pool].set(...[...normalizedArgs, obj]);
+
+        return Object.freeze(obj);
+    };
+    self[pool] = new BoxedMultiKeyMap();
+    self.prototype = Object.freeze({ [variant]: self, [isSingleton]: false });
+
+    return self
 }
 
+/**
+ * Defines a data type
+ * @param decl The variants definition
+ * @returns The data type
+ */
+export function Data(decl) {
+    const dataDecl = Array.isArray(decl) ? { 'Anonymous!': decl } : decl;
+
+    assert(isObjectLiteral(dataDecl), 'Data declaration must be an object literal or an array');
+    // TODO: how to extend anonymous variant? Maybe each variant should have a reference to the base?
+
+    assert(implies(extend in dataDecl, dataDecl[extend] && isData in dataDecl[extend]),
+        'Data can only extend another Data declaration');
+
+    const result = Object.create(extend in dataDecl ? dataDecl[extend] : null);
+    if (!(isData in result))
+        result[isData] = true;
+
+    for (const [name, params] of Object.entries(dataDecl)) {
+        assert(isCapitalized(name), `variant name must be capitalized: ${name}`);
+        assert(Array.isArray(params), `variant properties must be an array: ${name}`)
+        assert(params.every(isCamelCase), `variant properties must be camelCase strings: ${name}: ${params}`);
+        assert(new Set(params).size === params.length, `variant properties must be unique: ${name}: ${params}`)
+
+        if (params.length === 0) {
+            const obj = result[name] = Object.create(null)
+            Object.assign(obj, ({ [variant]: obj, [isSingleton]: true }))
+            Object.freeze(obj)
+        } else {
+            result[name] = Object.freeze(variantConstructor(params, name))
+        }
+    }
+
+    if (Object.keys(result).length === 1 && 'Anonymous!' in result)
+        return result['Anonymous!'];
+
+    return Object.freeze(result);
+}

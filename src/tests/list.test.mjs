@@ -1,4 +1,4 @@
-import { Data, Trait } from "../index.mjs";
+import { Data, Trait, all } from "../index.mjs";
 
 describe('List tests', () => {
     const List = Data({ Nil: [], Cons: ['head', 'tail'] });
@@ -13,7 +13,7 @@ describe('List tests', () => {
         expect(cons.tail).toBe(List.Nil)
     })
 
-    const concat = Trait({
+    const concat = Trait(List, {
         Nil({ }, ys) { return ys },
         Cons({ head, tail }, ys) {
             return List.Cons({ head, tail: concat(tail, ys) })
@@ -23,10 +23,10 @@ describe('List tests', () => {
     test('List Concat', () => {
         const { Cons, Nil } = List;
         // [1, 2, 3]
-        const xs = Cons({ head: 1, tail: Cons({ head: 2, tail: Cons({ head: 3, tail: Nil }) }) }),
-            // [4, 5, 6]   
-            ys = Cons({ head: 4, tail: Cons({ head: 5, tail: Cons({ head: 6, tail: Nil }) }) }),
-            // xs ++ ys == [1, 2, 3, 4, 5, 6]    
+        const xs = Cons(1, Cons(2, Cons(3, Nil))),
+            // [4, 5, 6]
+            ys = Cons(4, Cons(5, Cons(6, Nil))),
+            // xs ++ ys == [1, 2, 3, 4, 5, 6]
             zs = concat(xs, ys);
 
         expect(zs.head).toBe(1)
@@ -35,10 +35,9 @@ describe('List tests', () => {
         expect(zs.tail.tail.tail.head).toBe(4)
         expect(zs.tail.tail.tail.tail.head).toBe(5)
         expect(zs.tail.tail.tail.tail.tail.head).toBe(6)
-
     });
 
-    const length = Trait({
+    const length = Trait(List, {
         Nil() { return 0 },
         Cons({ head, tail }) { return 1 + length(tail) }
     });
@@ -46,7 +45,20 @@ describe('List tests', () => {
     test('List Length', () => {
         const { Cons, Nil } = List
         // [1, 2, 3]
-        const xs = Cons({ head: 1, tail: Cons({ head: 2, tail: Cons({ head: 3, tail: Nil }) }) });
+        const xs = Cons(1, Cons(2, Cons(3, Nil)));
         expect(length(xs)).toBe(3)
     });
-});
+
+    const isNil = Trait(List, {
+        [all]: () => false,
+        Nil: () => true
+    });
+
+    test('List isNil', () => {
+        const { Cons, Nil } = List
+        // [1, 2, 3]
+        const xs = Cons(1, Cons(2, Cons(3, Nil)));
+        expect(isNil(xs)).toBe(false)
+        expect(isNil(Nil)).toBe(true)
+    })
+})

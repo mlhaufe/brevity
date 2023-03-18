@@ -1,4 +1,4 @@
-import { Data, isData, variantName, Trait } from "../index.mjs"
+import { Data, isData, variant, Trait } from "../index.mjs"
 
 describe('Color tests', () => {
     const Color = Data({ Red: [], Green: [], Blue: [] });
@@ -7,11 +7,11 @@ describe('Color tests', () => {
         expect(Color[isData]).toBe(true);
         const red = Color.Red;
         expect(red).toBeDefined();
-        expect(red[variantName]).toBe('Red');
+        expect(red[variant]).toBe(red);
         expect(red.Red).toBeUndefined();
     })
 
-    const print = Trait({
+    const print = Trait(Color, {
         Red() { return '#FF0000' },
         Green() { return '#00FF00' },
         Blue() { return '#0000FF' }

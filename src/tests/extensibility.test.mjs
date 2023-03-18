@@ -1,9 +1,9 @@
-import { Data, Trait, apply } from "../index.mjs"
+import { Data, Trait, apply, extend } from "../index.mjs"
 
 describe('Extensibility for the Masses', () => {
     const IntExp = Data({ Lit: ['value'], Add: ['left', 'right'] })
 
-    const intPrint = Trait({
+    const intPrint = Trait(IntExp, {
         Lit({ value }) {
             return value.toString()
         },
@@ -12,7 +12,7 @@ describe('Extensibility for the Masses', () => {
         }
     })
 
-    const intEval = Trait({
+    const intEval = Trait(IntExp, {
         Lit({ value }) { return value },
         Add({ left, right }) {
             return this[apply](left) + this[apply](right)
@@ -32,7 +32,11 @@ describe('Extensibility for the Masses', () => {
         expect(intEval(exp)).toBe(6)
     })
 
-    const IntBoolExp = Data(IntExp, { Bool: ['value'], Iff: ['pred', 'ifTrue', 'ifFalse'] })
+    const IntBoolExp = Data({
+        [extend]: IntExp,
+        Bool: ['value'],
+        Iff: ['pred', 'ifTrue', 'ifFalse']
+    })
 
     test('IntBoolExp Data', () => {
         expect(IntBoolExp.Lit).toBeDefined()
@@ -52,7 +56,8 @@ describe('Extensibility for the Masses', () => {
         expect(exp.ifFalse.value).toBe(0)
     })
 
-    const intBoolPrint = Trait(intPrint, {
+    const intBoolPrint = Trait(IntBoolExp, {
+        [extend]: intPrint,
         Bool({ value }) { return value.toString() },
         Iff({ pred, ifTrue, ifFalse }) {
             return `(${this[apply](pred)} ? ${this[apply](ifTrue)} : ${this[apply](ifFalse)})`
@@ -70,7 +75,8 @@ describe('Extensibility for the Masses', () => {
         expect(intBoolPrint(exp)).toBe('(true ? 1 : 2)')
     })
 
-    const intBoolEval = Trait(intEval, {
+    const intBoolEval = Trait(IntBoolExp, {
+        [extend]: intEval,
         Bool({ value }) { return value },
         Iff({ pred, ifTrue, ifFalse }) {
             return this[apply](pred) ? this[apply](ifTrue) : this[apply](ifFalse)
@@ -88,7 +94,8 @@ describe('Extensibility for the Masses', () => {
         expect(intBoolEval(exp)).toBe(1)
     })
 
-    const StmtExp = Data(IntBoolExp, {
+    const StmtExp = Data({
+        [extend]: IntBoolExp,
         Assign: ['scope', 'name', 'value'],
         Expr: ['value'],
         Seq: ['first', 'second'],
@@ -125,7 +132,8 @@ describe('Extensibility for the Masses', () => {
         expect(exp.value.right.value).toBe(1)
     })
 
-    const stmtPrint = Trait(intBoolPrint, {
+    const stmtPrint = Trait(StmtExp, {
+        [extend]: intBoolPrint,
         Assign({ name, value }) { return `${name} = ${this[apply](value)}` },
         Expr({ value }) { return this[apply](value) },
         Seq({ first, second }) { return `${this[apply](first)}; ${this[apply](second)}` },
@@ -165,7 +173,8 @@ describe('Extensibility for the Masses', () => {
         expect(stmtPrint(exp2)).toBe('x = (y + 1); x = (x + 1)')
     })
 
-    const stmtEval = Trait(intBoolEval, {
+    const stmtEval = Trait(StmtExp, {
+        [extend]: intBoolEval,
         Assign({ scope, name, value }) {
             return scope.set(name, this[apply](value)).get(name)
         },

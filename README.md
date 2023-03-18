@@ -76,14 +76,28 @@ p2.x === 3
 p2.y === 2
 ```
 
-### `variantName` symbol
+If you only have a single variant a short hand is available:
 
-Each data variant has a `[variantName]` field which provides the name of the variant:
+```js
+const Disk = Data({
+    Disk: ['position', 'velocity', 'radius', 'item']
+})
+```
+
+Can be written as:
+
+```js
+const Disk = Data(['position', 'velocity', 'radius', 'item'])
+```
+
+### `variant` symbol
+
+Each data variant has a `[variant]` field which provides a reference to the constructor:
 
 ```js
 const Color = Data({ Red: [], Green: [], Blue: [] });
 
-Color.Red[variantName] === 'Red'
+Color.Red[variant] === Color.Red
 
 const Point = Data({ Point2: ['x', 'y'], Point3: ['x', 'y', 'z'] }),
     {Point2, Point3} = Point
@@ -91,8 +105,8 @@ const Point = Data({ Point2: ['x', 'y'], Point3: ['x', 'y', 'z'] }),
 const p2 = Point2(12, 3),
       p3 = Point3(184, 13, 56)
 
-p2[variantName] === 'Point2'
-p3[variantName] === 'Point3'
+p2[variant] === Point2
+p3[variant] === Point3
 ```
 
 ### Recursive Data
@@ -116,12 +130,16 @@ const xs = Cons(1, Cons(2, Cons(3, Nil))),
 
 ### Extending Data
 
-Data declarations can be extended by passing the base declaration as the first argument:
+Data declarations can be extended by utilizing the `extend` symbol:
 
 ```js
 const IntExp = Data({ Lit: ['value'], Add: ['left', 'right'] })
 
-const IntBoolExp = Data(IntExp, { Bool: ['value'], Iff: ['pred', 'ifTrue', 'ifFalse'] }),
+const IntBoolExp = Data({ 
+        [extend]: IntExp,
+        Bool: ['value'], 
+        Iff: ['pred', 'ifTrue', 'ifFalse'] 
+    }),
     {Add, Lit, Bool, Iff} = IntBoolExp
 
 // if (true) 1 else 1 + 3
@@ -166,8 +184,8 @@ const Lang = Data({
 // S = S ( S ) ∪ ε
 const S = Alt(Cat(() => S, Cat(Char('('), Cat(() => S, Char(')')))), Empty)
 
-S[variantName] === 'Alt'
-S.left[variantName] === 'Cat'
+S[variant] === Alt
+S.left[variant] === Cat
 S.left.first === S
 ```
 
@@ -238,7 +256,9 @@ pMap.has(Point3(1, 2, 4)) // false
 A `Trait` associates operations with data declarations and supports pattern matching.
 
 ```js
-const print = Trait({
+const Color = Data({ Red: [], Green: [], Blue: [] });
+
+const print = Trait(Color, {
     Red() { return '#FF0000' },
     Green() { return '#00FF00' },
     Blue() { return '#0000FF' }
@@ -250,8 +270,10 @@ print(Color.Red) // '#FF0000'
 The trait `print` is a function that can then be applied to data instances.
 
 ```js
-const concat = Trait({
-    Nil({ }, ys) { return ys },
+const List = Data({ Nil: [], Cons: ['head', 'tail'] });
+
+const concat = Trait(List, {
+    Nil(_, ys) { return ys },
     Cons({ head, tail }, ys) {
         return List.Cons({ head, tail: concat(tail, ys) })
     }
@@ -270,21 +292,37 @@ const xs = Cons(1, Cons(2, Nil)),
 If the same operation should be applied to all variants, then the `all` symbol can be used:
 
 ```js
-const operation = Trait({
+const operation = Trait(undefined, {
     [all](target){ return JSON.stringify(target) }
 })
 ```
 
-### Extending Traits
+Note that in this case a Data declaration was not provided as an argument since it's irrelevant.
 
-Like the `Data` declaration one `Trait` can extend another:
+A more practical example:
 
 ```js
-const baseTrait = Trait({
+const isNil = Trait(List, {
+    [all]: () => false,
+    Nil: () => true
+});
+```
+
+In this case `Nil` takes priority over `[all]` and works as expected.
+
+If a data declaration is not provided, `[all]` or `[apply]` must be defined.
+
+### Extending Traits
+
+Like the `Data` declaration one `Trait` can extend another via the `extend` symbol:
+
+```js
+const baseTrait = Trait(FooData, {
     Foo(){ ... }
 })
 
-const subTrait = Trait(baseTrait, {
+const subTrait = Trait(BarData, {
+    [extend]: baseTrait,
     Bar() { ... }
 })
 ```
@@ -303,7 +341,7 @@ Instead of `this`, the `apply` symbol is used:
 ```js
 const IntExp = Data({ Lit: ['value'], Add: ['left', 'right'] })
 
-const intPrint = Trait({
+const intPrint = Trait(IntExp, {
     Lit({ value }) {
         return value.toString()
     },
@@ -312,9 +350,14 @@ const intPrint = Trait({
     }
 })
 
-const IntBoolExp = Data(IntExp, { Bool: ['value'], Iff: ['pred', 'ifTrue', 'ifFalse'] })
+const IntBoolExp = Data({
+    [extend]: IntExp,
+    Bool: ['value'], 
+    Iff: ['pred', 'ifTrue', 'ifFalse'] 
+})
 
-const intBoolPrint = Trait(intPrint, {
+const intBoolPrint = Trait(IntBoolExp, {
+    [extend]: intPrint,
     Bool({ value }) { return value.toString() },
     Iff({ pred, ifTrue, ifFalse }) {
         return `(${this[apply](pred)} ? ${this[apply](ifTrue)} : ${this[apply](ifFalse)})`
@@ -333,7 +376,8 @@ care about such extensions, relying on open recursion is key.
 There may be cases that you need to call the parent trait in the context of the current. This can be accomplished as follows:
 
 ```js
-const someTrait = Trait(parentTrait, {
+const someTrait = Trait(FooData, {
+    [extend]: parentTrait,
     Foo(self) {
         // ...
         parentTrait[apply].call(this, self)
@@ -350,7 +394,7 @@ trait solves this problem.
 Given the following contrived trait you can see that it will blow the stack when called:
 
 ```js
-const omega = new Trait({
+const omega = Trait(undefined, {
     [apply](x) { return this[apply](x); }
 })
 
@@ -369,7 +413,7 @@ The `bottom` argument can also be a function which will be called with the respe
 what the bottom value should be:
 
 ```js
-const foo = Trait({
+const foo = Trait(undefined, {
     [apply](x) {
         if (x <= 3) {
             return 1 + this[apply](x + 1);
@@ -396,7 +440,7 @@ initial entry in this cache. So the added benefit of this trait is not just for 
 for improving performance:
 
 ```js
-const fib = new Trait({
+const fib = Trait(undefined, {
     [apply](n) {
         return n < 2 ? n : this[apply](n - 1) + this[apply](n - 2);
     }
@@ -415,6 +459,27 @@ start = performance.now();
 fibFix(40);
 end = performance.now();
 const memoTime = end - start; // ~5ms
+```
+
+### Advanced usage of `apply`
+
+Like other methods, `apply` can be overwritten to enable advanced usage. You can see an example
+of this by looking at the implementation of `memoFix`:
+
+```js
+const memoFix = (trait, bottom) => {
+    const visited = new BoxedMultiKeyMap()
+    return Trait(undefined, {
+        [extend]: trait,
+        [apply](...args) {
+            if (!visited.has(...args)) {
+                visited.set(...args, typeof bottom === 'function' ? bottom(...args) : bottom);
+                visited.set(...args, trait[apply].apply(this, args));
+            }
+            return visited.get(...args);
+        }
+    })
+}
 ```
 
 ## The Expression Problem
@@ -527,14 +592,14 @@ Here is how the above would be approached with this library:
 const Exp = Data({ Lit: ['value'], Add: ['left', 'right']})
 
 // operations
-const evaluate = Trait({
+const evaluate = Trait(Exp, {
     Lit({value}){ return value },
     Add({left, right}){
          return this[apply](left) + this[apply](right)
     }
 })
 
-const print = Trait({
+const print = Trait(Exp, {
     Lit({value}) { return `${value}` },
     Add({left, right}) {
         return `${this[apply](left)} + ${this[apply](right)}`
@@ -557,17 +622,19 @@ print(add) // "1 + 3"
 Adding a new data type `Mul` is as simple as extending the base data type `Exp`:
 
 ```js
-const MulExp = Data(Exp, { Mul: ['left','right']})
+const MulExp = Data({ [extend]: Exp, Mul: ['left','right']})
 ```
 
 To extend `evaluate` and `print` to the new data declaration, simply extend the existing traits:
 
 ```js
-const evalMul = Trait(evaluate, {
+const evalMul = Trait(MulExp, {
+    [extend]: evaluate,
     Mul({left,right}){ return this[apply](left) * this[apply](right) }
 })
 
-const printMul = Trait(print, {
+const printMul = Trait(MulExp, {
+    [extend]: print,
     Mul({left,right}){ return `${this[apply](left)} * ${this[apply](right)}` }
 })
 ```
@@ -575,7 +642,7 @@ const printMul = Trait(print, {
 Adding a new operation for all data declarations thus far `isValue`:
 
 ```js
-const isValue = Trait({
+const isValue = Trait(MulExp, {
     Lit({value}) { return true },
     Add({left,right}) { return false },
     Mul({left,right}){ return false}

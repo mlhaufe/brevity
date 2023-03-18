@@ -1,4 +1,4 @@
-import { Data, Trait, apply } from '../index.mjs'
+import { Data, Trait, apply, extend } from '../index.mjs'
 
 describe('Arithmetic', () => {
     // data declaration
@@ -6,7 +6,7 @@ describe('Arithmetic', () => {
         { Add, Lit } = Exp
 
     // operations
-    const evaluate = Trait({
+    const evaluate = Trait(Exp, {
         Lit({ value }) { return value },
         Add({ left, right }) {
             return this[apply](left) + this[apply](right)
@@ -14,15 +14,15 @@ describe('Arithmetic', () => {
     })
 
     test('named parameters', () => {
-        expect(Exp.Lit).toBeDefined()
-        expect(Exp.Add).toBeDefined()
+        expect(Lit).toBeDefined()
+        expect(Add).toBeDefined()
 
         // 1 + (2 + 3)
-        const exp = Exp.Add({
-            left: Exp.Lit(1),
-            right: Exp.Add({
-                left: Exp.Lit(2),
-                right: Exp.Lit(3)
+        const exp = Add({
+            left: Lit({ value: 1 }),
+            right: Add({
+                left: Lit({ value: 2 }),
+                right: Lit({ value: 3 })
             })
         })
 
@@ -32,21 +32,18 @@ describe('Arithmetic', () => {
     })
 
     test('extra parameters throw', () => {
-        expect(() => Exp.Add({ left: Exp.Lit(1), right: Exp.Lit(2), extra: 3 })).toThrow()
+        expect(() => Add({ left: Lit(1), right: Lit(2), extra: 3 })).toThrow()
     })
 
     test('missing parameters throw', () => {
-        expect(() => Exp.Add({ left: Exp.Lit(1) })).toThrow()
+        expect(() => Add({ left: Lit(1) })).toThrow()
     })
 
     test('positional parameters', () => {
         // 1 + (2 + 3)
-        const exp = Exp.Add(
-            Exp.Lit(1),
-            Exp.Add(
-                Exp.Lit(2),
-                Exp.Lit(3)
-            )
+        const exp = Add(
+            Lit(1),
+            Add(Lit(2), Lit(3))
         )
 
         expect(exp.left.value).toBe(1)
@@ -55,8 +52,8 @@ describe('Arithmetic', () => {
     })
 
     test('wrong number of parameters throw', () => {
-        expect(() => Exp.Add(Exp.Lit(1))).toThrow()
-        expect(() => Exp.Add(Exp.Lit(1), Exp.Lit(2), Exp.Lit(3))).toThrow()
+        expect(() => Add(Lit(1))).toThrow()
+        expect(() => Add(Lit(1), Lit(2), Lit(3))).toThrow()
     })
 
     test('evaluate', () => {
@@ -83,7 +80,7 @@ describe('Arithmetic', () => {
         expect(evaluate(exp2)).toBe(10)
     })
 
-    const print = Trait({
+    const print = Trait(Exp, {
         Lit({ value }) { return `${value}` },
         Add({ left, right }) {
             return `${this[apply](left)} + ${this[apply](right)}`
@@ -114,8 +111,10 @@ describe('Arithmetic', () => {
         expect(print(exp2)).toBe('1 + 2 + 3 + 4')
     })
 
-    const MulExp = Data(Exp, { Mul: ['left', 'right'] }),
-        { Mul } = MulExp
+    const MulExp = Data({
+        [extend]: Exp,
+        Mul: ['left', 'right']
+    })
 
     test('MulExp Data', () => {
         expect(MulExp.Lit).toBeDefined()
@@ -136,7 +135,8 @@ describe('Arithmetic', () => {
         expect(exp.right.right.value).toBe(3)
     })
 
-    const evalMul = Trait(evaluate, {
+    const evalMul = Trait(MulExp, {
+        [extend]: evaluate,
         Mul({ left, right }) { return this[apply](left) * this[apply](right) }
     })
 
@@ -153,7 +153,8 @@ describe('Arithmetic', () => {
         expect(evalMul(exp)).toBe(7)
     })
 
-    const printMul = Trait(print, {
+    const printMul = Trait(MulExp, {
+        [extend]: print,
         Mul({ left, right }) { return `${this[apply](left)} * ${this[apply](right)}` }
     })
 
@@ -170,7 +171,7 @@ describe('Arithmetic', () => {
         expect(printMul(exp)).toBe('1 + 2 * 3')
     })
 
-    const isValue = Trait({
+    const isValue = Trait(MulExp, {
         Lit({ value }) { return true },
         Add({ left, right }) { return false },
         Mul({ left, right }) { return false }

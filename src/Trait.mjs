@@ -1,96 +1,106 @@
-import { variantName } from './Data.mjs';
+import { isObjectLiteral } from './isObjectLiteral.mjs';
+import { assert } from './assert.mjs';
+import { implies } from './implies.mjs';
+import { extend, variant, isData } from './index.mjs';
 
 export const isTrait = Symbol('isTrait'),
     all = Symbol('all'),
     apply = Symbol('apply');
 
+const getAncestorFunctions = (() => {
+    const cache = new WeakMap()
+    return (obj) => {
+        if (cache.has(obj))
+            return cache.get(obj)
+        const fnValues = Object.values(obj).filter(v => typeof v === 'function'),
+            proto = Reflect.getPrototypeOf(obj)
+        if (proto !== null && isTrait in proto)
+            cache.set(obj, fnValues.concat(getAncestorFunctions(proto)))
+        else
+            cache.set(obj, fnValues)
+        return cache.get(obj)
+    }
+})()
+
 const protoTrait = () => { }
 protoTrait[isTrait] = true;
 protoTrait[apply] = function (instance, ...args) {
-    const name = typeof instance === 'object' && instance !== null && variantName in instance ? instance[variantName] : all,
-        fn = this[name] ?? this[all];
-    if (!fn)
-        throw new TypeError(`no trait defined for [all]`)
+    if (typeof instance === 'object' && instance !== null && variant in instance) {
+        const vt = instance[variant],
+            fns = getAncestorFunctions(this),
+            // have to lookup by associated variant instead of by name
+            // because a trait can be defined for an anonymous data declaration
+            fn = fns.find(fn => fn[variant] === vt)
 
-    return fn.call(this, instance, ...args)
+        if (fn) return fn.call(this, instance, ...args);
+
+        // fallback to all
+        if (all in this) return this[all].call(this, instance, ...args);
+
+        throw new TypeError(`no trait defined for ${String(vt)}`)
+    } else {
+        throw new TypeError(`instance must be a variant: ${String(instance)}`)
+    }
 }
 
 /**
  * Defines a trait for a data declaration.
- * const traitFn = Trait(traits)
- * const result = traitFn(dataInstance, ...args)
- * @overload
- * @param {object} traits The traits to define.
+ * @param {object} dataDecl The data declaration to define the trait for.
+ * @param {object} traifDef The traits to define.
  * @throws {TypeError} if traits is not an object literal
- * @throws {TypeError} if any trait is not a function 
- * @returns {function} a trait
- * @example
- * const List = Data({ Nil: [], Cons: ['head', 'tail'] })
- * const length = Trait({
- *     Nil() { return 0 },
- *     Cons({ head, tail }) { return 1 + length(tail) }
- * });
- * const { Nil, Cons } = List
- * // [1, 2, 3]
- * const xs = Cons({ head: 1, tail: Cons({ head: 2, tail: Cons({ head: 3, tail: Nil }) }) });
- * length(xs) // => 3
- *
- * @overload
- * Defines a trait for a data declaration that extends another trait.
- * const traitFn = Trait(baseTrait, traits)
- * const result = traitFn(dataInstance, ...args)
- * @param {object} baseTrait The trait to extend.
- * @param {object} traits The traits to define.
- * @throws {TypeError} if baseTrait is not a trait
- * @throws {TypeError} if traits is not an object literal
+ * @throws {TypeError} if dataDecl is not a data declaration
  * @throws {TypeError} if any trait is not a function
- * @returns {function} a trait
- * @example
- * const IntExp = Data({ Lit: ['value'], Add: ['left', 'right'] })
- * const intPrint = Trait({
- *     Lit({ value }) {
- *         return value.toString()
- *     },
- *     Add({ left, right }) {
- *         return `(${this[apply](left)} + ${this[apply](right)})`
- *     }
- * })
- * const IntBoolExp = Data(IntExp, { Bool: ['value'], Iff: ['pred', 'ifTrue', 'ifFalse'] })
- * const intBoolPrint = Trait(intPrint, {
- *     Bool({ value }) { return value.toString() },
- *     Iff({ pred, ifTrue, ifFalse }) {
- *         return `(${this[apply](pred)} ? ${this[apply](ifTrue)} : ${this[apply](ifFalse)})`
- *     }
- * });
- * // if (true) 1 else 0
- * const exp = IntBoolExp.Iff({
- *     pred: IntBoolExp.Bool({ value: true }),
- *     ifTrue: IntBoolExp.Lit({ value: 1 }),
- *     ifFalse: IntBoolExp.Lit({ value: 2 })
- * })
+ * @returns {function} a trait function
  */
-export function Trait(...args) {
-    const { baseTrait, traits } = args.length === 1 ?
-        { traits: args[0] } : { baseTrait: args[0], traits: args[1] }
+export function Trait(dataDecl, traitDef) {
     let localTraits = (...args) => localTraits[apply](...args)
 
-    if (baseTrait && traits) {
-        if (!baseTrait[isTrait])
-            throw new TypeError(`baseTrait must be a Trait: ${baseTrait}`)
-        if (typeof traits !== 'object' || Array.isArray(traits))
-            throw new TypeError('traits must be an object literal');
-        Reflect.setPrototypeOf(localTraits, baseTrait)
-    } else if (!baseTrait && traits) {
-        if (typeof traits !== 'object' || Array.isArray(traits))
-            throw new TypeError('traits must be an object literal');
-        Reflect.setPrototypeOf(localTraits, protoTrait)
-    } else {
-        throw new TypeError('Trait must be called with at least 2 arguments')
+    assert(isObjectLiteral(traitDef), 'traitDef must be an object literal');
+
+    assert(implies(dataDecl == undefined, all in traitDef || apply in traitDef),
+        'Symbol(all) or Symbol(apply) must be defined if dataDecl is undefined');
+
+    if (all in traitDef) {
+        assert(typeof traitDef[all] === 'function', `Symbol(all) must be a function`);
+        localTraits[all] = traitDef[all];
     }
-    Object.assign(localTraits, traits);
-    for (const [name, trait] of Object.entries(localTraits)) {
-        if (typeof trait !== 'function')
-            throw new TypeError(`trait must be a function: ${name}`);
+
+    if (apply in traitDef) {
+        assert(typeof traitDef[apply] === 'function', `Symbol(apply) trait must be a function`);
+        localTraits[apply] = traitDef[apply];
+    }
+
+    Reflect.setPrototypeOf(localTraits,
+        extend in traitDef ? traitDef[extend] : protoTrait
+    )
+
+    if (dataDecl == undefined) return localTraits
+
+    if (isData in dataDecl) {
+        if (!(all in traitDef)) {
+            // every name in dataDecl must be in traitDef
+            assert(Object.keys(dataDecl).every(name => name in traitDef), `Every variant must have a trait defined`);
+        } else {
+            assert(typeof traitDef[all] === 'function', `trait must be a function: Symbol(all)`);
+            localTraits[all] = traitDef[all];
+        }
+
+        // but we iterate over traitDef instead of dataDecl so we can associate the variant
+        // since the it could have override entries
+        for (const [name, f] of Object.entries(traitDef)) {
+            assert(typeof f === 'function', `trait must be a function: ${name}`);
+            localTraits[name] = f;
+            f[variant] = dataDecl[name];
+        }
+    } else if (variant in dataDecl.prototype) {
+        // traitDef may only have one function. that is f
+        assert(Object.keys(traitDef).length === 1, `Only one trait may be defined for a variant declaration`);
+        const [name, f] = Object.entries(traitDef)[0];
+        assert(typeof f === 'function', `trait must be a function: ${name}`);
+        localTraits[name] = f;
+        f[variant] = dataDecl;
+    } else {
+        throw new TypeError(`dataDecl must be a data declaration or a variant declaration`)
     }
 
     return localTraits
