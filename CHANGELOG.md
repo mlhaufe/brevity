@@ -1,5 +1,80 @@
 # Changelog
 
+## v0.7.0
+
+### Data shorthand
+
+Enabled a shorthand form for single variant Data declarations:
+
+```js
+const Disk = Data({
+    Disk: ['position', 'velocity', 'radius', 'item']
+})
+```
+
+Can now be written as:
+
+```js
+const Disk = Data(['position', 'velocity', 'radius', 'item'])
+```
+
+### `variantName` subsumed by `variant`
+
+The `variantName` symbol has been removed. Each instance now has a `variant` symbol reference that points to its constructor. If the variant is a singleton, it just points to itself.
+
+### `Trait` requires a Data declaration as its first argument
+
+Trait must now be provided its associated data declaration as the first argument:
+
+```js
+const Color = Data({ Red: [], Green: [], Blue: [] });
+
+const print = Trait(Color, {
+    Red() { return '#FF0000' },
+    Green() { return '#00FF00' },
+    Blue() { return '#0000FF' }
+})
+```
+
+### Inheritance now accomplished via `extend` symbol
+
+Inheritance is now accomplished on Data and Trait via use of this `extend` property.
+
+For `Data`:
+
+```js
+const IntExp = Data({ Lit: ['value'], Add: ['left', 'right'] })
+
+const IntBoolExp = Data({
+    [extend]: IntExp,
+    Bool: ['value'], 
+    Iff: ['pred', 'ifTrue', 'ifFalse'] 
+})
+```
+
+For `Trait`:
+
+```js
+const intPrint = Trait(IntExp, {
+    Lit({ value }) { ... },
+    Add({ left, right }) { ... }
+})
+
+const intBoolPrint = Trait(IntBoolExp, {
+    [extend]: intPrint,
+    Bool({ value }) { ... },
+    Iff({ pred, ifTrue, ifFalse }) { ... }
+});
+```
+
+### Updated README
+
+The README now documents the above. Additionally an example of overriding `[apply]` has been provided
+
+### Updated dependencies
+
+Project dependencies updated to latest versions
+
 ## v0.6.2
 
 - Updated `README.md` to reflect npm usage.

@@ -19,7 +19,7 @@ describe('Peano tests', () => {
         expect(() => Data({ Zero: [], Succ: ['pred', 'pred'] })).toThrow();
     })
 
-    const value = Trait({
+    const value = Trait(Peano, {
         Zero() { return 0 },
         Succ({ pred }) { return 1 + value(pred) }
     })
