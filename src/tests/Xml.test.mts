@@ -1,9 +1,8 @@
 import { Data, Trait, all } from "../index.mjs"
 
 describe('Simplified Xml Tests', () => {
-    const Attrs = Data({ Attr: ['name', 'value'] });
-    const Node = Data({ Element: ['name', 'attrs', 'children'], Text: ['text'] });
-    const { Attr } = Attrs,
+    const Attr = Data(['name', 'value']),
+        Node = Data({ Element: ['name', 'attrs', 'children'], Text: ['text'] }),
         { Element, Text } = Node;
     // <html lang="en">
     //   <head>
@@ -13,29 +12,15 @@ describe('Simplified Xml Tests', () => {
     //     <h1>Hello World!</h1>
     //   </body>
     // </html>
-    const html = Element({
-        name: 'html', attrs: [Attr({ name: 'lang', value: 'en' })],
-        children: [
-            Element({
-                name: 'head', attrs: [],
-                children: [
-                    Element({
-                        name: 'title', attrs: [],
-                        children: [Text({ text: 'Hello World!' })]
-                    })
-                ]
-            }),
-            Element({
-                name: 'body', attrs: [],
-                children: [
-                    Element({
-                        name: 'h1', attrs: [],
-                        children: [Text({ text: 'Hello World!' })]
-                    })
-                ]
-            })
-        ]
-    });
+
+    const html = Element('html', [Attr('lang', 'en')], [
+        Element('head', [], [
+            Element('title', [], [Text('Hello World!')])
+        ]),
+        Element('body', [], [
+            Element('h1', [], [Text('Hello World!')])
+        ])
+    ]);
 
     test('html declaration', () => {
         expect(html).toBeDefined();
@@ -78,7 +63,7 @@ describe('Simplified Xml Tests', () => {
         expect(h1.children[0].text).toBe('Hello World!');
     })
 
-    const print = Trait({
+    const print = Trait(Node, {
         Element: ({ name, attrs, children }) => {
             const attrsText = attrs.map(({ name, value }) => ` ${name}="${value}"`).join('');
             const childrenText = children.map(child => print(child)).join('');
@@ -97,18 +82,13 @@ describe('Simplified Xml Tests', () => {
     //  <a href='https://brave.com'>Be Brave</a>
     //  <a href="https://archive.org">Internet Archive</a>
     //</xml>
-    const xml = Element({
-        name: 'xml', attrs: [],
-        children: [
-            Element({
-                name: 'a', attrs: [Attr({ name: 'href', value: 'https://brave.com' })],
-                children: [Text({ text: 'Be Brave' })]
-            })
-        ]
-    });
+    const xml = Element('xml', [], [
+        Element('a', [Attr('href', 'https://brave.com')], [Text('Be Brave')]),
+        Element('a', [Attr('href', 'https://archive.org')], [Text('Internet Archive')])
+    ]);
 
-    const nodeName = Trait({
-        [all]({ name }) { return name }
+    const nodeName = Trait(Node, {
+        [all]: ({ name }) => name
     })
 
     test('nodeName', () => {

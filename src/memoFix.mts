@@ -1,12 +1,12 @@
 import { BoxedMultiKeyMap } from "./BoxedMultiKeyMap.mjs";
-import { Trait, apply } from "./Trait.mts.disabled";
+import { Trait, apply } from "./index.mjs"
 
 const visited = Symbol('visited');
 /**
  * Extends a trait to support the computation of a least fixed point with a bottom element and memoization
  * @param trait The trait to extend
  * @param bottom The bottom element of the least fixed point
- * @returns {Trait} The extended trait
+ * @returns The extended trait
  */
 export const memoFix = (trait, bottom) => Trait(trait, {
     [visited]: new BoxedMultiKeyMap(),

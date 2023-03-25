@@ -79,6 +79,3 @@ export function Trait<B extends TraitFn<any>, T extends TraitMethods<T, U>, U>(.
         if (typeof trait !== 'function')
             throw new TypeError(`trait must be a function: ${name}`);
     }
-
-    return localTraits
-}

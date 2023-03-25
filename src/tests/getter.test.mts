@@ -1,12 +1,10 @@
-import { Data, variantName } from "../index.mjs"
+import { Data, variant } from "../index.mjs"
 
 describe('Getter field tests', () => {
     test('Data with computed property names', () => {
-        const Person = Data({
-            Employee: ['firstName', 'lastName', 'fullName']
-        })
+        const Employee = Data(['firstName', 'lastName', 'fullName'])
 
-        const p = Person.Employee({
+        const p = Employee({
             firstName: 'John',
             lastName: 'Doe',
             fullName: () => `${p.firstName} ${p.lastName}`
@@ -29,15 +27,15 @@ describe('Getter field tests', () => {
         const S = Alt(Cat(() => S, Cat(Char('('), Cat(() => S, Char(')')))), Empty)
 
         expect(S).toBeDefined()
-        expect(S[variantName]).toBe('Alt')
+        expect(S[variant]).toBe(Alt)
         expect(S.left).toBeDefined()
-        expect(S.left[variantName]).toBe('Cat')
+        expect(S.left[variant]).toBe(Cat)
 
         expect(S.left.first).toBeDefined()
         expect(S.left.first).toBe(S)
-        expect(S.left.first[variantName]).toBe('Alt')
+        expect(S.left.first[variant]).toBe(Alt)
 
         expect(S.right).toBeDefined()
-        expect(S.right[variantName]).toBe('Empty')
+        expect(S.right[variant]).toBe(Empty)
     })
 })

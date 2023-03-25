@@ -1,22 +1,25 @@
-import { Data, isData, Trait, variantName } from "../index.mjs"
+import { Data, isData, variant, Trait } from "../index.mjs"
 
 describe('Bool tests', () => {
     const Bool = Data({ False: [], True: [] })
 
     test('Bool Data', () => {
         expect(Bool[isData]).toBe(true)
-        const { False: f, True: t } = Bool
 
-        expect(f[variantName]).toBe('False')
-        expect(t[variantName]).toBe('True')
+        const f = Bool.False,
+            t = Bool.True
+
+        expect(f[variant]).toBe(f)
+        expect(t[variant]).toBe(t)
     })
 
     test('Bool traits', () => {
-        const { False: f, True: t } = Bool
+        const f = Bool.False,
+            t = Bool.True
 
-        const and = Trait<[typeof Bool], typeof Bool>({
-            // False(left, _) { return left },
-            // True(_, right) { return right }
+        const and = Trait(Bool, {
+            False: (left, _) => left,
+            True: (_, right) => right
         })
 
         expect(and(f, f)).toBe(f)
@@ -24,7 +27,7 @@ describe('Bool tests', () => {
         expect(and(t, f)).toBe(f)
         expect(and(t, t)).toBe(t)
 
-        const or = Trait<typeof Bool, typeof Bool>({
+        const or = Trait(Bool, {
             False(_, right) { return right },
             True(left, _) { return left }
         })
@@ -34,9 +37,9 @@ describe('Bool tests', () => {
         expect(or(t, f)).toBe(t)
         expect(or(t, t)).toBe(t)
 
-        const not = Trait({
-            False(_self) { return Bool.True },
-            True(_self) { return Bool.False }
+        const not = Trait(Bool, {
+            False() { return Bool.True },
+            True() { return Bool.False }
         })
 
         expect(not(f)).toBe(t)

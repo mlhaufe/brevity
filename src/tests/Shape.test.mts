@@ -1,6 +1,12 @@
-import { Data, isData, variantName, Trait } from "../index.mjs";
+import { Data, isData, variant, Trait } from "../index.mjs";
 
 describe('Shape tests', () => {
+    /*
+        TODO: how to associate types with the properties?
+
+        type ShapeType = { Circle: [number], Rectangle: [number, number] }
+        const Shape = Data<ShapeType>({ Circle: ['radius'], Rectangle: ['width', 'height'] })
+    */
     const Shape = Data({ Circle: ['radius'], Rectangle: ['width', 'height'] }),
         { Circle, Rectangle } = Shape;
 
@@ -8,7 +14,7 @@ describe('Shape tests', () => {
         expect(Shape[isData]).toBe(true);
 
         const circle = Circle({ radius: 1 });
-        expect(circle[variantName]).toBe('Circle');
+        expect(circle[variant]).toBe(Circle);
         expect(circle).toBeDefined();
         expect(circle.radius).toBe(1);
         // @ts-expect-error
@@ -17,7 +23,7 @@ describe('Shape tests', () => {
         expect(circle.height).toBeUndefined();
 
         const rectangle = Rectangle({ width: 2, height: 3 });
-        expect(rectangle[variantName]).toBe('Rectangle');
+        expect(rectangle[variant]).toBe(Rectangle);
         expect(rectangle).toBeDefined();
         // @ts-expect-error
         expect(rectangle.radius).toBeUndefined();
@@ -25,9 +31,9 @@ describe('Shape tests', () => {
         expect(rectangle.height).toBe(3);
     })
 
-    const area = Trait({
+    const area = Trait(Shape, {
         Circle({ radius }) { return Math.PI * radius * radius },
-        Rectangle({ width, height }) { return width * height }
+        Rectangle({ height, width }) { return width * height }
     })
 
     test('Shape area', () => {

@@ -95,11 +95,15 @@ describe('Equality tests', () => {
             two = Succ({ pred: one });
 
         expect(zero === zero).toBe(true);
+        // @ts-expect-error
         expect(zero === one).toBe(false);
+        // @ts-expect-error
         expect(zero === two).toBe(false);
+        // @ts-expect-error
         expect(one === zero).toBe(false);
         expect(one === one).toBe(true);
         expect(one === two).toBe(false);
+        // @ts-expect-error
         expect(two === zero).toBe(false);
         expect(two === one).toBe(false);
         expect(two === two).toBe(true);

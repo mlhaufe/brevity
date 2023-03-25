@@ -1,6 +1,6 @@
 import { Data } from "../index.mjs";
 
-describe('Mutability', () => {
+describe('Immutability', () => {
 
     test('Data declaration is immutable', () => {
         const Color = Data({ Red: [], Green: [], Blue: [] })
@@ -34,21 +34,11 @@ describe('Mutability', () => {
         expect(() => p.z = 3).toThrow(TypeError)
     })
 
-    test('Data variant properties are mutable', () => {
+    test('Data variant properties are immutable', () => {
         const Point = Data({ Point2: ['x', 'y'] })
         const p = Point.Point2({ x: 1, y: 2 })
 
-        // @ts-expect-error
-        expect(() => p.x = 3).not.toThrow(TypeError)
-        expect(p.x).toBe(3)
-    })
-
-    test('Assigning a function to a Data variant property should become a getter', () => {
-        const Point = Data({ Point2: ['x', 'y'] })
-        const p = Point.Point2({ x: 1, y: 2 })
-
-        // @ts-expect-error
-        p.x = () => 3
-        expect(p.x()).toBe(3)
+        expect(() => p.x = 3).toThrow(TypeError)
+        expect(p.x).toBe(1)
     })
 })
