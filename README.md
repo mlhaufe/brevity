@@ -1,5 +1,9 @@
 # Brevity
 
+[![Build](https://github.com/mlhaufe/brevity/workflows/Build/badge.svg?branch=master)](https://github.com/mlhaufe/brevity/actions?query=workflow%3ABuild%2FRelease)
+[![npm version](https://badge.fury.io/js/%40mlhaufe%2Fbrevity.svg)](https://www.npmjs.com/package/@mlhaufe/brevity)
+[![Downloads](https://img.shields.io/npm/dm/@mlhaufe/brevity.svg)](https://www.npmjs.com/package/@mlhaufe/brevity)
+
 Brevity is a library that enables [Feature-Oriented Programming (FOP)](https://en.wikipedia.org/wiki/Feature-oriented_programming) and solves the expression problem
 in a manner that makes data and operation declarations trivial to define and compose.
 
