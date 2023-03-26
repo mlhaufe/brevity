@@ -32,10 +32,16 @@ describe('Arithmetic', () => {
     })
 
     test('extra parameters throw', () => {
-        expect(() => Add({ left: Lit(1), right: Lit(2), extra: 3 })).toThrow()
+        expect(() => Add({
+            left: Lit(1),
+            right: Lit(2),
+            // @ts-expect-error
+            extra: 3
+        })).toThrow()
     })
 
     test('missing parameters throw', () => {
+        // @ts-expect-error
         expect(() => Add({ left: Lit(1) })).toThrow()
     })
 
@@ -52,7 +58,9 @@ describe('Arithmetic', () => {
     })
 
     test('wrong number of parameters throw', () => {
+        // @ts-expect-error
         expect(() => Add(Lit(1))).toThrow()
+        // @ts-expect-error
         expect(() => Add(Lit(1), Lit(2), Lit(3))).toThrow()
     })
 

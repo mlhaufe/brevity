@@ -39,16 +39,18 @@ describe('Extensibility for the Masses', () => {
     })
 
     test('IntBoolExp Data', () => {
-        expect(IntBoolExp.Lit).toBeDefined()
-        expect(IntBoolExp.Add).toBeDefined()
-        expect(IntBoolExp.Bool).toBeDefined()
-        expect(IntBoolExp.Iff).toBeDefined()
+        const { Lit, Add, Bool, Iff } = IntBoolExp
+
+        expect(Lit).toBeDefined()
+        expect(Add).toBeDefined()
+        expect(Bool).toBeDefined()
+        expect(Iff).toBeDefined()
 
         // if (true) 1 else 0
-        const exp = IntBoolExp.Iff({
-            pred: IntBoolExp.Bool({ value: true }),
-            ifTrue: IntBoolExp.Lit({ value: 1 }),
-            ifFalse: IntBoolExp.Lit({ value: 0 })
+        const exp = Iff({
+            pred: Bool({ value: true }),
+            ifTrue: Lit({ value: 1 }),
+            ifFalse: Lit({ value: 0 })
         })
 
         expect(exp.pred.value).toBe(true)
@@ -65,11 +67,13 @@ describe('Extensibility for the Masses', () => {
     });
 
     test('intBoolPrint', () => {
+        const { Lit, Add, Bool, Iff } = IntBoolExp
+
         // if (true) 1 else 0
-        const exp = IntBoolExp.Iff({
-            pred: IntBoolExp.Bool({ value: true }),
-            ifTrue: IntBoolExp.Lit({ value: 1 }),
-            ifFalse: IntBoolExp.Lit({ value: 2 })
+        const exp = Iff({
+            pred: Bool({ value: true }),
+            ifTrue: Lit({ value: 1 }),
+            ifFalse: Lit({ value: 2 })
         })
 
         expect(intBoolPrint(exp)).toBe('(true ? 1 : 2)')
@@ -84,11 +88,13 @@ describe('Extensibility for the Masses', () => {
     })
 
     test('intBoolEval', () => {
+        const { Lit, Add, Bool, Iff } = IntBoolExp
+
         // if (true) 1 else 0
-        const exp = IntBoolExp.Iff({
-            pred: IntBoolExp.Bool({ value: true }),
-            ifTrue: IntBoolExp.Lit({ value: 1 }),
-            ifFalse: IntBoolExp.Lit({ value: 2 })
+        const exp = Iff({
+            pred: Bool({ value: true }),
+            ifTrue: Lit({ value: 1 }),
+            ifFalse: Lit({ value: 2 })
         })
 
         expect(intBoolEval(exp)).toBe(1)
@@ -103,26 +109,28 @@ describe('Extensibility for the Masses', () => {
     })
 
     test('StmtExp Data', () => {
-        expect(StmtExp.Lit).toBeDefined()
-        expect(StmtExp.Add).toBeDefined()
-        expect(StmtExp.Bool).toBeDefined()
-        expect(StmtExp.Iff).toBeDefined()
-        expect(StmtExp.Assign).toBeDefined()
-        expect(StmtExp.Expr).toBeDefined()
-        expect(StmtExp.Seq).toBeDefined()
-        expect(StmtExp.Var).toBeDefined()
+        const { Lit, Add, Bool, Iff, Assign, Expr, Seq, Var } = StmtExp
+
+        expect(Lit).toBeDefined()
+        expect(Add).toBeDefined()
+        expect(Bool).toBeDefined()
+        expect(Iff).toBeDefined()
+        expect(Assign).toBeDefined()
+        expect(Expr).toBeDefined()
+        expect(Seq).toBeDefined()
+        expect(Var).toBeDefined()
 
         const scope = new Map()
         scope.set('x', 1)
         scope.set('y', 2)
 
         // x = y + 1
-        const exp = StmtExp.Assign({
+        const exp = Assign({
             scope,
             name: 'x',
-            value: StmtExp.Add({
-                left: StmtExp.Var({ scope, name: 'y' }),
-                right: StmtExp.Lit({ value: 1 })
+            value: Add({
+                left: Var({ scope, name: 'y' }),
+                right: Lit({ value: 1 })
             })
         })
 
@@ -141,31 +149,33 @@ describe('Extensibility for the Masses', () => {
     })
 
     test('stmtPrint', () => {
+        const { Lit, Add, Bool, Iff, Assign, Expr, Seq, Var } = StmtExp
+
         const scope = new Map()
         scope.set('x', 1)
         scope.set('y', 2)
 
         // x = y + 1
-        const exp = StmtExp.Assign({
+        const exp = Assign({
             scope,
             name: 'x',
-            value: StmtExp.Add({
-                left: StmtExp.Var({ scope, name: 'y' }),
-                right: StmtExp.Lit({ value: 1 })
+            value: Add({
+                left: Var({ scope, name: 'y' }),
+                right: Lit({ value: 1 })
             })
         })
 
         expect(stmtPrint(exp)).toBe('x = (y + 1)')
 
         // x = y + 1; x = x + 1
-        const exp2 = StmtExp.Seq({
+        const exp2 = Seq({
             first: exp,
-            second: StmtExp.Assign({
+            second: Assign({
                 scope,
                 name: 'x',
-                value: StmtExp.Add({
-                    left: StmtExp.Var({ scope, name: 'x' }),
-                    right: StmtExp.Lit({ value: 1 })
+                value: Add({
+                    left: Var({ scope, name: 'x' }),
+                    right: Lit({ value: 1 })
                 })
             })
         })
@@ -187,17 +197,19 @@ describe('Extensibility for the Masses', () => {
     })
 
     test('stmtEval', () => {
+        const { Lit, Add, Bool, Iff, Assign, Expr, Seq, Var } = StmtExp
+
         const scope = new Map()
         scope.set('x', 1)
         scope.set('y', 2)
 
         // x = y + 1
-        const exp = StmtExp.Assign({
+        const exp = Assign({
             scope,
             name: 'x',
-            value: StmtExp.Add({
-                left: StmtExp.Var({ scope, name: 'y' }),
-                right: StmtExp.Lit({ value: 1 })
+            value: Add({
+                left: Var({ scope, name: 'y' }),
+                right: Lit({ value: 1 })
             })
         })
 
@@ -205,50 +217,22 @@ describe('Extensibility for the Masses', () => {
         expect(scope.get('x')).toBe(3)
 
         // x = y + 1; x = x + 1
-        const exp2 = StmtExp.Seq({
+        const exp2 = Seq({
             first: exp,
-            second: StmtExp.Assign({
-                scope,
-                name: 'x',
-                value: StmtExp.Add({
-                    left: StmtExp.Var({ scope, name: 'x' }),
-                    right: StmtExp.Lit({ value: 1 })
-                })
-            })
+            second: Assign(scope, 'x', Add(Var(scope, 'x'), Lit(1)))
         })
 
         expect(stmtEval(exp2)).toBe(4)
         expect(scope.get('x')).toBe(4)
 
         // x = 3 + 4; if (true) { x = 9 + 2 } else { x = 3 + 1 };
-        const exp3 = StmtExp.Seq({
-            first: StmtExp.Assign({
-                scope,
-                name: 'x',
-                value: StmtExp.Add({
-                    left: StmtExp.Lit({ value: 3 }),
-                    right: StmtExp.Lit({ value: 4 })
-                })
-            }),
-            second: StmtExp.Expr({
-                value: StmtExp.Iff({
-                    pred: StmtExp.Bool({ value: true }),
-                    ifTrue: StmtExp.Assign({
-                        scope,
-                        name: 'x',
-                        value: StmtExp.Add({
-                            left: StmtExp.Lit({ value: 9 }),
-                            right: StmtExp.Lit({ value: 2 })
-                        })
-                    }),
-                    ifFalse: StmtExp.Assign({
-                        scope,
-                        name: 'x',
-                        value: StmtExp.Add({
-                            left: StmtExp.Lit({ value: 3 }),
-                            right: StmtExp.Lit({ value: 1 })
-                        })
-                    })
+        const exp3 = Seq({
+            first: Assign(scope, 'x', Add(Lit(3), Lit(4))),
+            second: Expr({
+                value: Iff({
+                    pred: Bool(true),
+                    ifTrue: Assign(scope, 'x', Add(Lit(9), Lit(2))),
+                    ifFalse: Assign(scope, 'x', Add(Lit(3), Lit(1)))
                 })
             })
         })

@@ -50,7 +50,7 @@ describe('least fixed point', () => {
 
         expect(() => foo(1)).toThrowError(new Error('Maximum call stack size exceeded'));
 
-        const fooFix = memoFix(foo, (x) => x ** 2)
+        const fooFix = memoFix(foo, (x: number) => x ** 2)
 
         expect(fooFix(1)).toBe(19);
         expect(fooFix(2)).toBe(18);

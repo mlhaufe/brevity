@@ -16,11 +16,15 @@ type TraitDecl<D extends DataDef<any>> = {
     (instance: Variant<PropNames>, ...args: PropNames) => any :
     never
 }
+//  {
+//     [all]?: (instance: Variant<any>, ...args: any[]) => any
+//     [apply]?: (instance: unknown, ...args: any[]) => any
+// }
 
 type TraitDef = ((instance: unknown, ...args: any[]) => unknown) & {
     [all]?(...args: any[]): unknown
     [apply](instance: unknown, ...args: any[]): unknown
-    [isTrait]: boolean
+    [isTrait]: true
     [variant]?: unknown
 }
 
@@ -42,8 +46,8 @@ const getAncestorFunctions = (() => {
 const protoTrait: TraitDef = Object.assign(
     ((instance: unknown, ...args: any[]) => protoTrait[apply](instance, ...args)),
     {
-        [isTrait]: true,
-        [apply](this: TraitDef<any>, instance, ...args: any[]) {
+        [isTrait]: true as true,
+        [apply](this: TraitDef, instance, ...args: any[]) {
             if (typeof instance === 'object' && instance !== null && variant in instance) {
                 const vt = instance[variant],
                     fns = getAncestorFunctions(this)!,

@@ -38,8 +38,8 @@ describe('Bool tests', () => {
         expect(or(t, t)).toBe(t)
 
         const not = Trait(Bool, {
-            False() { return Bool.True },
-            True() { return Bool.False }
+            False: () => Bool.True,
+            True: () => Bool.False
         })
 
         expect(not(f)).toBe(t)
