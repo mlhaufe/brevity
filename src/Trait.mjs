@@ -78,17 +78,19 @@ export function Trait(dataDecl, traitDef) {
 
     if (isData in dataDecl) {
         if (!(all in traitDef)) {
-            // every name in dataDecl must be in traitDef
-            assert(Object.keys(dataDecl).every(name => name in traitDef), `Every variant must have a trait defined`);
+            // every key in dataDecl must be in traitDef
+            Object.keys(dataDecl).forEach(name => {
+                assert(traitDef[name] != null, `Invalid Trait declaration. Missing definition for '${String(name)}'`);
+            })
         } else {
-            assert(typeof traitDef[all] === 'function', `trait must be a function: Symbol(all)`);
+            assert(typeof traitDef[all] === 'function', `Invalid Trait declaration. Symbol(all) must be a function`);
             localTraits[all] = traitDef[all];
         }
 
         // but we iterate over traitDef instead of dataDecl so we can associate the variant
         // since the it could have override entries
         for (const [name, f] of Object.entries(traitDef)) {
-            assert(typeof f === 'function', `trait must be a function: ${name}`);
+            assert(typeof f === 'function', `Invalid Trait declaration. '${name}' must be a function`);
             localTraits[name] = f;
             f[variant] = dataDecl[name];
         }

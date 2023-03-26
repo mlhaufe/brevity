@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.7.1
+
+- Improved error messaging on invalid Trait declarations
+- Added status badges to README
+- Updated dependencies
+
 ## v0.7.0
 
 ### Data shorthand
