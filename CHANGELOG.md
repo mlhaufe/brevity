@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.8.0
+
+- Replaced `Symbol(all)` with `_` in `Trait` declarations
+- Added `Symbol(data)` for use with `Trait` declarations
+- Updated README
+
 ## v0.7.1
 
 - Improved error messaging on invalid Trait declarations

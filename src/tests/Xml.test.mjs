@@ -1,4 +1,4 @@
-import { Data, Trait, all } from "../index.mjs"
+import { Data, Trait } from "../index.mjs"
 
 describe('Simplified Xml Tests', () => {
     const Attr = Data(['name', 'value']),
@@ -88,7 +88,7 @@ describe('Simplified Xml Tests', () => {
     ]);
 
     const nodeName = Trait(Node, {
-        [all]: ({ name }) => name
+        _: ({ name }) => name
     })
 
     test('nodeName', () => {

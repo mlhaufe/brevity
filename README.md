@@ -291,13 +291,13 @@ const xs = Cons(1, Cons(2, Nil)),
     zs = concat(xs, ys);
 ```
 
-### `all` symbol
+### Wilcard `_` trait
 
-If the same operation should be applied to all variants, then the `all` symbol can be used:
+If the same operation should be applied to all variants, then the `_` token can be used:
 
 ```js
 const operation = Trait(undefined, {
-    [all](target){ return JSON.stringify(target) }
+    _: (target) => JSON.stringify(target)
 })
 ```
 
@@ -307,14 +307,14 @@ A more practical example:
 
 ```js
 const isNil = Trait(List, {
-    [all]: () => false,
+    _: () => false,
     Nil: () => true
 });
 ```
 
-In this case `Nil` takes priority over `[all]` and works as expected.
+In this case `Nil` takes priority over `_` and works as expected.
 
-If a data declaration is not provided, `[all]` or `[apply]` must be defined.
+If a data declaration is not provided, `_` or `[apply]` must be defined.
 
 ### Extending Traits
 
@@ -332,6 +332,23 @@ const subTrait = Trait(BarData, {
 ```
 
 `subtrait` can now be applied to both `Foo` and `Bar` instances.
+
+### `data` symbol
+
+With a trait declaration:
+
+```js
+const fooTrait = Trait(FooData, {
+    Foo(){ ... }
+})
+```
+
+The associated data declaration `FooData` can be referenced
+via the `Symbol(data)`:
+
+```js
+fooTrait[data] === FooData
+```
 
 ### Open Recursion
 

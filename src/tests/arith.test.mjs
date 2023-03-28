@@ -1,4 +1,4 @@
-import { Data, Trait, apply, extend } from '../index.mjs'
+import { Data, Trait, apply, data, extend } from '../index.mjs'
 
 describe('Arithmetic', () => {
     // data declaration
@@ -66,6 +66,7 @@ describe('Arithmetic', () => {
             })
         })
 
+        expect(evaluate[data]).toBe(Exp)
         expect(evaluate(exp)).toBe(6)
 
         // 1 + (2 + 3) + 4
