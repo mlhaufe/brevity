@@ -1,4 +1,4 @@
-import { Data, Trait, all } from "../index.mjs";
+import { Data, Trait } from "../index.mjs";
 
 describe('List tests', () => {
     const List = Data({ Nil: [], Cons: ['head', 'tail'] });
@@ -50,7 +50,7 @@ describe('List tests', () => {
     });
 
     const isNil = Trait(List, {
-        [all]: () => false,
+        _: () => false,
         Nil: () => true
     });
 

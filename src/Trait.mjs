@@ -4,7 +4,7 @@ import { implies } from './implies.mjs';
 import { extend, variant, isData } from './index.mjs';
 
 export const isTrait = Symbol('isTrait'),
-    all = Symbol('all'),
+    data = Symbol('data'),
     apply = Symbol('apply');
 
 const getAncestorFunctions = (() => {
@@ -24,7 +24,7 @@ const getAncestorFunctions = (() => {
 
 const protoTrait = () => { }
 protoTrait[isTrait] = true;
-protoTrait[apply] = function (instance, ...args) {
+protoTrait[apply] = function self(instance, ...args) {
     if (typeof instance === 'object' && instance !== null && variant in instance) {
         const vt = instance[variant],
             fns = getAncestorFunctions(this),
@@ -34,10 +34,12 @@ protoTrait[apply] = function (instance, ...args) {
 
         if (fn) return fn.call(this, instance, ...args);
 
-        // fallback to all
-        if (all in this) return this[all].call(this, instance, ...args);
+        // fallback to wildcard
+        if ('_' in this) return this['_'].call(this, instance, ...args);
 
         throw new TypeError(`no trait defined for ${String(vt)}`)
+    } else if (this[data] == undefined) {
+        return this['_'].call(this, instance, ...args);
     } else {
         throw new TypeError(`instance must be a variant: ${String(instance)}`)
     }
@@ -57,12 +59,12 @@ export function Trait(dataDecl, traitDef) {
 
     assert(isObjectLiteral(traitDef), 'traitDef must be an object literal');
 
-    assert(implies(dataDecl == undefined, all in traitDef || apply in traitDef),
-        'Symbol(all) or Symbol(apply) must be defined if dataDecl is undefined');
+    assert(implies(dataDecl == undefined, '_' in traitDef || apply in traitDef),
+        "Wildcard '_' or Symbol(apply) must be defined if dataDecl is undefined");
 
-    if (all in traitDef) {
-        assert(typeof traitDef[all] === 'function', `Symbol(all) must be a function`);
-        localTraits[all] = traitDef[all];
+    if ("_" in traitDef) {
+        assert(typeof traitDef['_'] === 'function', `Wildcard '_' must be a function`);
+        localTraits['_'] = traitDef['_'];
     }
 
     if (apply in traitDef) {
@@ -74,17 +76,19 @@ export function Trait(dataDecl, traitDef) {
         extend in traitDef ? traitDef[extend] : protoTrait
     )
 
+    localTraits[data] = dataDecl
+
     if (dataDecl == undefined) return localTraits
 
     if (isData in dataDecl) {
-        if (!(all in traitDef)) {
+        if (!('_' in traitDef)) {
             // every key in dataDecl must be in traitDef
             Object.keys(dataDecl).forEach(name => {
                 assert(traitDef[name] != null, `Invalid Trait declaration. Missing definition for '${String(name)}'`);
             })
         } else {
-            assert(typeof traitDef[all] === 'function', `Invalid Trait declaration. Symbol(all) must be a function`);
-            localTraits[all] = traitDef[all];
+            assert(typeof traitDef['_'] === 'function', `Invalid Trait declaration. Wildcard '_' must be a function`);
+            localTraits['_'] = traitDef['_'];
         }
 
         // but we iterate over traitDef instead of dataDecl so we can associate the variant

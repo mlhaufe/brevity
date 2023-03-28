@@ -1,4 +1,4 @@
-import { Data, isData, variant, Trait } from "../index.mjs"
+import { Data, isData, data, variant, Trait } from "../index.mjs"
 
 describe('Color tests', () => {
     const Color = Data({ Red: [], Green: [], Blue: [] });
@@ -18,6 +18,8 @@ describe('Color tests', () => {
     })
 
     test('Color print', () => {
+        expect(print[data]).toBe(Color);
+
         expect(print(Color.Red)).toBe('#FF0000');
         expect(print(Color.Green)).toBe('#00FF00');
         expect(print(Color.Blue)).toBe('#0000FF');
