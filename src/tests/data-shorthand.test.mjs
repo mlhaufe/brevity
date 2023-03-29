@@ -1,4 +1,4 @@
-import { Data, Trait, variant } from "../index.mjs"
+import { Data, Trait, variant, variantName } from "../index.mjs"
 
 describe('Data shorthand tests', () => {
     const Disk = Data(['position', 'velocity', 'radius', 'item'])
@@ -9,6 +9,7 @@ describe('Data shorthand tests', () => {
         const disk = Disk({ position: [0, 0], velocity: [0, 0], radius: 1, item: 'apple' });
         expect(disk).toBeDefined();
         expect(disk[variant]).toBe(Disk);
+        expect(disk[variantName]).toBe('Anonymous!');
         expect(disk.position).toEqual([0, 0]);
         expect(disk.velocity).toEqual([0, 0]);
         expect(disk.radius).toBe(1);

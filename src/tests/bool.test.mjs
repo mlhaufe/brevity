@@ -1,4 +1,4 @@
-import { Data, isData, variant, Trait } from "../index.mjs"
+import { Data, isData, variant, variantName, Trait } from "../index.mjs"
 
 describe('Bool tests', () => {
     const Bool = Data({ False: [], True: [] })
@@ -9,7 +9,9 @@ describe('Bool tests', () => {
             t = Bool.True
 
         expect(f[variant]).toBe(f)
+        expect(f[variantName]).toBe('False')
         expect(t[variant]).toBe(t)
+        expect(t[variantName]).toBe('True')
     })
 
     test('Bool traits', () => {

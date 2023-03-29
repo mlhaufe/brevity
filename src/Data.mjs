@@ -9,6 +9,7 @@ const isCapitalized = str => typeof str === 'string' && str.match(/^[A-Z][A-Za-z
     pool = Symbol('pool');
 
 export const variant = Symbol('variant'),
+    variantName = Symbol('variantName'),
     isData = Symbol('isData'),
     isSingleton = Symbol('isSingleton');
 
@@ -58,7 +59,7 @@ function variantConstructor(params, name) {
         return Object.freeze(obj);
     };
     self[pool] = new BoxedMultiKeyMap();
-    self.prototype = Object.freeze({ [variant]: self, [isSingleton]: false });
+    self.prototype = Object.freeze({ [variant]: self, [variantName]: name, [isSingleton]: false });
 
     return self
 }
@@ -89,7 +90,7 @@ export function Data(decl) {
 
         if (params.length === 0) {
             const obj = result[name] = Object.create(null)
-            Object.assign(obj, ({ [variant]: obj, [isSingleton]: true }))
+            Object.assign(obj, ({ [variant]: obj, [variantName]: name, [isSingleton]: true }))
             Object.freeze(obj)
         } else {
             result[name] = Object.freeze(variantConstructor(params, name))

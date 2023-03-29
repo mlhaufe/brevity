@@ -4,6 +4,7 @@
 
 - Replaced `Symbol(all)` with `_` in `Trait` declarations
 - Added `Symbol(data)` for use with `Trait` declarations
+- Added `Symbol(variantName)` to every data instance
 - Updated README
 
 ## v0.7.1
