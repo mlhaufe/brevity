@@ -94,6 +94,39 @@ Can be written as:
 const Disk = Data(['position', 'velocity', 'radius', 'item'])
 ```
 
+### `variantName` symbol
+
+Each data variant has a `[variantName]` field which provides the name of the variant's constructor
+
+```js
+const Color = Data({ Red: [], Green: [], Blue: [] });
+
+Color.Red[variantName] === 'Red'
+
+const Point = Data({ Point2: ['x', 'y'], Point3: ['x', 'y', 'z'] }),
+    {Point2, Point3} = Point
+
+const p2 = Point2(12, 3),
+      p3 = Point3(184, 13, 56)
+
+p2[variantName] === 'Point2'
+p3[variantName] === 'Point3'
+```
+
+If the data declaration was in short-hand form:
+
+```js
+const Disk = Data(['position', 'velocity', 'radius', 'item'])
+```
+
+Then the variantName is `Anonymous!`
+
+```js
+const disk = Disk({ position: [0, 0], velocity: [0, 0], radius: 1, item: 'apple' });
+
+disk[variantName] === 'Anonymous!'
+```
+
 ### `variant` symbol
 
 Each data variant has a `[variant]` field which provides a reference to the constructor:
@@ -289,6 +322,61 @@ const xs = Cons(1, Cons(2, Nil)),
     ys = Cons(3, Cons(4, Nil)),
     // xs ++ ys == [1, 2, 3, 4]
     zs = concat(xs, ys);
+```
+
+### Primitives
+
+Traits can be defined for primitives `Number`, `String`, `Boolean`, `BigInt`:
+
+```js
+const printNumber = Trait(Number, {
+    1: () => 'one',
+    15: () => 'fifteen',
+    [Infinity]: () => 'infinity',
+    [Number.EPSILON]: () => 'epsilon',
+    [Number.MAX_SAFE_INTEGER]: () => 'max safe integer',
+    [Number.MAX_VALUE]: () => 'max value',
+    [Number.MIN_VALUE]: () => 'min value',
+    [Number.NaN]: () => 'not a number',
+    [NaN]: () => 'not a number',
+    [Number.POSITIVE_INFINITY]: () => 'positive infinity',
+    [Number.NEGATIVE_INFINITY]: () => 'negative infinity',
+    _: (n) => n.toString()
+})
+
+printNumber(15) === 'fifteen'
+
+const fib = Trait(Number, {
+    0: () => 0,
+    1: () => 1,
+    _: (n) => fib(n - 1) + fib(n - 2)
+})
+
+fib(12) === 144
+
+const printString = Trait(String, {
+    '': () => 'empty string',
+    'hello': (s) => s,
+    _: (s) => s
+})
+
+printString('') === 'empty string'
+
+const printBoolean = Trait(Boolean, {
+    true: () => 'true',
+    false: () => 'false'
+})
+
+printBoolean(true) === 'true'
+
+const printBigInt = Trait(BigInt, {
+    '0n': () => 'zero',
+    '1n': () => 'one',
+    '1234567890123456789012345678901234567890n': () => 'a big number',
+    _: (n) => n.toString()
+})
+
+printBigInt(1234567890123456789012345678901234567890n) === 'a big number'
 ```
 
 ### Wilcard `_` trait

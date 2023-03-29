@@ -1,4 +1,4 @@
-import { Data, isData, variant, Trait } from "../index.mjs";
+import { Data, isData, variant, variantName, Trait } from "../index.mjs";
 
 describe('Shape tests', () => {
     const Shape = Data({ Circle: ['radius'], Rectangle: ['width', 'height'] }),
@@ -9,6 +9,7 @@ describe('Shape tests', () => {
 
         const circle = Circle({ radius: 1 });
         expect(circle[variant]).toBe(Circle);
+        expect(circle[variantName]).toBe('Circle');
         expect(circle).toBeDefined();
         expect(circle.radius).toBe(1);
         expect(circle.width).toBeUndefined();
@@ -16,6 +17,7 @@ describe('Shape tests', () => {
 
         const rectangle = Rectangle({ width: 2, height: 3 });
         expect(rectangle[variant]).toBe(Rectangle);
+        expect(rectangle[variantName]).toBe('Rectangle');
         expect(rectangle).toBeDefined();
         expect(rectangle.radius).toBeUndefined();
         expect(rectangle.width).toBe(2);
