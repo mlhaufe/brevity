@@ -5,7 +5,13 @@
     "keywords": [
         "Object Algebra",
         "Feature Oriented Programming",
-        "Expression Problem"
+        "Expression Problem",
+        "Traits",
+        "Algebraic Data Types",
+        "Pattern Matching",
+        "memoization",
+        "fixed point",
+        "memofix"
     ],
     "module": "dist/index.mjs",
     "type": "module",

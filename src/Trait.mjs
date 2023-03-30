@@ -4,7 +4,8 @@ import { extend, variant, variantName, isData } from './index.mjs';
 
 export const isTrait = Symbol('isTrait'),
     data = Symbol('data'),
-    apply = Symbol('apply');
+    apply = Symbol('apply'),
+    _ = Symbol('_');
 
 const getAncestorFunctions = (() => {
     const cache = new WeakMap()
@@ -33,16 +34,16 @@ protoTrait[apply] = function self(instance, ...args) {
         if (typeof instance === 'object' && instance !== null && variant in instance)
             fn = this[instance[variantName]]
         else
-            throw new TypeError(`instance must be a data variant: ${String(instance)}`)
+            throw new TypeError(`instance must be a data variant: ${instance[variantName]}`)
     } else if (dataType.prototype[variant]) { // anonymous data declaration
         if (typeof instance === 'object' && instance !== null && variant in instance) {
             const vt = instance[variant],
                 fns = getAncestorFunctions(this);
-            // have to lookup by associated variant instead of by name
-            // pattern matching may solve this in the future
-            fn = fns.find(fn => fn[variant] === vt)
+            // Since only 1 function can be defined for a variant,
+            // there should only ever be 1 entry in fns
+            fn = fns[0]
         } else {
-            throw new TypeError(`instance must be a data variant: ${String(instance)}`)
+            throw new TypeError(`instance must be a data variant: ${instance[variantName]}`)
         }
     } else if ([Number, String, Boolean, BigInt].includes(dataType)) {
         const type = dataType,
@@ -60,11 +61,125 @@ protoTrait[apply] = function self(instance, ...args) {
     // fallback to wildcard
     if ('_' in this) return this['_'].call(this, instance, ...args);
 
-    throw new TypeError(`no trait defined for ${String(instance)}`)
+    throw new TypeError(`no trait defined for ${instance[variantName]}`)
 }
 
-const primitiveList = [Number, String, Boolean, BigInt],
+const primCons = [Number, String, Boolean, BigInt],
+    typeofList = ['boolean', 'bigint', 'number', 'string', 'symbol', 'undefined'],
     msgWildcardInvalid = `Invalid Trait declaration. Wildcard '_' must be a function`;
+
+function assignTraitDefs(traitDef, localTraits, dataDecl) {
+    // We iterate over traitDef instead of dataDecl so we can associate the variant
+    // since it could have overridden entries from a parent
+    for (const [name, f] of Object.entries(traitDef)) {
+        localTraits[name] = createTraitFn(name, f);
+        f[variant] = dataDecl?.[name];
+    }
+}
+
+const isPrimitive = (p) => {
+    return p === null || typeofList.includes(typeof p)
+}
+
+const isPattern = (p) => {
+    return isPrimitive(p) || variant in p || isObjectLiteral(p)
+}
+
+const containsWildcard = (arg) => {
+    if (arg === _)
+        return true;
+    else if (Array.isArray(arg))
+        return arg.some(containsWildcard);
+    else if (typeof arg === 'object' && arg !== null)
+        return Object.values(arg).some(containsWildcard);
+    else
+        return false;
+}
+
+/**
+ * Unifies a pattern with an argument.
+ * @param p The pattern to unify with.
+ * @param a The argument to unify with.
+ * @returns {boolean} True if the pattern and argument unify, false otherwise.
+ */
+const unify = (p, a) => {
+    if (p === _)
+        return true
+    if (isPrimitive(p))
+        return p === a
+    if (variant in p) {
+        if (containsWildcard(p)) {
+            if (typeof a !== 'object' || a === null)
+                return false
+            if (!(variant in a))
+                return false
+            if (p[variant] !== a[variant])
+                return false
+            for (const [k, v] of Object.entries(p)) {
+                if (k === variant)
+                    continue
+                if (!(k in a))
+                    return false
+                if (!unify(v, a[k]))
+                    return false
+            }
+            return true
+        }
+
+        return p === a
+    }
+    if (isObjectLiteral(p)) {
+        if (typeof a !== 'object' || a === null)
+            return false
+        for (const [k, v] of Object.entries(p)) {
+            if (!(k in a))
+                return false
+            if (!unify(v, a[k]))
+                return false
+        }
+        return true
+    }
+    return false
+}
+
+const createTraitFn = (name, patternDefOrFn) => {
+    if (typeof patternDefOrFn === 'function')
+        return patternDefOrFn
+
+    const badPatternMsg = `Invalid Trait declaration for '${String(name)}'.` +
+        'Patterns must be of the form [...[p1, p2, ... pn, fn]]';
+
+    if (Array.isArray(patternDefOrFn)) {
+        // [...[p1, p2, ... pn, fn]]
+        const patterns = patternDefOrFn;
+        assert(patterns.length > 0, badPatternMsg);
+
+        for (const pf of patterns) {
+            // [p1, p2, ... pn, fn]
+            assert(Array.isArray(pf) && pf.length >= 2, badPatternMsg);
+            // p1, p2, ... pn
+            assert(pf.slice(0, -1).every(isPattern), badPatternMsg);
+            assert(typeof pf[pf.length - 1] === 'function', badPatternMsg);
+        }
+
+        return function (...args) {
+            // find the first pattern that unifies with the args
+            // then return the result of calling the function with the args
+            for (const pf of patterns) {
+                const ps = pf.slice(0, -1),
+                    f = pf[pf.length - 1];
+                if (ps.every((p, i) => unify(p, args[i])))
+                    return f.apply(this, args);
+            }
+
+            throw new TypeError(
+                `no matching pattern defined for ${args[0][variantName]} with arguments ${JSON.stringify(args)}`
+            );
+        }
+    }
+
+    throw new TypeError(`Invalid Trait declaration. '${String(name)}' must be a function or pattern`);
+}
 
 /**
  * Defines a trait for a data declaration.
@@ -80,15 +195,11 @@ export function Trait(dataDecl, traitDef) {
 
     assert(isObjectLiteral(traitDef), 'traitDef must be an object literal');
 
-    if ("_" in traitDef) {
-        assert(typeof traitDef['_'] === 'function', msgWildcardInvalid);
-        localTraits['_'] = traitDef['_'];
-    }
+    if ("_" in traitDef)
+        localTraits['_'] = createTraitFn('_', traitDef['_'])
 
-    if (apply in traitDef) {
-        assert(typeof traitDef[apply] === 'function', `Symbol(apply) trait must be a function`);
-        localTraits[apply] = traitDef[apply];
-    }
+    if (apply in traitDef)
+        localTraits[apply] = createTraitFn(apply, traitDef[apply])
 
     Reflect.setPrototypeOf(localTraits,
         extend in traitDef ? traitDef[extend] : protoTrait
@@ -106,43 +217,20 @@ export function Trait(dataDecl, traitDef) {
             Object.keys(dataDecl).forEach(name => {
                 assert(traitDef[name] != null, `Invalid Trait declaration. Missing definition for '${String(name)}'`);
             })
-        } else {
-            assert(typeof traitDef['_'] === 'function', msgWildcardInvalid);
-            localTraits['_'] = traitDef['_'];
         }
 
-        // but we iterate over traitDef instead of dataDecl so we can associate the variant
-        // since it could have override entries
-        for (const [name, f] of Object.entries(traitDef)) {
-            assert(typeof f === 'function', `Invalid Trait declaration. '${name}' must be a function`);
-            localTraits[name] = f;
-            f[variant] = dataDecl[name];
-        }
+        assignTraitDefs(traitDef, localTraits, dataDecl);
     } else if (variant in dataDecl.prototype) {
-        // traitDef may only have one function. that is f
         assert(Object.keys(traitDef).length === 1, `Only one trait may be defined for a variant declaration`);
-        const [name, f] = Object.entries(traitDef)[0];
-        assert(typeof f === 'function', `trait must be a function: ${name}`);
-        localTraits[name] = f;
-        f[variant] = dataDecl;
-    } else if (primitiveList.includes(dataDecl)) {
+        assignTraitDefs(traitDef, localTraits, dataDecl);
+    } else if (primCons.includes(dataDecl)) {
         if (!('_' in traitDef)) {
-            if (dataDecl === Boolean) {
-                const message = `Invalid Trait declaration. Missing definition for`;
-                for (const [name, f] of Object.entries(traitDef)) {
-                    assert(typeof f === 'function', `${message} '${name}'`);
-                    localTraits[name] = f;
-                    f[variant] = undefined;
-                }
-            } else {
+            if (dataDecl === Boolean)
+                assignTraitDefs(traitDef, localTraits, undefined)
+            else
                 throw new TypeError(msgWildcardInvalid);
-            }
         } else {
-            for (const [name, f] of Object.entries(traitDef)) {
-                assert(typeof f === 'function', `Invalid Trait declaration. '${name}' must be a function`);
-                localTraits[name] = f;
-                f[variant] = undefined;
-            }
+            assignTraitDefs(traitDef, localTraits, undefined)
         }
     } else {
         throw new TypeError(`dataDecl must be a data declaration or a variant declaration`)
