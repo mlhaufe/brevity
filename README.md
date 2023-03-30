@@ -404,6 +404,127 @@ In this case `Nil` takes priority over `_` and works as expected.
 
 If a data declaration is not provided, `_` or `[apply]` must be defined.
 
+### Nested Pattern Matching
+
+More advanced pattern matching is supported beyond simply variants and utilize `Symbol(_)`
+as a wildcard.
+
+```js
+const Expr = Data({ Num: ['value'], Var: ['name'], Mul: ['left', 'right'] }),
+            { Num, Var, Mul } = Expr
+
+// 1 * x = x
+// x * 1 = x
+// 0 * x = 0
+// x * 0 = 0
+const simplify = Trait(Expr, {
+    _: (self) => self,
+    Mul: [
+        [Mul(Num(1), _), ({ right }) => right],
+        [Mul(_, Num(1)), ({ left }) => left],
+        [Mul(Num(0), _), ({ left }) => left],
+        [Mul(_, Num(0)), ({ right }) => right]
+    ]
+})
+
+const e1 = Mul(Var('x'), Num(1))
+
+simplify(e1) === Var('x')
+
+const e2 = Mul(Num(1), Var('x'))
+
+simplify(e2) === Var('x')
+
+const e3 = Mul(Num(0), Var('x'))
+
+simplify(e3) === Num(0)
+
+const e4 = Mul(Var('x'), Num(0))
+
+simplify(e4) === Num(0)
+```
+
+Object literals can be used as well as an alternative to using `_` :
+
+```js
+const simplify = Trait(Expr, {
+    _: (self) => self,
+    Mul: [
+        [{ left: Num(1) }, ({ right }) => right],
+        [{ right: Num(1) }, ({ left }) => left],
+        [{ left: Num(0) }, ({ left }) => left],
+        [{ right: Num(0) }, ({ right }) => right]
+    ]
+})
+```
+
+A more complicated example with nested patterns:
+
+```js
+const List = Data({ Nil: [], Cons: ['head', 'tail'] }),
+            { Nil, Cons } = List
+
+const tell = Trait(List, {
+    Nil: () => 'The list is empty',
+    Cons: [
+        [Cons(_, Nil), ({ head }) => 
+            `The list has one element: ${head}`],
+        [Cons(_, Cons(_, Nil)), ({ head, tail }) => 
+            `The list has two elements: ${head} and ${tail.head}`],
+        [Cons(_, Cons(_, _)), ({ head, tail }) => 
+            `This list is long. The first two elements are: ${head} and ${tail.head}`]
+    ]
+})
+```
+
+A contrived way to test if a list contains the value `3`:
+
+```js
+const contains3 = Trait(List, {
+    Nil: () => false,
+    Cons: [
+        [Cons(3, _), () => true],
+        [Cons(_, _), ({ tail }) => contains3(tail)]
+    ]
+})
+```
+
+Pattern declarations have the following form:
+
+```js
+const traitName = Trait(DataDecl, {
+  VariantName: [
+    [pattern1, pattern2, ...patternN, (self, v2, ...vN) => {...}]
+  ]
+})
+```
+
+A pattern can be one of the following:
+
+```js
+// Literals
+false
+149n
+1
+'foo'
+Symbol('foo')
+null
+undefined
+
+// wildcard
+_
+
+//  variant instances
+Nil
+Cons(1, Nil)
+Cons(pattern1, pattern2)
+Cons(1, Cons(pattern, Nil)
+
+// structural 
+{left: 3, right: Nil }
+{left: pattern1, right: pattern2 }
+```
+
 ### Extending Traits
 
 Like the `Data` declaration one `Trait` can extend another via the `extend` symbol:

@@ -3,9 +3,13 @@
 ## v0.8.0
 
 - Replaced `Symbol(all)` with `_` in `Trait` declarations
+- Added `Symbol(_)` for use with `Trait` pattern matching
 - Added `Symbol(data)` for use with `Trait` declarations
 - Added `Symbol(variantName)` to every data instance
+- Extended `Trait` to allow matching on primitives `Number`, `String`, `Boolean`, `BigInt`
+- Added pattern matching in Trait declarations
 - Updated README
+- Added SEO keywords
 
 ## v0.7.1
 
