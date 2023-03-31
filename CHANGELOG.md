@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.9.0
+
+- Enabled array destructuring on variants
+- Traits support array pattern matching
+- Updated README
+
 ## v0.8.0
 
 - Replaced `Symbol(all)` with `_` in `Trait` declarations
