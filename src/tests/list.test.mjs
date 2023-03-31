@@ -1,4 +1,4 @@
-import { Data, Trait } from "../index.mjs";
+import { Data, Trait, _ } from "../index.mjs";
 
 describe('List tests', () => {
     const List = Data({ Nil: [], Cons: ['head', 'tail'] });
@@ -60,5 +60,25 @@ describe('List tests', () => {
         const xs = Cons(1, Cons(2, Cons(3, Nil)));
         expect(isNil(xs)).toBe(false)
         expect(isNil(Nil)).toBe(true)
+    })
+
+    test('List trait array destructuring', () => {
+        const { Cons, Nil } = List
+
+        const xs = Cons(1, Cons(2, Cons(3, Nil)));
+
+        const isThree = Trait(List, {
+            _: () => false,
+            Cons: [
+                [[_, [_, [_, Nil]]], () => true],
+                [_, () => false]
+            ]
+        })
+
+        expect(isThree(xs)).toBe(true)
+
+        const ys = Cons(1, Cons(2, Cons(3, Cons(4, Nil))));
+
+        expect(isThree(ys)).toBe(false)
     })
 })

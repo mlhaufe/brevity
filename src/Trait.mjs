@@ -82,7 +82,7 @@ const isPrimitive = (p) => {
 }
 
 const isPattern = (p) => {
-    return isPrimitive(p) || variant in p || isObjectLiteral(p)
+    return isPrimitive(p) || variant in p || isObjectLiteral(p) || Array.isArray(p)
 }
 
 const containsWildcard = (arg) => {
@@ -135,6 +135,32 @@ const unify = (p, a) => {
             if (!(k in a))
                 return false
             if (!unify(v, a[k]))
+                return false
+        }
+        return true
+    }
+    if (Array.isArray(p)) {
+        // argument must be an array or a variant
+        // if it's a variant, compare the properties to the array elements
+        if (typeof a !== 'object' || a === null)
+            return false
+        if (variant in a) {
+            const keys = Object.keys(a)
+            if (p.length !== keys.length)
+                return false
+            for (let i = 0; i < p.length; i++) {
+                const k = keys[i]
+                if (!unify(p[i], a[k]))
+                    return false
+            }
+            return true
+        }
+        if (!Array.isArray(a))
+            return false
+        if (p.length !== a.length)
+            return false
+        for (let i = 0; i < p.length; i++) {
+            if (!unify(p[i], a[i]))
                 return false
         }
         return true

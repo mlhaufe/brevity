@@ -82,8 +82,8 @@ describe('Arithmetic', () => {
     })
 
     const print = Trait(Exp, {
-        Lit({ value }) { return `${value}` },
-        Add({ left, right }) {
+        Lit([value]) { return `${value}` },
+        Add([left, right]) {
             return `${this[apply](left)} + ${this[apply](right)}`
         }
     })
@@ -156,7 +156,7 @@ describe('Arithmetic', () => {
 
     const printMul = Trait(MulExp, {
         [extend]: print,
-        Mul({ left, right }) { return `${this[apply](left)} * ${this[apply](right)}` }
+        Mul([left, right]) { return `${this[apply](left)} * ${this[apply](right)}` }
     })
 
     test('printMul', () => {

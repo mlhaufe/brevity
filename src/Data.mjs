@@ -13,6 +13,15 @@ export const variant = Symbol('variant'),
     isData = Symbol('isData'),
     isSingleton = Symbol('isSingleton');
 
+const protoVariant = {
+    *[Symbol.iterator]() {
+        for (const key of Object.keys(this)) {
+            if (key !== variant && key !== variantName && key !== isSingleton)
+                yield this[key];
+        }
+    }
+}
+
 function variantConstructor(params, name) {
     function self(...args) {
         const normalizedArgs = [];
@@ -59,7 +68,11 @@ function variantConstructor(params, name) {
         return Object.freeze(obj);
     };
     self[pool] = new BoxedMultiKeyMap();
-    self.prototype = Object.freeze({ [variant]: self, [variantName]: name, [isSingleton]: false });
+    self.prototype = Object.freeze(Object.assign(Object.create(protoVariant), {
+        [variant]: self,
+        [variantName]: name,
+        [isSingleton]: false
+    }));
 
     return self
 }

@@ -31,4 +31,22 @@ describe('Data shorthand tests', () => {
 
         expect(toString(disk)).toBe('Disk([0,0], [0,0], 1, "apple")');
     })
+
+    test('Array destructuring', () => {
+        const disk = Disk({ position: [0, 0], velocity: [1, 3], radius: 1, item: 'apple' });
+
+        const [p, v, r, i] = disk;
+
+        expect(p).toEqual([0, 0]);
+        expect(v).toEqual([1, 3]);
+        expect(r).toBe(1);
+        expect(i).toBe('apple');
+
+        const { position, velocity, radius, item } = disk;
+
+        expect(position).toEqual([0, 0]);
+        expect(velocity).toEqual([1, 3]);
+        expect(radius).toBe(1);
+        expect(item).toBe('apple');
+    })
 })

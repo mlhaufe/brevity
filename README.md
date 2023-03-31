@@ -94,6 +94,19 @@ Can be written as:
 const Disk = Data(['position', 'velocity', 'radius', 'item'])
 ```
 
+### Destructuring
+
+Variants support both object and array destructuring:
+
+```js
+const disk = Disk({ position: [0, 0], velocity: [1, 3], radius: 1, item: 'apple' });
+
+const [position, velocity, radius, item] = disk;
+
+const { position, velocity, radius, item } = disk;
+
+```
+
 ### `variantName` symbol
 
 Each data variant has a `[variantName]` field which provides the name of the variant's constructor
@@ -324,6 +337,31 @@ const xs = Cons(1, Cons(2, Nil)),
     zs = concat(xs, ys);
 ```
 
+### Wilcard `_` trait
+
+If the same operation should be applied to all variants, then the `_` token can be used:
+
+```js
+const operation = Trait(undefined, {
+    _: (target) => JSON.stringify(target)
+})
+```
+
+Note that in this case a Data declaration was not provided as an argument since it's irrelevant.
+
+A more practical example:
+
+```js
+const isNil = Trait(List, {
+    _: () => false,
+    Nil: () => true
+});
+```
+
+In this case `Nil` takes priority over `_` and works as expected.
+
+If a data declaration is not provided, `_` or `[apply]` must be defined.
+
 ### Primitives
 
 Traits can be defined for primitives `Number`, `String`, `Boolean`, `BigInt`:
@@ -378,31 +416,6 @@ const printBigInt = Trait(BigInt, {
 
 printBigInt(1234567890123456789012345678901234567890n) === 'a big number'
 ```
-
-### Wilcard `_` trait
-
-If the same operation should be applied to all variants, then the `_` token can be used:
-
-```js
-const operation = Trait(undefined, {
-    _: (target) => JSON.stringify(target)
-})
-```
-
-Note that in this case a Data declaration was not provided as an argument since it's irrelevant.
-
-A more practical example:
-
-```js
-const isNil = Trait(List, {
-    _: () => false,
-    Nil: () => true
-});
-```
-
-In this case `Nil` takes priority over `_` and works as expected.
-
-If a data declaration is not provided, `_` or `[apply]` must be defined.
 
 ### Nested Pattern Matching
 
@@ -523,6 +536,10 @@ Cons(1, Cons(pattern, Nil)
 // structural 
 {left: 3, right: Nil }
 {left: pattern1, right: pattern2 }
+
+// array
+
+[pattern1, pattern2, ... , patternN]
 ```
 
 ### Extending Traits
