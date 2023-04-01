@@ -21,8 +21,8 @@ describe('Fibonacci trait', () => {
 
     test('Specific', () => {
         const fib = Trait(Number, {
-            0: () => 0,
-            1: () => 1,
+            0: (n) => 0,
+            1: (n) => 1,
             _: (n) => fib(n - 1) + fib(n - 2)
         })
 

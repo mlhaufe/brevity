@@ -38,7 +38,7 @@ describe('List tests', () => {
     });
 
     const length = Trait(List, {
-        Nil() { return 0 },
+        Nil(self) { return 0 },
         Cons({ head, tail }) { return 1 + length(tail) }
     });
 
@@ -68,10 +68,10 @@ describe('List tests', () => {
         const xs = Cons(1, Cons(2, Cons(3, Nil)));
 
         const isThree = Trait(List, {
-            _: () => false,
+            _: (self) => false,
             Cons: [
-                [[_, [_, [_, Nil]]], () => true],
-                [_, () => false]
+                [[_, [_, [_, Nil]]], (self) => true],
+                [_, (self) => false]
             ]
         })
 

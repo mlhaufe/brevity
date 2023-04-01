@@ -20,7 +20,7 @@ describe('Peano tests', () => {
     })
 
     const value = Trait(Peano, {
-        Zero() { return 0 },
+        Zero(self) { return 0 },
         Succ({ pred }) { return 1 + value(pred) }
     })
 

@@ -75,7 +75,7 @@ describe('Pattern matching', () => {
             { Nil, Cons } = List
 
         const length = Trait(List, {
-            Nil: () => 0,
+            Nil: (self) => 0,
             Cons: ({ tail }) => 1 + length(tail)
         })
 
@@ -83,7 +83,7 @@ describe('Pattern matching', () => {
         expect(length(l)).toEqual(3)
 
         const tell = Trait(List, {
-            Nil: () => 'The list is empty',
+            Nil: (self) => 'The list is empty',
             Cons: [
                 [Cons(_, Nil), ({ head }) => `The list has one element: ${head}`],
                 [Cons(_, Cons(_, Nil)), ({ head, tail }) => `The list has two elements: ${head} and ${tail.head}`],
@@ -101,9 +101,9 @@ describe('Pattern matching', () => {
         expect(tell(l3)).toEqual('This list is long. The first two elements are: 1 and 2')
 
         const contains3 = Trait(List, {
-            Nil: () => false,
+            Nil: (self) => false,
             Cons: [
-                [Cons(3, _), () => true],
+                [Cons(3, _), (self) => true],
                 [Cons(_, _), ({ tail }) => contains3(tail)]
             ]
         })
