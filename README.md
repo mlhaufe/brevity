@@ -368,32 +368,32 @@ Traits can be defined for primitives `Number`, `String`, `Boolean`, `BigInt`:
 
 ```js
 const printNumber = Trait(Number, {
-    1: () => 'one',
-    15: () => 'fifteen',
-    [Infinity]: () => 'infinity',
-    [Number.EPSILON]: () => 'epsilon',
-    [Number.MAX_SAFE_INTEGER]: () => 'max safe integer',
-    [Number.MAX_VALUE]: () => 'max value',
-    [Number.MIN_VALUE]: () => 'min value',
-    [Number.NaN]: () => 'not a number',
-    [NaN]: () => 'not a number',
-    [Number.POSITIVE_INFINITY]: () => 'positive infinity',
-    [Number.NEGATIVE_INFINITY]: () => 'negative infinity',
+    1: (n) => 'one',
+    15: (n) => 'fifteen',
+    [Infinity]: (n) => 'infinity',
+    [Number.EPSILON]: (n) => 'epsilon',
+    [Number.MAX_SAFE_INTEGER]: (n) => 'max safe integer',
+    [Number.MAX_VALUE]: (n) => 'max value',
+    [Number.MIN_VALUE]: (n) => 'min value',
+    [Number.NaN]: (n) => 'not a number',
+    [NaN]: (n) => 'not a number',
+    [Number.POSITIVE_INFINITY]: (n) => 'positive infinity',
+    [Number.NEGATIVE_INFINITY]: (n) => 'negative infinity',
     _: (n) => n.toString()
 })
 
 printNumber(15) === 'fifteen'
 
 const fib = Trait(Number, {
-    0: () => 0,
-    1: () => 1,
+    0: (n) => 0,
+    1: (n) => 1,
     _: (n) => fib(n - 1) + fib(n - 2)
 })
 
 fib(12) === 144
 
 const printString = Trait(String, {
-    '': () => 'empty string',
+    '': (s) => 'empty string',
     'hello': (s) => s,
     _: (s) => s
 })
@@ -408,9 +408,9 @@ const printBoolean = Trait(Boolean, {
 printBoolean(true) === 'true'
 
 const printBigInt = Trait(BigInt, {
-    '0n': () => 'zero',
-    '1n': () => 'one',
-    '1234567890123456789012345678901234567890n': () => 'a big number',
+    '0n': (n) => 'zero',
+    '1n': (n) => 'one',
+    '1234567890123456789012345678901234567890n': (n) => 'a big number',
     _: (n) => n.toString()
 })
 
@@ -478,7 +478,7 @@ const List = Data({ Nil: [], Cons: ['head', 'tail'] }),
             { Nil, Cons } = List
 
 const tell = Trait(List, {
-    Nil: () => 'The list is empty',
+    Nil: (self) => 'The list is empty',
     Cons: [
         [Cons(_, Nil), ({ head }) => 
             `The list has one element: ${head}`],
@@ -494,9 +494,9 @@ A contrived way to test if a list contains the value `3`:
 
 ```js
 const contains3 = Trait(List, {
-    Nil: () => false,
+    Nil: (self) => false,
     Cons: [
-        [Cons(3, _), () => true],
+        [Cons(3, _), (self) => true],
         [Cons(_, _), ({ tail }) => contains3(tail)]
     ]
 })
@@ -507,10 +507,14 @@ Pattern declarations have the following form:
 ```js
 const traitName = Trait(DataDecl, {
   VariantName: [
+    [pattern1, pattern2, ...patternN, (self, v2, ...vN) => {...}],
     [pattern1, pattern2, ...patternN, (self, v2, ...vN) => {...}]
   ]
 })
 ```
+
+Note: every pattern must have the same length or an error will be thrown.
+In other words the arity of your patterns must be consistent.
 
 A pattern can be one of the following:
 
@@ -540,6 +544,66 @@ Cons(1, Cons(pattern, Nil)
 // array
 
 [pattern1, pattern2, ... , patternN]
+```
+
+### Partial Application
+
+Traits support [partial application](https://en.wikipedia.org/wiki/Partial_application)
+via the usage of the wildcard symbol `Symbol(_)`:
+
+```js
+const add3 = Trait(Number, {
+    _: (a, b, c) => a + b + c
+})
+
+add3(1, 2, 3) === 6
+add3(_, 2, 3)(1) === 6
+add3(1, _, 3)(2) === 6
+add3(1, 2, _)(3) === 6
+add3(1, _, _)(2, 3) === 6
+add3(_, 2, _)(1, 3) === 6
+add3(_, _, 3)(1, 2) === 6
+add3(_, _, _)(1, 2, _)(3) === 6
+add3(_, _, _)(_, 2, _)(1, _)(3) === 6
+add3(_, _, _)(_, 2, _)(_, 3)(1) === 6
+```
+
+A more practical example where this can be a benefit can be seen with linked lists:
+
+```js
+const List = Data({ Nil: [], Cons: ['head', 'tail'] })
+
+const { Nil, Cons } = List
+```
+
+Concatenation can be defined in terms of foldRight:
+
+```js
+const foldRight = Trait(List, {
+    Nil: (self, fn, z) => z,
+    Cons: ({ head, tail }, fn, z) => fn(head, foldRight(tail, fn, z))
+})
+
+const concat = (xs, ys) => foldRight(xs, Cons, ys)
+```
+
+The only purpose `(xs, ys) => ...` has is to put the arguments into the right
+position in `foldRight`. With partial application this can be simplified as:
+
+```js
+const concat = foldRight(_, Cons, _)
+```
+
+Another example for computing the length of a list:
+
+```js
+const length = (xs) => foldRight(xs, (x, acc) => acc + 1, 0)
+```
+
+With partial application:
+
+```js
+const length = foldRight(_, (x, acc) => acc + 1, 0)
 ```
 
 ### Extending Traits

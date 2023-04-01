@@ -4,6 +4,8 @@
 
 - Enabled array destructuring on variants
 - Traits support array pattern matching
+- Traits support Partial Application
+- Trait declaration entries must have consistent arity
 - Updated README
 
 ## v0.8.0

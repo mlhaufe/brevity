@@ -1,19 +1,19 @@
-import { Trait, data } from "../Trait.mjs"
+import { Trait, data } from "../index.mjs"
 
 describe('Primitive traits', () => {
     test('Number trait', () => {
         const printNumber = Trait(Number, {
-            1: () => 'one',
-            15: () => 'fifteen',
-            [Infinity]: () => 'infinity',
-            [Number.EPSILON]: () => 'epsilon',
-            [Number.MAX_SAFE_INTEGER]: () => 'max safe integer',
-            [Number.MAX_VALUE]: () => 'max value',
-            [Number.MIN_VALUE]: () => 'min value',
-            [Number.NaN]: () => 'not a number',
-            [NaN]: () => 'not a number',
-            [Number.POSITIVE_INFINITY]: () => 'positive infinity',
-            [Number.NEGATIVE_INFINITY]: () => 'negative infinity',
+            1: (n) => 'one',
+            15: (n) => 'fifteen',
+            [Infinity]: (n) => 'infinity',
+            [Number.EPSILON]: (n) => 'epsilon',
+            [Number.MAX_SAFE_INTEGER]: (n) => 'max safe integer',
+            [Number.MAX_VALUE]: (n) => 'max value',
+            [Number.MIN_VALUE]: (n) => 'min value',
+            [Number.NaN]: (n) => 'not a number',
+            [NaN]: (n) => 'not a number',
+            [Number.POSITIVE_INFINITY]: (n) => 'positive infinity',
+            [Number.NEGATIVE_INFINITY]: (n) => 'negative infinity',
             _: (n) => n.toString()
         })
 
@@ -38,7 +38,7 @@ describe('Primitive traits', () => {
 
     test('String trait', () => {
         const printString = Trait(String, {
-            '': () => 'empty string',
+            '': (s) => 'empty string',
             'hello': (s) => s,
             _: (s) => s
         })
@@ -67,9 +67,9 @@ describe('Primitive traits', () => {
 
     test('BigInt trait', () => {
         const printBigInt = Trait(BigInt, {
-            '0n': () => 'zero',
-            '1n': () => 'one',
-            '1234567890123456789012345678901234567890n': () => 'a big number',
+            '0n': (n) => 'zero',
+            '1n': (n) => 'one',
+            '1234567890123456789012345678901234567890n': (n) => 'a big number',
             _: (n) => n.toString()
         })
 

@@ -22,6 +22,29 @@ const getAncestorFunctions = (() => {
     }
 })()
 
+function accumulator(fn, savedArgs, remainingCount) {
+    return function (...args) {
+        const newRemainingCount = args.reduce(
+            (sum, arg) => arg !== _ ? sum - 1 : sum,
+            remainingCount
+        );
+        const argClone = [...args];
+        const newSavedArgs = savedArgs.map(
+            arg => arg === _ ? argClone.shift() : arg
+        );
+
+        return newRemainingCount === 0 ? fn(...newSavedArgs) :
+            accumulator(fn, newSavedArgs, newRemainingCount);
+    };
+}
+
+const wildcardFn = () => _
+
+function partial(fn) {
+    return fn.length === 0 ? fn :
+        accumulator(fn, Array.from({ length: fn.length }, wildcardFn), fn.length);
+}
+
 const protoTrait = () => { }
 protoTrait[isTrait] = true;
 protoTrait[apply] = function self(instance, ...args) {
@@ -37,8 +60,7 @@ protoTrait[apply] = function self(instance, ...args) {
             throw new TypeError(`instance must be a data variant: ${instance[variantName]}`)
     } else if (dataType.prototype[variant]) { // anonymous data declaration
         if (typeof instance === 'object' && instance !== null && variant in instance) {
-            const vt = instance[variant],
-                fns = getAncestorFunctions(this);
+            const fns = getAncestorFunctions(this);
             // Since only 1 function can be defined for a variant,
             // there should only ever be 1 entry in fns
             fn = fns[0]
@@ -170,10 +192,9 @@ const unify = (p, a) => {
 
 const createTraitFn = (name, patternDefOrFn) => {
     if (typeof patternDefOrFn === 'function')
-        return patternDefOrFn
+        return patternDefOrFn;
 
-    const badPatternMsg = `Invalid Trait declaration for '${String(name)}'.` +
-        'Patterns must be of the form [...[p1, p2, ... pn, fn]]';
+    const badPatternMsg = `Invalid Trait declaration for '${String(name)}'. `
 
     if (Array.isArray(patternDefOrFn)) {
         // [...[p1, p2, ... pn, fn]]
@@ -182,13 +203,23 @@ const createTraitFn = (name, patternDefOrFn) => {
 
         for (const pf of patterns) {
             // [p1, p2, ... pn, fn]
-            assert(Array.isArray(pf) && pf.length >= 2, badPatternMsg);
+            assert(Array.isArray(pf) && pf.length >= 2,
+                `${badPatternMsg} pattern must be an array of length >= 2: ${JSON.stringify(pf)}`
+            );
             // p1, p2, ... pn
-            assert(pf.slice(0, -1).every(isPattern), badPatternMsg);
-            assert(typeof pf[pf.length - 1] === 'function', badPatternMsg);
+            assert(pf.slice(0, -1).every(isPattern),
+                `${badPatternMsg} A pattern must be a primitive, variant, object literal, or array: ${JSON.stringify(pf)}`
+            );
+            assert(typeof pf[pf.length - 1] === 'function',
+                `${badPatternMsg} The last element of a pattern must be a function: ${JSON.stringify(pf)}`
+            );
+            // Every pf must have the same length
+            assert(pf.length === patterns[0].length,
+                `${badPatternMsg} All patterns must have the same arity: ${JSON.stringify(pf)}`
+            );
         }
 
-        return function (...args) {
+        function fn(...args) {
             // find the first pattern that unifies with the args
             // then return the result of calling the function with the args
             for (const pf of patterns) {
@@ -202,6 +233,11 @@ const createTraitFn = (name, patternDefOrFn) => {
                 `no matching pattern defined for ${args[0][variantName]} with arguments ${JSON.stringify(args)}`
             );
         }
+        // change the argument length of the function to match the pattern length
+        // so that partial application knows how many to expect
+        Object.defineProperty(fn, 'length', { value: patterns[0].length - 1 })
+
+        return fn
     }
 
     throw new TypeError(`Invalid Trait declaration. '${String(name)}' must be a function or pattern`);
@@ -262,5 +298,18 @@ export function Trait(dataDecl, traitDef) {
         throw new TypeError(`dataDecl must be a data declaration or a variant declaration`)
     }
 
-    return localTraits
+    // determine the arity of the trait by iterating over every function
+    // while also enforcing an equal arity for all functions
+    const fns = Object.values(localTraits).filter(fn => typeof fn === 'function')
+    const arity = fns.reduce((max, fn) => {
+        assert(fn.length === max,
+            `Invalid Trait declaration. All functions must have the same arity`);
+        return Math.max(max, fn.length)
+    }, fns[0]?.length ?? 0)
+
+    Object.defineProperty(localTraits, 'length', { value: arity })
+
+    return new Proxy(partial(localTraits), {
+        get(target, prop) { return Reflect.get(localTraits, prop) }
+    })
 }
