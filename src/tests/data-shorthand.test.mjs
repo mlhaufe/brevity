@@ -1,7 +1,7 @@
 import { Data, Trait, variant, variantName } from "../index.mjs"
 
 describe('Data shorthand tests', () => {
-    const Disk = Data(['position', 'velocity', 'radius', 'item'])
+    const Disk = Data({ position: {}, velocity: {}, radius: {}, item: {} })
 
     test('Disk Data', () => {
         expect(Disk).toBeDefined();

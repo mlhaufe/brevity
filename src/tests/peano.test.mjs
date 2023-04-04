@@ -1,7 +1,7 @@
 import { Data, Trait } from "../index.mjs";
 
 describe('Peano tests', () => {
-    const Peano = Data({ Zero: [], Succ: ['pred'] });
+    const Peano = Data({ Zero: {}, Succ: { pred: {} } });
 
     test('Peano Data', () => {
         const zero = Peano.Zero,
@@ -14,10 +14,6 @@ describe('Peano tests', () => {
         expect(two.pred).toBe(one);
         expect(three.pred).toBe(two);
     });
-
-    test('Bad Peano definition', () => {
-        expect(() => Data({ Zero: [], Succ: ['pred', 'pred'] })).toThrow();
-    })
 
     const value = Trait(Peano, {
         Zero(self) { return 0 },

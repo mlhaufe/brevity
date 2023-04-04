@@ -2,7 +2,11 @@ import { Data, Trait, _ } from "../index.mjs";
 
 describe('Pattern matching', () => {
     test('Simplify expression', () => {
-        const Expr = Data({ Num: ['value'], Var: ['name'], Mul: ['left', 'right'] }),
+        const Expr = Data({
+            Num: { value: {} },
+            Var: { name: {} },
+            Mul: { left: {}, right: {} }
+        }),
             { Num, Var, Mul } = Expr
 
         const simplify = Trait(Expr, {
@@ -49,9 +53,9 @@ describe('Pattern matching', () => {
 
     test('Notification', () => {
         const Notification = Data({
-            Email: ['sender', 'title', 'body'],
-            SMS: ['caller', 'message'],
-            VoiceRecording: ['contactName', 'link']
+            Email: { sender: {}, title: {}, body: {} },
+            SMS: { caller: {}, message: {} },
+            VoiceRecording: { contactName: {}, link: {} }
         })
         const { Email, SMS, VoiceRecording } = Notification
 
@@ -71,7 +75,7 @@ describe('Pattern matching', () => {
     })
 
     test('List', () => {
-        const List = Data({ Nil: [], Cons: ['head', 'tail'] }),
+        const List = Data({ Nil: {}, Cons: { head: {}, tail: {} } }),
             { Nil, Cons } = List
 
         const length = Trait(List, {

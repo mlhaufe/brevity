@@ -1,7 +1,10 @@
 import { Data, isData, variant, variantName, Trait } from "../index.mjs"
 
 describe('Point tests', () => {
-    const Point = Data({ Point2: ['x', 'y'], Point3: ['x', 'y', 'z'] }),
+    const Point = Data({
+        Point2: { x: {}, y: {} },
+        Point3: { x: {}, y: {}, z: {} }
+    }),
         { Point2, Point3 } = Point;
 
     test('Point Data', () => {

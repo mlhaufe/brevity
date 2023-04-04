@@ -1,5 +1,31 @@
 # Changelog
 
+## v0.10.0
+
+- Property declarations must now be object literals instead of arrays:
+
+```js
+// before
+const Point3 = Data(['x', 'y', 'z'])
+// after
+const Point3 = Data([{x: {}, y: {}, z: {}}])
+```
+
+```js
+// before
+const Point = Data({
+    Point2: ['x', 'y'],
+    Point3: ['x', 'y', 'z']
+})
+// after
+const Point = Data({
+    Point2: {x: {}, y: {}},
+    Point3: {x: {}, y: {}, z: {}}
+})
+```
+
+- Updated README
+
 ## v0.9.0
 
 - Enabled array destructuring on variants

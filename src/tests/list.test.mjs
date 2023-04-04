@@ -1,7 +1,7 @@
 import { Data, Trait, _ } from "../index.mjs";
 
 describe('List tests', () => {
-    const List = Data({ Nil: [], Cons: ['head', 'tail'] });
+    const List = Data({ Nil: {}, Cons: { head: {}, tail: {} } });
 
     test('List Data', () => {
         const { Nil, Cons } = List;
