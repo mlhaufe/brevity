@@ -1,8 +1,11 @@
 import { Data, Trait } from "../index.mjs"
 
 describe('Simplified Xml Tests', () => {
-    const Attr = Data(['name', 'value']),
-        Node = Data({ Element: ['name', 'attrs', 'children'], Text: ['text'] }),
+    const Attr = Data({ name: {}, value: {} }),
+        Node = Data({
+            Element: { name: {}, attrs: {}, children: {} },
+            Text: { text: {} }
+        }),
         { Element, Text } = Node;
     // <html lang="en">
     //   <head>

@@ -24,44 +24,47 @@ const protoVariant = {
 
 function variantConstructor(params, name) {
     function self(...args) {
-        const normalizedArgs = [];
+        let normalizedArgs = []
+        const propNames = Object.keys(params);
 
-        if (params.length === 1) {
+        if (propNames.length === 1) {
             if (args.length === 1) {
                 const arg = args[0];
                 if (!isObjectLiteral(arg))
                     normalizedArgs.push(arg);
                 else
-                    normalizedArgs.push(params[0] in arg ? arg[params[0]] : arg);
+                    normalizedArgs.push(propNames[0] in arg ? arg[propNames[0]] : arg);
             }
         } else {
             if (args.length === 1) {
                 const objArg = args[0];
                 assert(isObjectLiteral(objArg),
-                    `Wrong number of arguments. expected: ${name}(${params}), got: ${name}(${args})`);
+                    `Wrong number of arguments. expected: ${name}(${propNames}), got: ${name}(${args})`);
 
-                assert(Object.keys(objArg).length === params.length,
-                    `Wrong number of parameters. Expected: ${name}(${params}), got: ${name}(${Object.keys(objArg)})`);
+                assert(Object.keys(objArg).length === propNames.length,
+                    `Wrong number of parameters. Expected: ${name}(${propNames}), got: ${name}(${Object.keys(objArg)})`);
 
-                for (const param of params) {
-                    assert(param in objArg, `Missing parameter: ${param}`);
-                    normalizedArgs.push(objArg[param]);
-                }
-            } else if (args.length === params.length) {
+                normalizedArgs = Object.entries(params).map(([propName, propCfg]) => {
+                    assert(propName in objArg, `Missing parameter: ${propName}`);
+                    assert(isObjectLiteral(propCfg) && Object.keys(propCfg).length === 0,
+                        `Invalid property configuration: ${propName}`);
+                    return objArg[propName];
+                })
+            } else if (args.length === propNames.length) {
                 normalizedArgs.push(...args);
             } else {
-                throw new TypeError(`Wrong number of arguments. expected: ${name}(${params}), got: ${name}(${args})`);
+                throw new TypeError(`Wrong number of arguments. expected: ${name}(${propNames}), got: ${name}(${args})`);
             }
         }
 
         let obj = self[pool].get(...normalizedArgs);
         if (obj) return obj;
         obj = Object.create(self.prototype);
-        params.forEach((param, i) => {
+        Object.entries(params).forEach(([propName, cfg], i) => {
             if (typeof normalizedArgs[i] === 'function')
-                Object.defineProperty(obj, param, { get: normalizedArgs[i], enumerable: true });
+                Object.defineProperty(obj, propName, { get: normalizedArgs[i], enumerable: true });
             else
-                obj[param] = normalizedArgs[i];
+                obj[propName] = normalizedArgs[i];
         });
         self[pool].set(...[...normalizedArgs, obj]);
 
@@ -83,10 +86,10 @@ function variantConstructor(params, name) {
  * @returns The data type
  */
 export function Data(decl) {
-    const dataDecl = Array.isArray(decl) ? { 'Anonymous!': decl } : decl;
+    assert(isObjectLiteral(decl), 'Data declaration must be an object literal');
 
-    assert(isObjectLiteral(dataDecl), 'Data declaration must be an object literal or an array');
-    // TODO: how to extend anonymous variant? Maybe each variant should have a reference to the base?
+    // if every key is camelCase, then it's an anonymous variant
+    const dataDecl = Object.keys(decl).every(isCamelCase) ? { 'Anonymous!': decl } : decl;
 
     assert(implies(extend in dataDecl, dataDecl[extend] && isData in dataDecl[extend]),
         'Data can only extend another Data declaration');
@@ -97,11 +100,11 @@ export function Data(decl) {
 
     for (const [name, params] of Object.entries(dataDecl)) {
         assert(isCapitalized(name), `variant name must be capitalized: ${name}`);
-        assert(Array.isArray(params), `variant properties must be an array: ${name}`)
-        assert(params.every(isCamelCase), `variant properties must be camelCase strings: ${name}: ${params}`);
-        assert(new Set(params).size === params.length, `variant properties must be unique: ${name}: ${params}`)
+        assert(isObjectLiteral(params), `variant properties must be an object literal: ${name}`)
+        const propNames = Object.keys(params);
+        assert(propNames.every(isCamelCase), `variant properties must be camelCase strings: ${name}: ${params}`);
 
-        if (params.length === 0) {
+        if (propNames.length === 0) {
             const obj = result[name] = Object.create(null)
             Object.assign(obj, ({ [variant]: obj, [variantName]: name, [isSingleton]: true }))
             Object.freeze(obj)

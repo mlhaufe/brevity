@@ -45,7 +45,7 @@ For direct use in a browser (no build step):
 Enumerations can be declared similar to how you would in a functional language:
 
 ```js
-const Color = Data({ Red: [], Green: [], Blue: [] });
+const Color = Data({ Red: {}, Green: {}, Blue: {} });
 ```
 
 Variants without properties are considered singletons:
@@ -60,7 +60,10 @@ red === red2
 Each variant can have properties. These properties become named parameters of each constructor:
 
 ```js
-const Point = Data({ Point2: ['x', 'y'], Point3: ['x', 'y', 'z'] }),
+const Point = Data({
+        Point2: {x: {}, y: {}},
+        Point3: {x: {}, y: {}, z: {}} 
+    }),
     {Point2, Point3} = Point
 
 const p2 = Point2({x: 3, y: 2}),
@@ -84,14 +87,14 @@ If you only have a single variant a short hand is available:
 
 ```js
 const Disk = Data({
-    Disk: ['position', 'velocity', 'radius', 'item']
+    Disk: {position: {}, velocity: {}, radius: {}, item: {}}
 })
 ```
 
 Can be written as:
 
 ```js
-const Disk = Data(['position', 'velocity', 'radius', 'item'])
+const Disk = Data({position: {}, velocity: {}, radius: {}, item: {}})
 ```
 
 ### Destructuring
@@ -112,11 +115,14 @@ const { position, velocity, radius, item } = disk;
 Each data variant has a `[variantName]` field which provides the name of the variant's constructor
 
 ```js
-const Color = Data({ Red: [], Green: [], Blue: [] });
+const Color = Data({ Red: {}, Green: {}, Blue: {} });
 
 Color.Red[variantName] === 'Red'
 
-const Point = Data({ Point2: ['x', 'y'], Point3: ['x', 'y', 'z'] }),
+const Point = Data({ 
+        Point2: {x: {}, y: {}}, 
+        Point3: { x: {}, y: {}, z: {}}
+    }),
     {Point2, Point3} = Point
 
 const p2 = Point2(12, 3),
@@ -129,7 +135,7 @@ p3[variantName] === 'Point3'
 If the data declaration was in short-hand form:
 
 ```js
-const Disk = Data(['position', 'velocity', 'radius', 'item'])
+const Disk = Data({position: {}, velocity: {}, radius: {}, item: {}})
 ```
 
 Then the variantName is `Anonymous!`
@@ -145,11 +151,14 @@ disk[variantName] === 'Anonymous!'
 Each data variant has a `[variant]` field which provides a reference to the constructor:
 
 ```js
-const Color = Data({ Red: [], Green: [], Blue: [] });
+const Color = Data({ Red: {}, Green: {}, Blue: {} });
 
 Color.Red[variant] === Color.Red
 
-const Point = Data({ Point2: ['x', 'y'], Point3: ['x', 'y', 'z'] }),
+const Point = Data({ 
+        Point2: {x: {}, y: {}}, 
+        Point3: {x: {}, y: {}, z: {}} 
+    }),
     {Point2, Point3} = Point
 
 const p2 = Point2(12, 3),
@@ -164,14 +173,14 @@ p3[variant] === Point3
 Recursive data can be defined as follows:
 
 ```js
-const Peano = Data({ Zero: [], Succ: ['pred'] });
+const Peano = Data({ Zero: {}, Succ: { pred: {} } });
 
 const zero = Peano.Zero,
       one = Peano.Succ({ pred: zero }),
       two = Peano.Succ({ pred: one }),
       three = Peano.Succ({ pred: two });
 
-const List = Data({ Nil: [], Cons: ['head', 'tail'] }),
+const List = Data({ Nil: {}, Cons: { head: {}, tail: {} } }),
     { Cons, Nil } = List;
 
 // [1, 2, 3]
@@ -183,12 +192,12 @@ const xs = Cons(1, Cons(2, Cons(3, Nil))),
 Data declarations can be extended by utilizing the `extend` symbol:
 
 ```js
-const IntExp = Data({ Lit: ['value'], Add: ['left', 'right'] })
+const IntExp = Data({ Lit: {value: {}}, Add: {left: {}, right: {}} })
 
 const IntBoolExp = Data({ 
         [extend]: IntExp,
-        Bool: ['value'], 
-        Iff: ['pred', 'ifTrue', 'ifFalse'] 
+        Bool: {value: {}}, 
+        Iff: {pred: {}, ifTrue: {}, ifFalse: {}} 
     }),
     {Add, Lit, Bool, Iff} = IntBoolExp
 
@@ -196,7 +205,10 @@ const IntBoolExp = Data({
 const exp = Iff({
     pred: Bool({ value: true }),
     ifTrue: Lit({ value: 1 }),
-    ifFalse: Add({left: Lit({value: 1}, right: Lit({value: 3}))})
+    ifFalse: Add({
+        left: Lit({value: 1}, 
+        right: Lit({value: 3}))
+    })
 })
 ```
 
@@ -206,7 +218,7 @@ const exp = Iff({
 
 ```js
 const Person = Data({
-    Employee: ['firstName', 'lastName', 'fullName']
+    Employee: {firstName: {}, lastName: {}, fullName: {}}
 })
 
 const p = Person.Employee({
@@ -223,10 +235,10 @@ This can also be used for self-referential structures:
 
 ```js
 const Lang = Data({
-    Alt: ['left', 'right'],
-    Cat: ['first', 'second'],
-    Char: ['value'],
-    Empty: [],
+    Alt: {left: {}, right: {}},
+    Cat: {first: {}, second: {}},
+    Char: {value: {}},
+    Empty: {},
 }),
     { Alt, Empty, Cat, Char } = Lang
 
@@ -255,7 +267,10 @@ Which is what allows strict equality comparisons.
 Non-singleton variants also support strict equality comparisons:
 
 ```js
-const Point = Data({ Point2: ['x', 'y'], Point3: ['x','y','z'] }),
+const Point = Data({ 
+        Point2: {x: {}, y: {}}, 
+        Point3: {x: {}, y: {}, z: {}} 
+    }),
     {Point2, Point3}
 
 Point3(1,2,3) === Point3({x:1,y:2,z:3}) // true
@@ -267,7 +282,10 @@ Besides the convenience of the above, this also enables use of variant declarati
 directly like Array, Map, Set, etc.
 
 ```js
-const Point = Data({ Point2: ['x', 'y'], Point3: ['x', 'y', 'z'] }),
+const Point = Data({ 
+        Point2: {x: {}, y: {}}, 
+        Point3: {x: {}, y: {}, z: {}} 
+    }),
     { Point2, Point3 } = Point;
 
 const pArray = [Point2(1, 2), Point3(1, 2, 3)];
@@ -306,7 +324,7 @@ pMap.has(Point3(1, 2, 4)) // false
 A `Trait` associates operations with data declarations and supports pattern matching.
 
 ```js
-const Color = Data({ Red: [], Green: [], Blue: [] });
+const Color = Data({ Red: {}, Green: {}, Blue: {} });
 
 const print = Trait(Color, {
     Red() { return '#FF0000' },
@@ -320,7 +338,7 @@ print(Color.Red) // '#FF0000'
 The trait `print` is a function that can then be applied to data instances.
 
 ```js
-const List = Data({ Nil: [], Cons: ['head', 'tail'] });
+const List = Data({ Nil: {}, Cons: {head: {}, tail: {}} });
 
 const concat = Trait(List, {
     Nil(_, ys) { return ys },
@@ -423,8 +441,12 @@ More advanced pattern matching is supported beyond simply variants and utilize `
 as a wildcard.
 
 ```js
-const Expr = Data({ Num: ['value'], Var: ['name'], Mul: ['left', 'right'] }),
-            { Num, Var, Mul } = Expr
+const Expr = Data({ 
+        Num: {value: {}}, 
+        Var: {name: {}}, 
+        Mul: {left: {}, right: {}} 
+    }),
+    { Num, Var, Mul } = Expr
 
 // 1 * x = x
 // x * 1 = x
@@ -474,7 +496,7 @@ const simplify = Trait(Expr, {
 A more complicated example with nested patterns:
 
 ```js
-const List = Data({ Nil: [], Cons: ['head', 'tail'] }),
+const List = Data({ Nil: {}, Cons: {head: {}, tail: {}} }),
             { Nil, Cons } = List
 
 const tell = Trait(List, {
@@ -571,7 +593,7 @@ add3(_, _, _)(_, 2, _)(_, 3)(1) === 6
 A more practical example where this can be a benefit can be seen with linked lists:
 
 ```js
-const List = Data({ Nil: [], Cons: ['head', 'tail'] })
+const List = Data({ Nil: {}, Cons: {head: {}, tail: {}} })
 
 const { Nil, Cons } = List
 ```
@@ -650,7 +672,10 @@ different mechanism is needed as the recursion happens across a data family and 
 Instead of `this`, the `apply` symbol is used:
 
 ```js
-const IntExp = Data({ Lit: ['value'], Add: ['left', 'right'] })
+const IntExp = Data({
+    Lit: {value: {}},
+    Add: {left: {}, right: {}}
+})
 
 const intPrint = Trait(IntExp, {
     Lit({ value }) {
@@ -663,8 +688,8 @@ const intPrint = Trait(IntExp, {
 
 const IntBoolExp = Data({
     [extend]: IntExp,
-    Bool: ['value'], 
-    Iff: ['pred', 'ifTrue', 'ifFalse'] 
+    Bool: {value: {}}, 
+    Iff: {pred: {}, ifTrue: {}, ifFalse: {}} 
 })
 
 const intBoolPrint = Trait(IntBoolExp, {
@@ -900,7 +925,7 @@ Here is how the above would be approached with this library:
 
 ```js
 // data declaration
-const Exp = Data({ Lit: ['value'], Add: ['left', 'right']})
+const Exp = Data({ Lit: {value: {}}, Add: {left: {}, right: {}}})
 
 // operations
 const evaluate = Trait(Exp, {
@@ -933,7 +958,7 @@ print(add) // "1 + 3"
 Adding a new data type `Mul` is as simple as extending the base data type `Exp`:
 
 ```js
-const MulExp = Data({ [extend]: Exp, Mul: ['left','right']})
+const MulExp = Data({ [extend]: Exp, Mul: {left: {}, right: {}}})
 ```
 
 To extend `evaluate` and `print` to the new data declaration, simply extend the existing traits:

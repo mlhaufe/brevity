@@ -1,7 +1,7 @@
 import { Data, isData, variant, variantName, Trait } from "../index.mjs"
 
 describe('Bool tests', () => {
-    const Bool = Data({ False: [], True: [] })
+    const Bool = Data({ False: {}, True: {} })
     test('Bool Data', () => {
         expect(Bool[isData]).toBe(true)
 

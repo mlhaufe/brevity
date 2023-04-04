@@ -1,7 +1,10 @@
 import { Data, Trait } from "../index.mjs"
 
 describe('Tree Tests', () => {
-    const Tree = Data({ Leaf: ['value'], Branch: ['left', 'right'] }),
+    const Tree = Data({
+        Leaf: { value: {} },
+        Branch: { left: {}, right: {} }
+    }),
         { Leaf, Branch } = Tree;
     test('Tree data', () => {
         const tree = Branch(Leaf(1), Leaf(2));

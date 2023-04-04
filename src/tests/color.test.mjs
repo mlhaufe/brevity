@@ -1,7 +1,7 @@
 import { Data, isData, data, variant, variantName, Trait } from "../index.mjs"
 
 describe('Color tests', () => {
-    const Color = Data({ Red: [], Green: [], Blue: [] });
+    const Color = Data({ Red: {}, Green: {}, Blue: {} });
 
     test('Color Data', () => {
         expect(Color[isData]).toBe(true);

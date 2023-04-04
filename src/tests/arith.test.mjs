@@ -2,7 +2,10 @@ import { Data, Trait, apply, data, extend } from '../index.mjs'
 
 describe('Arithmetic', () => {
     // data declaration
-    const Exp = Data({ Lit: ['value'], Add: ['left', 'right'] }),
+    const Exp = Data({
+        Lit: { value: {} },
+        Add: { left: {}, right: {} }
+    }),
         { Add, Lit } = Exp
 
     // operations
@@ -114,7 +117,7 @@ describe('Arithmetic', () => {
 
     const MulExp = Data({
         [extend]: Exp,
-        Mul: ['left', 'right']
+        Mul: { left: {}, right: {} }
     })
 
     test('MulExp Data', () => {

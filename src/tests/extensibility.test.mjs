@@ -1,7 +1,10 @@
 import { Data, Trait, apply, extend } from "../index.mjs"
 
 describe('Extensibility for the Masses', () => {
-    const IntExp = Data({ Lit: ['value'], Add: ['left', 'right'] })
+    const IntExp = Data({
+        Lit: { value: {} },
+        Add: { left: {}, right: {} }
+    })
 
     const intPrint = Trait(IntExp, {
         Lit({ value }) {
@@ -34,8 +37,8 @@ describe('Extensibility for the Masses', () => {
 
     const IntBoolExp = Data({
         [extend]: IntExp,
-        Bool: ['value'],
-        Iff: ['pred', 'ifTrue', 'ifFalse']
+        Bool: { value: {} },
+        Iff: { pred: {}, ifTrue: {}, ifFalse: {} }
     })
 
     test('IntBoolExp Data', () => {
@@ -96,10 +99,10 @@ describe('Extensibility for the Masses', () => {
 
     const StmtExp = Data({
         [extend]: IntBoolExp,
-        Assign: ['scope', 'name', 'value'],
-        Expr: ['value'],
-        Seq: ['first', 'second'],
-        Var: ['scope', 'name']
+        Assign: { scope: {}, name: {}, value: {} },
+        Expr: { value: {} },
+        Seq: { first: {}, second: {} },
+        Var: { scope: {}, name: {} }
     })
 
     test('StmtExp Data', () => {

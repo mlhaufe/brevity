@@ -19,7 +19,7 @@ describe('Partial Application', () => {
     })
 
     test('Linked List', () => {
-        const List = Data({ Nil: [], Cons: ['head', 'tail'] }),
+        const List = Data({ Nil: {}, Cons: { head: {}, tail: {} } }),
             { Nil, Cons } = List
 
         const foldRight = Trait(List, {

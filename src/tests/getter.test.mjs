@@ -2,7 +2,7 @@ import { Data, variant, variantName } from "../index.mjs"
 
 describe('Getter field tests', () => {
     test('Data with computed property names', () => {
-        const Employee = Data(['firstName', 'lastName', 'fullName'])
+        const Employee = Data({ firstName: {}, lastName: {}, fullName: {} })
 
         const p = Employee({
             firstName: 'John',
@@ -15,10 +15,10 @@ describe('Getter field tests', () => {
 
     test('Data with self-referential computed property names', () => {
         const Lang = Data({
-            Alt: ['left', 'right'],
-            Cat: ['first', 'second'],
-            Char: ['value'],
-            Empty: [],
+            Alt: { left: {}, right: {} },
+            Cat: { first: {}, second: {} },
+            Char: { value: {} },
+            Empty: {},
         }),
             { Alt, Empty, Cat, Char } = Lang
 

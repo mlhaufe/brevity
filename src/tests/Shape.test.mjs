@@ -1,7 +1,10 @@
 import { Data, isData, variant, variantName, Trait } from "../index.mjs";
 
 describe('Shape tests', () => {
-    const Shape = Data({ Circle: ['radius'], Rectangle: ['width', 'height'] }),
+    const Shape = Data({
+        Circle: { radius: {} },
+        Rectangle: { width: {}, height: {} }
+    }),
         { Circle, Rectangle } = Shape;
 
     test('Shape Data', () => {
