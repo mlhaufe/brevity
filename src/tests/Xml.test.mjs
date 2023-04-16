@@ -1,8 +1,8 @@
-import { Data, Trait } from "../index.mjs"
+import { data, trait } from "../index.mjs"
 
 describe('Simplified Xml Tests', () => {
-    const Attr = Data({ name: {}, value: {} }),
-        Node = Data({
+    const Attr = data({ name: {}, value: {} }),
+        Node = data({
             Element: { name: {}, attrs: {}, children: {} },
             Text: { text: {} }
         }),
@@ -66,7 +66,7 @@ describe('Simplified Xml Tests', () => {
         expect(h1.children[0].text).toBe('Hello World!');
     })
 
-    const print = Trait(Node, {
+    const print = trait(Node, {
         Element: ({ name, attrs, children }) => {
             const attrsText = attrs.map(({ name, value }) => ` ${name}="${value}"`).join('');
             const childrenText = children.map(child => print(child)).join('');
@@ -90,7 +90,7 @@ describe('Simplified Xml Tests', () => {
         Element('a', [Attr('href', 'https://archive.org')], [Text('Internet Archive')])
     ]);
 
-    const nodeName = Trait(Node, {
+    const nodeName = trait(Node, {
         _: ({ name }) => name
     })
 

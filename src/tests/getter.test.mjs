@@ -1,8 +1,8 @@
-import { Data, variant, variantName } from "../index.mjs"
+import { data, variant, variantName } from "../index.mjs"
 
 describe('Getter field tests', () => {
-    test('Data with computed property names', () => {
-        const Employee = Data({ firstName: {}, lastName: {}, fullName: {} })
+    test('data with computed property names', () => {
+        const Employee = data({ firstName: {}, lastName: {}, fullName: {} })
 
         const p = Employee({
             firstName: 'John',
@@ -13,8 +13,8 @@ describe('Getter field tests', () => {
         expect(p.fullName).toBe('John Doe')
     })
 
-    test('Data with self-referential computed property names', () => {
-        const Lang = Data({
+    test('data with self-referential computed property names', () => {
+        const Lang = data({
             Alt: { left: {}, right: {} },
             Cat: { first: {}, second: {} },
             Char: { value: {} },

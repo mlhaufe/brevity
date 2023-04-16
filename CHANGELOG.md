@@ -2,13 +2,14 @@
 
 ## v0.10.0
 
+- `Data` and `Trait` are now lowercase: `data`and `trait`
 - Property declarations must now be object literals instead of arrays:
 
 ```js
 // before
 const Point3 = Data(['x', 'y', 'z'])
 // after
-const Point3 = Data([{x: {}, y: {}, z: {}}])
+const Point3 = data([{x: {}, y: {}, z: {}}])
 ```
 
 ```js
@@ -18,13 +19,14 @@ const Point = Data({
     Point3: ['x', 'y', 'z']
 })
 // after
-const Point = Data({
+const Point = data({
     Point2: {x: {}, y: {}},
     Point3: {x: {}, y: {}, z: {}}
 })
 ```
 
 - Updated README
+- Updated package keywords
 
 ## v0.9.0
 

@@ -1,7 +1,7 @@
-import { Data, Trait } from "../index.mjs"
+import { data, trait } from "../index.mjs"
 
 describe('Tree Tests', () => {
-    const Tree = Data({
+    const Tree = data({
         Leaf: { value: {} },
         Branch: { left: {}, right: {} }
     }),
@@ -15,7 +15,7 @@ describe('Tree Tests', () => {
         expect(tree.right.value).toBe(2);
     })
 
-    const print = Trait(Tree, {
+    const print = trait(Tree, {
         Leaf({ value }) { return `${value}` },
         Branch({ left, right }) { return `(${print(left)}, ${print(right)})` }
     })

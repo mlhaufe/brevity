@@ -1,8 +1,8 @@
-import { Data, isData, variant, variantName, Trait } from "../index.mjs"
+import { data, isData, variant, variantName, trait } from "../index.mjs"
 
 describe('Bool tests', () => {
-    const Bool = Data({ False: {}, True: {} })
-    test('Bool Data', () => {
+    const Bool = data({ False: {}, True: {} })
+    test('Bool data', () => {
         expect(Bool[isData]).toBe(true)
 
         const f = Bool.False,
@@ -18,7 +18,7 @@ describe('Bool tests', () => {
         const f = Bool.False,
             t = Bool.True
 
-        const and = Trait(Bool, {
+        const and = trait(Bool, {
             False(left, _) { return left },
             True(_, right) { return right }
         })
@@ -28,7 +28,7 @@ describe('Bool tests', () => {
         expect(and(t, f)).toBe(f)
         expect(and(t, t)).toBe(t)
 
-        const or = Trait(Bool, {
+        const or = trait(Bool, {
             False(_, right) { return right },
             True(left, _) { return left }
         })
@@ -38,7 +38,7 @@ describe('Bool tests', () => {
         expect(or(t, f)).toBe(t)
         expect(or(t, t)).toBe(t)
 
-        const not = Trait(Bool, {
+        const not = trait(Bool, {
             False() { return Bool.True },
             True() { return Bool.False }
         })

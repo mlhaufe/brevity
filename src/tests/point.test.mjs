@@ -1,13 +1,13 @@
-import { Data, isData, variant, variantName, Trait } from "../index.mjs"
+import { data, isData, variant, variantName, trait } from "../index.mjs"
 
 describe('Point tests', () => {
-    const Point = Data({
+    const Point = data({
         Point2: { x: {}, y: {} },
         Point3: { x: {}, y: {}, z: {} }
     }),
         { Point2, Point3 } = Point;
 
-    test('Point Data', () => {
+    test('Point data', () => {
         expect(Point[isData]).toBe(true);
 
         const p2 = Point.Point2({ x: 1, y: 2 });
@@ -28,7 +28,7 @@ describe('Point tests', () => {
         expect(p3.z).toBe(5);
     })
 
-    const print = Trait(Point, {
+    const print = trait(Point, {
         Point2({ x, y }) { return `(${x}, ${y})` },
         Point3({ x, y, z }) { return `(${x}, ${y}, ${z})` }
     })

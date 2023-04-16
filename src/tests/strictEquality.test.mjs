@@ -1,8 +1,8 @@
-import { Data } from "../index.mjs";
+import { data } from "../index.mjs";
 
 describe('Equality tests', () => {
     test('data singleton equality', () => {
-        const Color = Data({ Red: {}, Green: {}, Blue: {} }),
+        const Color = data({ Red: {}, Green: {}, Blue: {} }),
             { Red, Green, Blue } = Color;
 
         expect(Red === Red).toBe(true);
@@ -14,7 +14,7 @@ describe('Equality tests', () => {
     })
 
     test('Point equality', () => {
-        const Point = Data({
+        const Point = data({
             Point2: { x: {}, y: {} },
             Point3: { x: {}, y: {}, z: {} }
         }),
@@ -36,7 +36,7 @@ describe('Equality tests', () => {
     })
 
     test('data arithmetic equality', () => {
-        const Exp = Data({
+        const Exp = data({
             Lit: { value: {} },
             Add: { left: {}, right: {} }
         }),
@@ -94,7 +94,7 @@ describe('Equality tests', () => {
     })
 
     test('data peano equality', () => {
-        const Peano = Data({ Zero: {}, Succ: { pred: {} } }),
+        const Peano = data({ Zero: {}, Succ: { pred: {} } }),
             { Zero, Succ } = Peano,
             zero = Zero,
             one = Succ({ pred: zero }),
@@ -112,7 +112,7 @@ describe('Equality tests', () => {
     })
 
     test('Recursive data equality', () => {
-        const List = Data({ Nil: {}, Cons: { head: {}, tail: {} } }),
+        const List = data({ Nil: {}, Cons: { head: {}, tail: {} } }),
             { Cons, Nil } = List;
 
         const list1 = Cons(1, Cons(2, Cons(3, Nil))),
@@ -125,7 +125,7 @@ describe('Equality tests', () => {
     })
 
     test('Array membership', () => {
-        const Point = Data({
+        const Point = data({
             Point2: { x: {}, y: {} },
             Point3: { x: {}, y: {}, z: {} }
         }),
@@ -142,7 +142,7 @@ describe('Equality tests', () => {
     })
 
     test('Set membership', () => {
-        const Point = Data({
+        const Point = data({
             Point2: { x: {}, y: {} },
             Point3: { x: {}, y: {}, z: {} }
         }),
@@ -159,7 +159,7 @@ describe('Equality tests', () => {
     })
 
     test('Map membership', () => {
-        const Point = Data({
+        const Point = data({
             Point2: { x: {}, y: {} },
             Point3: { x: {}, y: {}, z: {} }
         }),

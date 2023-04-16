@@ -1,8 +1,8 @@
-import { memoFix, Trait, apply } from '../index.mjs'
+import { memoFix, trait, apply } from '../index.mjs'
 
 describe('least fixed point', () => {
     test('returning bottom on infinite recursion', () => {
-        const omega = new Trait(undefined, {
+        const omega = trait(undefined, {
             [apply](x) { return this[apply](x); }
         })
 
@@ -14,7 +14,7 @@ describe('least fixed point', () => {
     })
 
     test('memo performance', () => {
-        const fib = new Trait(undefined, {
+        const fib = trait(undefined, {
             [apply](n) {
                 return n < 2 ? n : this[apply](n - 1) + this[apply](n - 2);
             }
@@ -38,7 +38,7 @@ describe('least fixed point', () => {
     })
 
     test('computed bottom', () => {
-        const foo = Trait(undefined, {
+        const foo = trait(undefined, {
             [apply](x) {
                 if (x <= 3) {
                     return 1 + this[apply](x + 1);

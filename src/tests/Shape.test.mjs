@@ -1,13 +1,13 @@
-import { Data, isData, variant, variantName, Trait } from "../index.mjs";
+import { data, isData, variant, variantName, trait } from "../index.mjs";
 
 describe('Shape tests', () => {
-    const Shape = Data({
+    const Shape = data({
         Circle: { radius: {} },
         Rectangle: { width: {}, height: {} }
     }),
         { Circle, Rectangle } = Shape;
 
-    test('Shape Data', () => {
+    test('Shape data', () => {
         expect(Shape[isData]).toBe(true);
 
         const circle = Circle({ radius: 1 });
@@ -27,7 +27,7 @@ describe('Shape tests', () => {
         expect(rectangle.height).toBe(3);
     })
 
-    const area = Trait(Shape, {
+    const area = trait(Shape, {
         Circle({ radius }) { return Math.PI * radius * radius },
         Rectangle({ width, height }) { return width * height }
     })
@@ -42,7 +42,7 @@ describe('Shape tests', () => {
 
     test('Trait with missing variant', () => {
         expect(() => {
-            const toString = Trait(Shape, {})
-        }).toThrow("Invalid Trait declaration. Missing definition for 'Circle'")
+            const toString = trait(Shape, {})
+        }).toThrow("Invalid trait declaration. Missing definition for 'Circle'")
     })
 })

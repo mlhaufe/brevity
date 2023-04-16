@@ -3,7 +3,7 @@ import { assert } from './assert.mjs';
 import { extend, variant, variantName, isData } from './index.mjs';
 
 export const isTrait = Symbol('isTrait'),
-    data = Symbol('data'),
+    dataDecl = Symbol('dataDecl'),
     apply = Symbol('apply'),
     _ = Symbol('_');
 
@@ -49,7 +49,7 @@ const protoTrait = () => { }
 protoTrait[isTrait] = true;
 protoTrait[apply] = function self(instance, ...args) {
     let fn
-    const dataType = this[data]
+    const dataType = this[dataDecl]
 
     if (dataType == undefined) {
         fn = this['_']
@@ -81,6 +81,7 @@ protoTrait[apply] = function self(instance, ...args) {
     if (fn) return fn.call(this, instance, ...args);
 
     // fallback to wildcard
+    // @ts-ignore
     if ('_' in this) return this['_'].call(this, instance, ...args);
 
     throw new TypeError(`no trait defined for ${instance[variantName]}`)
@@ -138,8 +139,6 @@ const unify = (p, a) => {
             if (p[variant] !== a[variant])
                 return false
             for (const [k, v] of Object.entries(p)) {
-                if (k === variant)
-                    continue
                 if (!(k in a))
                     return false
                 if (!unify(v, a[k]))
@@ -245,14 +244,14 @@ const createTraitFn = (name, patternDefOrFn) => {
 
 /**
  * Defines a trait for a data declaration.
- * @param {object} dataDecl The data declaration to define the trait for.
- * @param {object} traifDef The traits to define.
+ * @param {object} dataDec The data declaration to define the trait for.
+ * @param {object} traitDef The traits to define.
  * @throws {TypeError} if traits is not an object literal
  * @throws {TypeError} if dataDecl is not a data declaration
  * @throws {TypeError} if any trait is not a function
  * @returns {function} a trait function
  */
-export function Trait(dataDecl, traitDef) {
+export function trait(dataDec, traitDef) {
     let localTraits = (...args) => localTraits[apply](...args)
 
     assert(isObjectLiteral(traitDef), 'traitDef must be an object literal');
@@ -267,27 +266,27 @@ export function Trait(dataDecl, traitDef) {
         extend in traitDef ? traitDef[extend] : protoTrait
     )
 
-    localTraits[data] = dataDecl
+    localTraits[dataDecl] = dataDec
 
-    if (dataDecl == undefined) {
+    if (dataDec == undefined) {
         assert('_' in traitDef || apply in traitDef,
             "Wildcard '_' or Symbol(apply) must be defined if dataDecl is undefined");
         return localTraits
-    } else if (isData in dataDecl) {
+    } else if (isData in dataDec) {
         if (!('_' in traitDef)) {
             // every key in dataDecl must be in traitDef
-            Object.keys(dataDecl).forEach(name => {
+            Object.keys(dataDec).forEach(name => {
                 assert(traitDef[name] != null, `Invalid Trait declaration. Missing definition for '${String(name)}'`);
             })
         }
 
-        assignTraitDefs(traitDef, localTraits, dataDecl);
-    } else if (variant in dataDecl.prototype) {
+        assignTraitDefs(traitDef, localTraits, dataDec);
+    } else if (variant in dataDec.prototype) {
         assert(Object.keys(traitDef).length === 1, `Only one trait may be defined for a variant declaration`);
-        assignTraitDefs(traitDef, localTraits, dataDecl);
-    } else if (primCons.includes(dataDecl)) {
+        assignTraitDefs(traitDef, localTraits, dataDec);
+    } else if (primCons.includes(dataDec)) {
         if (!('_' in traitDef)) {
-            if (dataDecl === Boolean)
+            if (dataDec === Boolean)
                 assignTraitDefs(traitDef, localTraits, undefined)
             else
                 throw new TypeError(msgWildcardInvalid);

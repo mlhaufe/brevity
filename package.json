@@ -11,7 +11,8 @@
         "Pattern Matching",
         "memoization",
         "fixed point",
-        "memofix"
+        "memofix",
+        "Family Polymorphism"
     ],
     "module": "dist/index.mjs",
     "type": "module",

@@ -1,5 +1,5 @@
-export { Data, isData, isSingleton, variant, variantName } from './data2.mjs';
-export { Trait, apply, data, isTrait, _ } from './trait2.mjs';
+export { data, isData, isSingleton, variant, variantName } from './data.mjs';
+export { trait, apply, dataDecl, isTrait, _ } from './trait.mjs';
 export { memoFix } from './memoFix.mjs';
 
 /**

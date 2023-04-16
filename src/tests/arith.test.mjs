@@ -1,15 +1,15 @@
-import { Data, Trait, apply, data, extend } from '../index.mjs'
+import { data, trait, apply, dataDecl, extend } from '../index.mjs'
 
 describe('Arithmetic', () => {
     // data declaration
-    const Exp = Data({
+    const Exp = data({
         Lit: { value: {} },
         Add: { left: {}, right: {} }
     }),
         { Add, Lit } = Exp
 
     // operations
-    const evaluate = Trait(Exp, {
+    const evaluate = trait(Exp, {
         Lit({ value }) { return value },
         Add({ left, right }) {
             return this[apply](left) + this[apply](right)
@@ -69,7 +69,7 @@ describe('Arithmetic', () => {
             })
         })
 
-        expect(evaluate[data]).toBe(Exp)
+        expect(evaluate[dataDecl]).toBe(Exp)
         expect(evaluate(exp)).toBe(6)
 
         // 1 + (2 + 3) + 4
@@ -84,7 +84,7 @@ describe('Arithmetic', () => {
         expect(evaluate(exp2)).toBe(10)
     })
 
-    const print = Trait(Exp, {
+    const print = trait(Exp, {
         Lit([value]) { return `${value}` },
         Add([left, right]) {
             return `${this[apply](left)} + ${this[apply](right)}`
@@ -115,12 +115,12 @@ describe('Arithmetic', () => {
         expect(print(exp2)).toBe('1 + 2 + 3 + 4')
     })
 
-    const MulExp = Data({
+    const MulExp = data({
         [extend]: Exp,
         Mul: { left: {}, right: {} }
     })
 
-    test('MulExp Data', () => {
+    test('MulExp data', () => {
         expect(MulExp.Lit).toBeDefined()
         expect(MulExp.Add).toBeDefined()
         expect(MulExp.Mul).toBeDefined()
@@ -139,7 +139,7 @@ describe('Arithmetic', () => {
         expect(exp.right.right.value).toBe(3)
     })
 
-    const evalMul = Trait(MulExp, {
+    const evalMul = trait(MulExp, {
         [extend]: evaluate,
         Mul({ left, right }) { return this[apply](left) * this[apply](right) }
     })
@@ -157,7 +157,7 @@ describe('Arithmetic', () => {
         expect(evalMul(exp)).toBe(7)
     })
 
-    const printMul = Trait(MulExp, {
+    const printMul = trait(MulExp, {
         [extend]: print,
         Mul([left, right]) { return `${this[apply](left)} * ${this[apply](right)}` }
     })
@@ -175,7 +175,7 @@ describe('Arithmetic', () => {
         expect(printMul(exp)).toBe('1 + 2 * 3')
     })
 
-    const isValue = Trait(MulExp, {
+    const isValue = trait(MulExp, {
         Lit({ value }) { return true },
         Add({ left, right }) { return false },
         Mul({ left, right }) { return false }

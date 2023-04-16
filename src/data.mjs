@@ -85,7 +85,7 @@ function variantConstructor(params, name) {
  * @param decl The variants definition
  * @returns The data type
  */
-export function Data(decl) {
+export function data(decl) {
     assert(isObjectLiteral(decl), 'Data declaration must be an object literal');
 
     // if every key is camelCase, then it's an anonymous variant

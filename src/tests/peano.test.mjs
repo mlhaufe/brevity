@@ -1,9 +1,9 @@
-import { Data, Trait } from "../index.mjs";
+import { data, trait } from "../index.mjs";
 
 describe('Peano tests', () => {
-    const Peano = Data({ Zero: {}, Succ: { pred: {} } });
+    const Peano = data({ Zero: {}, Succ: { pred: {} } });
 
-    test('Peano Data', () => {
+    test('Peano data', () => {
         const zero = Peano.Zero,
             one = Peano.Succ({ pred: zero }),
             two = Peano.Succ({ pred: one }),
@@ -15,12 +15,12 @@ describe('Peano tests', () => {
         expect(three.pred).toBe(two);
     });
 
-    const value = Trait(Peano, {
+    const value = trait(Peano, {
         Zero(self) { return 0 },
         Succ({ pred }) { return 1 + value(pred) }
     })
 
-    test('Peano Value Trait', () => {
+    test('Peano Value trait', () => {
         const zero = Peano.Zero,
             one = Peano.Succ({ pred: zero }),
             two = Peano.Succ({ pred: one }),

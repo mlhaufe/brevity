@@ -27,7 +27,7 @@ export class BoxedMultiKeyMap {
         // https://github.com/tc39/proposal-symbols-as-weakmap-keys
         if (typeof key === 'symbol')
             return this.#primitiveMap.get(key) ?? this.#primitiveMap.set(key, Object(key)).get(key);
-        // This may be a mistake in general, but for use in the Data module it is necessary
+        // This may be a mistake in general, but for use in the data module it is necessary
         // for supporting strict equality
         if (typeof key === 'function' && key.toString().startsWith('(')) {
             const strFunc = key.toString();

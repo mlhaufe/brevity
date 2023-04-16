@@ -1,15 +1,15 @@
-import { Data, Trait, _ } from "../index.mjs";
+import { data, trait, _ } from "../index.mjs";
 
 describe('Pattern matching', () => {
     test('Simplify expression', () => {
-        const Expr = Data({
+        const Expr = data({
             Num: { value: {} },
             Var: { name: {} },
             Mul: { left: {}, right: {} }
         }),
             { Num, Var, Mul } = Expr
 
-        const simplify = Trait(Expr, {
+        const simplify = trait(Expr, {
             _: (self) => self,
             Mul: [
                 [{ left: Num(1) }, ({ right }) => right],
@@ -35,7 +35,7 @@ describe('Pattern matching', () => {
 
         expect(simplify(e4)).toEqual(Num(0))
 
-        const simplify2 = Trait(Expr, {
+        const simplify2 = trait(Expr, {
             _: (self) => self,
             Mul: [
                 [Mul(Num(1), _), ({ right }) => right],
@@ -52,14 +52,14 @@ describe('Pattern matching', () => {
     })
 
     test('Notification', () => {
-        const Notification = Data({
+        const Notification = data({
             Email: { sender: {}, title: {}, body: {} },
             SMS: { caller: {}, message: {} },
             VoiceRecording: { contactName: {}, link: {} }
         })
         const { Email, SMS, VoiceRecording } = Notification
 
-        const showNotification = Trait(Notification, {
+        const showNotification = trait(Notification, {
             Email: ({ sender, title, }) => `You got an email from ${sender} titled ${title}`,
             SMS: ({ caller, message }) => `You got a text message from ${caller} saying ${message}`,
             VoiceRecording: ({ contactName, link }) => `You received a voice recording from ${contactName}! Click the link to hear it: ${link}`
@@ -75,10 +75,10 @@ describe('Pattern matching', () => {
     })
 
     test('List', () => {
-        const List = Data({ Nil: {}, Cons: { head: {}, tail: {} } }),
+        const List = data({ Nil: {}, Cons: { head: {}, tail: {} } }),
             { Nil, Cons } = List
 
-        const length = Trait(List, {
+        const length = trait(List, {
             Nil: (self) => 0,
             Cons: ({ tail }) => 1 + length(tail)
         })
@@ -86,7 +86,7 @@ describe('Pattern matching', () => {
         const l = Cons(1, Cons(2, Cons(3, Nil)))
         expect(length(l)).toEqual(3)
 
-        const tell = Trait(List, {
+        const tell = trait(List, {
             Nil: (self) => 'The list is empty',
             Cons: [
                 [Cons(_, Nil), ({ head }) => `The list has one element: ${head}`],
@@ -104,7 +104,7 @@ describe('Pattern matching', () => {
         const l3 = Cons(1, Cons(2, Cons(3, Nil)))
         expect(tell(l3)).toEqual('This list is long. The first two elements are: 1 and 2')
 
-        const contains3 = Trait(List, {
+        const contains3 = trait(List, {
             Nil: (self) => false,
             Cons: [
                 [Cons(3, _), (self) => true],

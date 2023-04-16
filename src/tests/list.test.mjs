@@ -1,9 +1,9 @@
-import { Data, Trait, _ } from "../index.mjs";
+import { data, trait, _ } from "../index.mjs";
 
 describe('List tests', () => {
-    const List = Data({ Nil: {}, Cons: { head: {}, tail: {} } });
+    const List = data({ Nil: {}, Cons: { head: {}, tail: {} } });
 
-    test('List Data', () => {
+    test('List data', () => {
         const { Nil, Cons } = List;
         const nil = Nil,
             cons = Cons({ head: 1, tail: nil })
@@ -13,7 +13,7 @@ describe('List tests', () => {
         expect(cons.tail).toBe(List.Nil)
     })
 
-    const concat = Trait(List, {
+    const concat = trait(List, {
         Nil({ }, ys) { return ys },
         Cons({ head, tail }, ys) {
             return List.Cons({ head, tail: concat(tail, ys) })
@@ -37,7 +37,7 @@ describe('List tests', () => {
         expect(zs.tail.tail.tail.tail.tail.head).toBe(6)
     });
 
-    const length = Trait(List, {
+    const length = trait(List, {
         Nil(self) { return 0 },
         Cons({ head, tail }) { return 1 + length(tail) }
     });
@@ -49,7 +49,7 @@ describe('List tests', () => {
         expect(length(xs)).toBe(3)
     });
 
-    const isNil = Trait(List, {
+    const isNil = trait(List, {
         _: () => false,
         Nil: () => true
     });
@@ -67,7 +67,7 @@ describe('List tests', () => {
 
         const xs = Cons(1, Cons(2, Cons(3, Nil)));
 
-        const isThree = Trait(List, {
+        const isThree = trait(List, {
             _: (self) => false,
             Cons: [
                 [[_, [_, [_, Nil]]], (self) => true],

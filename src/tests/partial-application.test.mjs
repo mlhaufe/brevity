@@ -1,8 +1,8 @@
-import { Data, Trait, _ } from '../index.mjs'
+import { data, trait, _ } from '../index.mjs'
 
 describe('Partial Application', () => {
     test('add 3 numbers', () => {
-        const add3 = Trait(Number, {
+        const add3 = trait(Number, {
             _: (a, b, c) => a + b + c
         })
 
@@ -19,10 +19,10 @@ describe('Partial Application', () => {
     })
 
     test('Linked List', () => {
-        const List = Data({ Nil: {}, Cons: { head: {}, tail: {} } }),
+        const List = data({ Nil: {}, Cons: { head: {}, tail: {} } }),
             { Nil, Cons } = List
 
-        const foldRight = Trait(List, {
+        const foldRight = trait(List, {
             Nil: (self, fn, z) => z,
             Cons: ({ head, tail }, fn, z) => fn(head, foldRight(tail, fn, z))
         })
