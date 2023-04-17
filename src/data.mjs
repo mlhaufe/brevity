@@ -1,120 +1,119 @@
 import { BoxedMultiKeyMap } from "./BoxedMultiKeyMap.mjs";
 import { isObjectLiteral } from "./isObjectLiteral.mjs";
-import { assert } from "./assert.mjs";
-import { implies } from "./implies.mjs";
 import { extend } from "./index.mjs";
+import { hasPrototype } from "./hasPrototype.mjs";
 
-const isCapitalized = str => typeof str === 'string' && str.match(/^[A-Z][A-Za-z0-9]*/),
-    isCamelCase = str => typeof str === 'string' && str.match(/^[a-z][A-Za-z0-9]*/),
-    pool = Symbol('pool');
+/**
+ * Tests if the given string is capitalized
+ * @param {string} str - The string to test
+ * @returns {boolean} - True if the string is a valid identifier
+ */
+const isCapitalized = str => /^[A-Z][A-Za-z0-9]*/.test(str);
 
-export const variant = Symbol('variant'),
-    variantName = Symbol('variantName'),
-    isData = Symbol('isData'),
-    isSingleton = Symbol('isSingleton');
+/**
+ * Tests if the given string is camelCase
+ * @param {string} str - The string to test
+ * @returns {boolean} - True if the string is a valid identifier
+ */
+const isCamelCase = str => /^[a-z][A-Za-z0-9]*/.test(str);
 
-const protoVariant = {
-    *[Symbol.iterator]() {
-        for (const key of Object.keys(this)) {
-            if (key !== variant && key !== variantName && key !== isSingleton)
+const protoData = Object.create(null),
+    protoVariant = Object.assign(Object.create(null), {
+        /* Enables destructuring */
+        *[Symbol.iterator]() {
+            for (const key of Object.keys(this))
                 yield this[key];
+        }
+    })
+
+/**
+ * Normalizes the arguments passed to a variant constructor to an array of values
+ * @param {string[]} propNames
+ * @param {any[]} args
+ * @param {string} VName - The name of the variant
+ * @returns {any[]} - The normalized arguments
+ */
+function normalizeArgs(propNames, args, VName) {
+    if (propNames.length === 1) {
+        if (args.length === 1) {
+            const arg = args[0];
+            if (!isObjectLiteral(arg))
+                return [arg];
+            else
+                return [propNames[0] in arg ? arg[propNames[0]] : arg];
+        }
+    } else {
+        if (args.length === 1) {
+            const objArg = args[0];
+            if (!isObjectLiteral(objArg))
+                throw new TypeError(
+                    `Wrong number of arguments. expected: ${VName}(${propNames}) got: ${VName}(${args})`
+                );
+            if (Object.keys(objArg).length !== propNames.length)
+                throw new TypeError(
+                    `Wrong number of arguments. expected: ${VName}(${propNames}) got: ${VName}(${Object.keys(objArg)})`
+                );
+            return propNames.map((propName) => {
+                if (!(propName in objArg))
+                    throw new TypeError(`Missing parameter: ${propName}`);
+                return objArg[propName];
+            });
+        } else if (args.length === propNames.length) {
+            return [...args]
+        } else {
+            throw new TypeError(`Wrong number of arguments. expected: ${VName}(${propNames}), got: ${VName}(${args})`);
         }
     }
 }
 
-function variantConstructor(params, name) {
-    function self(...args) {
-        let normalizedArgs = []
-        const propNames = Object.keys(params);
-
-        if (propNames.length === 1) {
-            if (args.length === 1) {
-                const arg = args[0];
-                if (!isObjectLiteral(arg))
-                    normalizedArgs.push(arg);
-                else
-                    normalizedArgs.push(propNames[0] in arg ? arg[propNames[0]] : arg);
-            }
-        } else {
-            if (args.length === 1) {
-                const objArg = args[0];
-                assert(isObjectLiteral(objArg),
-                    `Wrong number of arguments. expected: ${name}(${propNames}), got: ${name}(${args})`);
-
-                assert(Object.keys(objArg).length === propNames.length,
-                    `Wrong number of parameters. Expected: ${name}(${propNames}), got: ${name}(${Object.keys(objArg)})`);
-
-                normalizedArgs = Object.entries(params).map(([propName, propCfg]) => {
-                    assert(propName in objArg, `Missing parameter: ${propName}`);
-                    assert(isObjectLiteral(propCfg) && Object.keys(propCfg).length === 0,
-                        `Invalid property configuration: ${propName}`);
-                    return objArg[propName];
-                })
-            } else if (args.length === propNames.length) {
-                normalizedArgs.push(...args);
-            } else {
-                throw new TypeError(`Wrong number of arguments. expected: ${name}(${propNames}), got: ${name}(${args})`);
-            }
-        }
-
-        let obj = self[pool].get(...normalizedArgs);
-        if (obj) return obj;
-        obj = Object.create(self.prototype);
-        Object.entries(params).forEach(([propName, cfg], i) => {
-            if (typeof normalizedArgs[i] === 'function')
-                Object.defineProperty(obj, propName, { get: normalizedArgs[i], enumerable: true });
-            else
-                obj[propName] = normalizedArgs[i];
-        });
-        self[pool].set(...[...normalizedArgs, obj]);
-
-        return Object.freeze(obj);
-    };
-    self[pool] = new BoxedMultiKeyMap();
-    self.prototype = Object.freeze(Object.assign(Object.create(protoVariant), {
-        [variant]: self,
-        [variantName]: name,
-        [isSingleton]: false
-    }));
-
-    return self
-}
+export const isData = obj => hasPrototype(obj, protoData)
 
 /**
  * Defines a data type
- * @param decl The variants definition
- * @returns The data type
+ * @param {object} def The variants definition
+ * @returns {object} The data type
  */
-export function data(decl) {
-    assert(isObjectLiteral(decl), 'Data declaration must be an object literal');
+export function data(def) {
+    if (!isObjectLiteral(def))
+        throw new TypeError('Data declaration must be an object literal');
+    if (def[extend] && !isData(def[extend]))
+        throw new TypeError('Data can only extend another Data declaration');
 
-    // if every key is camelCase, then it's an anonymous variant
-    const dataDecl = Object.keys(decl).every(isCamelCase) ? { 'Anonymous!': decl } : decl;
+    const dataFactory = Object.create(def[extend] ?? protoData);
 
-    assert(implies(extend in dataDecl, dataDecl[extend] && isData in dataDecl[extend]),
-        'Data can only extend another Data declaration');
+    for (const [VName, props] of Object.entries(def)) {
+        if (!isCapitalized(VName))
+            throw new TypeError(`variant name must be capitalized: ${VName}`);
+        if (!isObjectLiteral(props))
+            throw new TypeError(`variant properties must be an object literal: ${VName}`);
 
-    const result = Object.create(extend in dataDecl ? dataDecl[extend] : null);
-    if (!(isData in result))
-        result[isData] = true;
+        const propNames = Object.keys(props)
+        if (!propNames.every(isCamelCase))
+            throw new TypeError(`variant properties must be camelCase strings: ${VName}: ${props}`);
 
-    for (const [name, params] of Object.entries(dataDecl)) {
-        assert(isCapitalized(name), `variant name must be capitalized: ${name}`);
-        assert(isObjectLiteral(params), `variant properties must be an object literal: ${name}`)
-        const propNames = Object.keys(params);
-        assert(propNames.every(isCamelCase), `variant properties must be camelCase strings: ${name}: ${params}`);
+        const pool = new BoxedMultiKeyMap();
 
-        if (propNames.length === 0) {
-            const obj = result[name] = Object.create(null)
-            Object.assign(obj, ({ [variant]: obj, [variantName]: name, [isSingleton]: true }))
-            Object.freeze(obj)
-        } else {
-            result[name] = Object.freeze(variantConstructor(params, name))
-        }
+        if (propNames.length === 0)
+            dataFactory[VName] = Object.freeze(Object.create(protoVariant));
+        else
+            dataFactory[VName] = (...args) => {
+                const normalizedArgs = normalizeArgs(propNames, args, VName),
+                    cached = pool.get(...normalizedArgs);
+                if (cached) return cached;
+                const obj = Object.defineProperties(Object.create(protoVariant),
+                    propNames.reduce((acc, propName, i) => {
+                        if (typeof normalizedArgs[i] === 'function')
+                            acc[propName] = { get: normalizedArgs[i], enumerable: true };
+                        else
+                            acc[propName] = { value: normalizedArgs[i], enumerable: true };
+                        return acc;
+                    }, {})
+                )
+                pool.set(...[...normalizedArgs, obj])
+
+                return Object.freeze(obj);
+            }
     }
 
-    if (Object.keys(result).length === 1 && 'Anonymous!' in result)
-        return result['Anonymous!'];
-
-    return Object.freeze(result);
+    return Object.freeze(dataFactory);
 }

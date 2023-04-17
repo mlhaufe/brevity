@@ -1,49 +1,38 @@
-import { data, isData, variant, variantName, trait } from "../index.mjs"
+import { complect, data, trait } from "../index.mjs"
 
 describe('Bool tests', () => {
-    const Bool = data({ False: {}, True: {} })
-    test('Bool data', () => {
-        expect(Bool[isData]).toBe(true)
-
-        const f = Bool.False,
-            t = Bool.True
-
-        expect(f[variant]).toBe(f)
-        expect(f[variantName]).toBe('False')
-        expect(t[variant]).toBe(t)
-        expect(t[variantName]).toBe('True')
-    })
+    const boolData = data({ False: {}, True: {} })
 
     test('Bool traits', () => {
-        const f = Bool.False,
-            t = Bool.True
-
-        const and = trait(Bool, {
+        const and = trait(boolData, {
             False(left, _) { return left },
             True(_, right) { return right }
         })
 
-        expect(and(f, f)).toBe(f)
-        expect(and(f, t)).toBe(f)
-        expect(and(t, f)).toBe(f)
-        expect(and(t, t)).toBe(t)
-
-        const or = trait(Bool, {
+        const or = trait(boolData, {
             False(_, right) { return right },
             True(left, _) { return left }
         })
 
-        expect(or(f, f)).toBe(f)
-        expect(or(f, t)).toBe(t)
-        expect(or(t, f)).toBe(t)
-        expect(or(t, t)).toBe(t)
-
-        const not = trait(Bool, {
-            False() { return Bool.True },
-            True() { return Bool.False }
+        const not = trait(boolData, {
+            False() { return this.True },
+            True() { return this.False }
         })
 
-        expect(not(f)).toBe(t)
-        expect(not(t)).toBe(f)
+        const bool = complect(boolData, { and, or, not })
+        const { False: f, True: t } = bool
+
+        expect(f.and(f)).toBe(f)
+        expect(f.and(t)).toBe(f)
+        expect(t.and(f)).toBe(f)
+        expect(t.and(t)).toBe(t)
+
+        expect(f.or(f)).toBe(f)
+        expect(f.or(t)).toBe(t)
+        expect(t.or(f)).toBe(t)
+        expect(t.or(t)).toBe(t)
+
+        expect(f.not()).toBe(t)
+        expect(t.not()).toBe(f)
     })
 })

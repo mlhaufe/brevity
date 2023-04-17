@@ -1,6 +1,7 @@
-export { data, isData, isSingleton, variant, variantName } from './data.mjs';
-export { trait, apply, dataDecl, isTrait, _ } from './trait.mjs';
-export { memoFix } from './memoFix.mjs';
+export { data, isData } from './data.mjs';
+export { trait, isTrait, _ } from './trait.mjs';
+export { complect } from './complect.mjs';
+//export { memoFix } from './memoFix.mjs';
 
 /**
  * Used to declare inheritance from a parent.

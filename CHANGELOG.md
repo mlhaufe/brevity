@@ -25,8 +25,10 @@ const Point = data({
 })
 ```
 
+- Deprecated and removed symbols `data`, `isData`, `isSingleton`, `isTrait`, `variant`, `variantName`
 - Updated README
 - Updated package keywords
+- The trait declaration no longer returns a function. See the README for more details.
 
 ## v0.9.0
 
