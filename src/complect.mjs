@@ -1,44 +1,89 @@
-import { hasPrototype } from "./hasPrototype.mjs";
+import { isTrait } from "./index.mjs";
 
-const protoComplect = Object.create(null);
+function getDesc(obj, prop) {
+    const desc = Object.getOwnPropertyDescriptor(obj, prop);
+    return desc || (obj = Object.getPrototypeOf(obj) ? getDesc(obj, prop) : void 0);
+}
 
-export const isComplect = obj => hasPrototype(obj, protoComplect);
-
-/**
- *
- * @param {object} dataDecl - The data declaration
- * @param {Record<PropertyKey,object>} traitCfg - The trait configuration
- */
-export const complect = (dataDecl, traitCfg) => {
-    const merged = new Proxy(Object.create(protoComplect), {
-        get(_target, variantName) {
-            const result = dataDecl[variantName];
-
-            if (typeof result === 'function')
-                return (...args) => forwardingProxy(result(...args), traitCfg, variantName);
-            else
-                return forwardingProxy(result, traitCfg, variantName);
-        }
-    });
-
-    return Object.freeze(merged);
+const merge = (...protos) => {
+    let parents = protos
+    return Object.create(new Proxy(Object.create(null), {
+        has: (target, prop) => parents.some(obj => prop in obj),
+        get(target, prop, receiver) {
+            const obj = parents.find(obj => prop in obj);
+            return obj ? Reflect.get(obj, prop, receiver) : void 0;
+        },
+        set(target, prop, value, receiver) {
+            const obj = parents.find(obj => prop in obj);
+            return Reflect.set(obj || Object.create(null), prop, value, receiver);
+        },
+        ownKeys(target) {
+            const hash = Object.create(null);
+            for (let obj of parents) for (let p in obj) if (!hash[p]) hash[p] = true;
+            return Object.getOwnPropertyNames(hash);
+        },
+        getOwnPropertyDescriptor(target, prop) {
+            const obj = parents.find(obj => prop in obj);
+            const desc = obj ? getDesc(obj, prop) : void 0;
+            if (desc) desc.configurable = true;
+            return desc;
+        },
+        getPrototypeOf(target) { return parents },
+        setPrototypeOf(target, protoArray) {
+            // @ts-ignore
+            parents = protoArray
+            return true
+        },
+        deleteProperty(target, property) { return parents.some(p => delete p[target]) },
+        isExtensible(target) { return parents.every(p => Reflect.isExtensible(p)) },
+        preventExtensions: (target) => false,
+        defineProperty: (target, prop, desc) => false,
+    }));
 }
 
 /**
- * Intercept all property access and forward to the instance if they exist
- * otherwise forward them to the corresponding traitCfg entry
- * and bind the instance as the receiver
+ * Combines a data declaration with traits
+ * @param {object} dataDecl - The data declaration
+ * @param {Record<PropertyKey,object>} traits - The trait configuration
+ * @returns {object} - The complected data type
  */
-function forwardingProxy(instance, traitCfg, variantName) {
-    return new Proxy(instance, {
-        get(target, propName, receiver) {
-            if (propName in target) {
-                return target[propName];
-            } else if (propName in traitCfg) {
-                const trait = traitCfg[propName];
-                return trait[variantName].bind(trait, receiver);
-                // return trait[variantName].bind(receiver, receiver);
+export const complect = (dataDecl, traits) => {
+    //const merged = new Proxy(dataDecl, {
+    const merged = new Proxy({}, {
+        get(target, prop, receiver) {
+            //const VCons = Reflect.get(target, prop, receiver);
+            const VCons = Reflect.get(dataDecl, prop, receiver);
+            if (typeof VCons === 'function') {
+                return function (...args) {
+                    const instance = merge(VCons(...args), traits);
+                    return decorateSelf(prop, merged, instance);
+                }
+            }
+            const instance = merge(VCons, traits);
+            return decorateSelf(prop, merged, instance);
+        }
+    })
+
+    return merged
+}
+
+/**
+ * Intercepts the call to the trait method and passes the self object as the first argument
+ * @param {*} factory - The factory object
+ * @param {*} trait - The trait object
+ */
+const decorateSelf = (vName, factory, trait) => {
+    return new Proxy(trait, {
+        get(target, prop, receiver) {
+            const value = Reflect.get(target, prop, receiver);
+
+            if (isTrait(value)) {
+                if (!(vName in value) && !('_' in value))
+                    throw new Error(`Trait ${String(prop)} does not have a variant ${vName}`)
+                return (value[vName] ?? value['_']).bind(factory, receiver)
+            } else {
+                return value
             }
         }
-    });
+    })
 }

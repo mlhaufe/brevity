@@ -1,33 +1,54 @@
-import { data, trait, _ } from "../index.mjs";
+import { complect, data, trait, _ } from "../index.mjs";
 
 describe('List tests', () => {
-    const List = data({ Nil: {}, Cons: { head: {}, tail: {} } });
+    const listData = data({ Nil: {}, Cons: { head: {}, tail: {} } });
 
-    test('List data', () => {
-        const { Nil, Cons } = List;
-        const nil = Nil,
-            cons = Cons({ head: 1, tail: nil })
-
-        expect(nil).toBe(List.Nil)
-        expect(cons.head).toBe(1)
-        expect(cons.tail).toBe(List.Nil)
-    })
-
-    const concat = trait(List, {
-        Nil({ }, ys) { return ys },
+    const concat = trait(listData, {
+        Nil(self, ys) { return ys },
         Cons({ head, tail }, ys) {
-            return List.Cons({ head, tail: concat(tail, ys) })
+            return this.Cons({ head, tail: tail.concat(ys) })
         }
     })
 
+    const isNil = trait(listData, {
+        _: () => false,
+        Nil: () => true
+    });
+
+    const isThree = trait(listData, {
+        _: (self) => false,
+        Cons: [
+            //[[_, [_, [_, this.Nil]]], (self) => true],
+            (self = [_, [_, [_, Nil]]]) => true,
+            //[_, (self) => false]
+            (_) => (self) => false
+        ]
+    })
+
+    const length = trait(listData, {
+        Nil(self) { return 0 },
+        Cons({ head, tail }) { return 1 + tail.length() }
+    });
+
+    const list = complect(listData, { concat, isNil, isThree, length }),
+        { Nil, Cons } = list;
+
+    test('List data', () => {
+        const nil = Nil,
+            cons = Cons({ head: 1, tail: nil })
+
+        expect(nil).toBe(list.Nil)
+        expect(cons.head).toBe(1)
+        expect(cons.tail).toBe(list.Nil)
+    })
+
     test('List Concat', () => {
-        const { Cons, Nil } = List;
         // [1, 2, 3]
         const xs = Cons(1, Cons(2, Cons(3, Nil))),
             // [4, 5, 6]
             ys = Cons(4, Cons(5, Cons(6, Nil))),
             // xs ++ ys == [1, 2, 3, 4, 5, 6]
-            zs = concat(xs, ys);
+            zs = xs.concat(ys);
 
         expect(zs.head).toBe(1)
         expect(zs.tail.head).toBe(2)
@@ -37,48 +58,26 @@ describe('List tests', () => {
         expect(zs.tail.tail.tail.tail.tail.head).toBe(6)
     });
 
-    const length = trait(List, {
-        Nil(self) { return 0 },
-        Cons({ head, tail }) { return 1 + length(tail) }
-    });
-
     test('List Length', () => {
-        const { Cons, Nil } = List
         // [1, 2, 3]
         const xs = Cons(1, Cons(2, Cons(3, Nil)));
-        expect(length(xs)).toBe(3)
-    });
-
-    const isNil = trait(List, {
-        _: () => false,
-        Nil: () => true
+        expect(xs.length()).toBe(3)
     });
 
     test('List isNil', () => {
-        const { Cons, Nil } = List
         // [1, 2, 3]
         const xs = Cons(1, Cons(2, Cons(3, Nil)));
-        expect(isNil(xs)).toBe(false)
-        expect(isNil(Nil)).toBe(true)
+        expect(xs.isNil()).toBe(false)
+        expect(Nil.isNil()).toBe(true)
     })
 
     test('List trait array destructuring', () => {
-        const { Cons, Nil } = List
-
         const xs = Cons(1, Cons(2, Cons(3, Nil)));
 
-        const isThree = trait(List, {
-            _: (self) => false,
-            Cons: [
-                [[_, [_, [_, Nil]]], (self) => true],
-                [_, (self) => false]
-            ]
-        })
-
-        expect(isThree(xs)).toBe(true)
+        expect(xs.isThree()).toBe(true)
 
         const ys = Cons(1, Cons(2, Cons(3, Cons(4, Nil))));
 
-        expect(isThree(ys)).toBe(false)
+        expect(ys.isThree()).toBe(false)
     })
 })

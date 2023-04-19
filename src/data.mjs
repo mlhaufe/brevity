@@ -19,10 +19,13 @@ const isCamelCase = str => /^[a-z][A-Za-z0-9]*/.test(str);
 
 const protoData = Object.create(null),
     protoVariant = Object.assign(Object.create(null), {
-        /* Enables destructuring */
+        /* Enables array destructuring */
         *[Symbol.iterator]() {
-            for (const key of Object.keys(this))
-                yield this[key];
+            for (const key in this) {
+                const value = this[key];
+                if (typeof value !== 'function')
+                    yield this[key];
+            }
         }
     })
 
@@ -66,12 +69,17 @@ function normalizeArgs(propNames, args, VName) {
     }
 }
 
+/**
+ * Tests if the given object is a data object
+ * @param {*} obj - The object to test
+ * @returns {boolean} - True if the object is a data object
+ */
 export const isData = obj => hasPrototype(obj, protoData)
 
 /**
  * Defines a data type
- * @param {object} def The variants definition
- * @returns {object} The data type
+ * @param def The variants definition
+ * @returns The data type
  */
 export function data(def) {
     if (!isObjectLiteral(def))
@@ -111,9 +119,24 @@ export function data(def) {
                 )
                 pool.set(...[...normalizedArgs, obj])
 
-                return Object.freeze(obj);
+                return readonly(obj)
             }
     }
 
-    return Object.freeze(dataFactory);
+    return dataFactory;
 }
+
+
+/**
+ * Create a readonly object.
+ * This is used instead of Object.freeze because it allows for wrapping proxies.
+ * @see https://stackoverflow.com/a/75150991/153209
+ * @param {*} obj
+ * @returns
+ */
+const readonly = obj => new Proxy(obj, {
+    defineProperty: () => false,
+    deleteProperty: () => false,
+    isExtensible: () => false,
+    set: () => false
+})

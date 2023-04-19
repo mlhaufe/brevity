@@ -1,30 +1,33 @@
-import { data, trait } from "../index.mjs"
+import { complect, data, trait } from "../index.mjs"
 
 describe('Tree Tests', () => {
-    const Tree = data({
+    const treeData = data({
         Leaf: { value: {} },
         Branch: { left: {}, right: {} }
-    }),
-        { Leaf, Branch } = Tree;
-    test('Tree data', () => {
-        const tree = Branch(Leaf(1), Leaf(2));
-        expect(tree).toBeDefined();
-        expect(tree.left).toBeDefined();
-        expect(tree.left.value).toBe(1);
-        expect(tree.right).toBeDefined();
-        expect(tree.right.value).toBe(2);
-    })
+    });
 
-    const print = trait(Tree, {
+    const printable = trait(treeData, {
         Leaf({ value }) { return `${value}` },
-        Branch({ left, right }) { return `(${print(left)}, ${print(right)})` }
+        Branch({ left, right }) { return `(${left.print()}, ${right.print()})` }
+    });
+
+    const tree = complect(treeData, { print: printable }),
+        { Leaf, Branch } = tree;
+
+    test('Tree data', () => {
+        const t = Branch(Leaf(1), Leaf(2));
+        expect(t).toBeDefined();
+        expect(t.left).toBeDefined();
+        expect(t.left.value).toBe(1);
+        expect(t.right).toBeDefined();
+        expect(t.right.value).toBe(2);
     })
 
     test('Tree print', () => {
-        const tree = Branch(Leaf(1), Leaf(2));
-        expect(print(tree)).toBe('(1, 2)');
+        const t1 = Branch(Leaf(1), Leaf(2));
+        expect(t1.print()).toBe('(1, 2)');
 
-        const tree2 = Branch(Branch(Leaf(3), Leaf(4)), Leaf(5));
-        expect(print(tree2)).toBe('((3, 4), 5)');
+        const t2 = Branch(Branch(Leaf(3), Leaf(4)), Leaf(5));
+        expect(t2.print()).toBe('((3, 4), 5)');
     })
 })

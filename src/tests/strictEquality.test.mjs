@@ -63,19 +63,13 @@ describe('Equality tests', () => {
         // 1 + (2 + 4)
         const exp3 = Add(
             Lit(1),
-            Add(
-                Lit(2),
-                Lit(4)
-            )
+            Add(Lit(2), Lit(4))
         )
 
         // 1 + (2 + 3)
         const exp4 = Add(
             Lit(1),
-            Add(
-                Lit(2),
-                Lit(3)
-            )
+            Add(Lit(2), Lit(3))
         )
 
         // reflexivity
