@@ -1,3 +1,4 @@
+import { BoxedMultiKeyMap } from "./BoxedMultiKeyMap.mjs";
 import { isTrait } from "./index.mjs";
 
 function getDesc(obj, prop) {
@@ -48,21 +49,44 @@ const merge = (...protos) => {
  * @returns {object} - The complected data type
  */
 export const complect = (dataDecl, traits) => {
-    //const merged = new Proxy(dataDecl, {
+    const constructorPool = new BoxedMultiKeyMap();
+    let initTraits = traits
     const merged = new Proxy({}, {
         get(target, prop, receiver) {
+            const cached = constructorPool.get(dataDecl, prop, receiver);
+            if (cached) return cached;
+
             //const VCons = Reflect.get(target, prop, receiver);
             const VCons = Reflect.get(dataDecl, prop, receiver);
             if (typeof VCons === 'function') {
-                return function (...args) {
-                    const instance = merge(VCons(...args), traits);
-                    return decorateSelf(prop, merged, instance);
+                const fnResult = function (...args) {
+                    const vt = VCons(...args)
+
+                    const cached = fnResult.instancePool.get(vt);
+                    if (cached) return cached;
+
+                    const instance = merge(vt, initTraits),
+                        result = decorateSelf(prop, merged, instance);
+
+                    fnResult.instancePool.set(vt, result);
+                    return result
                 }
+                fnResult.instancePool = new BoxedMultiKeyMap();
+
+                constructorPool.set(dataDecl, prop, receiver, fnResult);
+                return fnResult
             }
-            const instance = merge(VCons, traits);
-            return decorateSelf(prop, merged, instance);
+            const instance = merge(VCons, initTraits),
+                result = decorateSelf(prop, merged, instance);
+
+            constructorPool.set(dataDecl, prop, receiver, result);
+            return result;
         }
     })
+
+    // Initialize any traits that have been delayed (have an init method)
+    // This ties the recursive knot for the family
+    initTraits = Object.fromEntries(Object.entries(traits).map(([k, t]) => [k, 'init' in t ? t.init(merged) : t]))
 
     return merged
 }
@@ -75,14 +99,15 @@ export const complect = (dataDecl, traits) => {
 const decorateSelf = (vName, factory, trait) => {
     return new Proxy(trait, {
         get(target, prop, receiver) {
-            const value = Reflect.get(target, prop, receiver);
+            const maybeTrait = Reflect.get(target, prop, receiver);
 
-            if (isTrait(value)) {
-                if (!(vName in value) && !('_' in value))
-                    throw new Error(`Trait ${String(prop)} does not have a variant ${vName}`)
-                return (value[vName] ?? value['_']).bind(factory, receiver)
+            if (isTrait(maybeTrait)) {
+                if (!(vName in maybeTrait) && !('_' in maybeTrait))
+                    throw new Error(`Trait ${maybeTrait(prop)} does not have a variant ${vName}`)
+                // makes 'this' refer to the family and the first argument refer to the data instance (self)
+                return (maybeTrait[vName] ?? maybeTrait['_']).bind(factory, receiver)
             } else {
-                return value
+                return maybeTrait
             }
         }
     })

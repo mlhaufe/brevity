@@ -8,33 +8,25 @@ describe('Pattern matching', () => {
             Mul: { left: {}, right: {} }
         })
 
-        const simplify1 = trait(exprData, {
+        const simplify1 = trait(exprData, (f) => ({
             _: (self) => self,
             Mul: [
-                // [{ left: Num(1) }, ({ right }) => right],
-                // [{ right: Num(1) }, ({ left }) => left],
-                // [{ left: Num(0) }, ({ left }) => left],
-                // [{ right: Num(0) }, ({ right }) => right]
-                (self = { left: Number(1) }) => self.right,
-                (self = { right: Number(1) }) => self.left,
-                (self = { left: Number(0) }) => self.left,
-                (self = { right: Number(0) }) => self.right
+                [{ left: f.Num(1) }, ({ right }) => right],
+                [{ right: f.Num(1) }, ({ left }) => left],
+                [{ left: f.Num(0) }, ({ left }) => left],
+                [{ right: f.Num(0) }, ({ right }) => right]
             ]
-        })
+        }))
 
-        const simplify2 = trait(exprData, {
+        const simplify2 = trait(exprData, (f) => ({
             _: (self) => self,
             Mul: [
-                // [Mul(Num(1), _), ({ right }) => right],
-                // [Mul(_, Num(1)), ({ left }) => left],
-                // [Mul(Num(0), _), ({ left }) => left],
-                // [Mul(_, Num(0)), ({ right }) => right]
-                (self = Mul(Num(1), _)) => self.right,
-                (self = Mul(_, Num(1))) => self.left,
-                (self = Mul(Num(0), _)) => self.left,
-                (self = Mul(_, Num(0))) => self.right
+                [f.Mul(f.Num(1), _), ({ right }) => right],
+                [f.Mul(_, f.Num(1)), ({ left }) => left],
+                [f.Mul(f.Num(0), _), ({ left }) => left],
+                [f.Mul(_, f.Num(0)), ({ right }) => right]
             ]
-        })
+        }))
 
         const expr = complect(exprData, { simplify1, simplify2 }),
             { Num, Var, Mul } = expr
@@ -90,30 +82,25 @@ describe('Pattern matching', () => {
 
         const length = trait(listData, {
             Nil: (self) => 0,
-            Cons: ({ tail }) => 1 + length(tail)
+            Cons: ({ tail }) => 1 + tail.length()
         })
 
-        const tell = trait(listData, {
+        const tell = trait(listData, (f) => ({
             Nil: (self) => 'The list is empty',
             Cons: [
-                // [Cons(_, Nil), ({ head }) => `The list has one element: ${head}`],
-                // [Cons(_, Cons(_, Nil)), ({ head, tail }) => `The list has two elements: ${head} and ${tail.head}`],
-                // [Cons(_, Cons(_, _)), ({ head, tail }) => `This list is long. The first two elements are: ${head} and ${tail.head}`]
-                (self = Cons(_, Nil)) => `The list has one element: ${self.head}`,
-                (self = Cons(_, Cons(_, Nil))) => `The list has two elements: ${self.head} and ${self.tail.head}`,
-                (self = Cons(_, Cons(_, _))) => `This list is long. The first two elements are: ${self.head} and ${self.tail.head}`
+                [f.Cons(_, f.Nil), ({ head }) => `The list has one element: ${head}`],
+                [f.Cons(_, f.Cons(_, f.Nil)), ({ head, tail }) => `The list has two elements: ${head} and ${tail.head}`],
+                [f.Cons(_, f.Cons(_, _)), ({ head, tail }) => `This list is long. The first two elements are: ${head} and ${tail.head}`]
             ]
-        })
+        }))
 
-        const contains3 = trait(listData, {
+        const contains3 = trait(listData, (f) => ({
             Nil: (self) => false,
             Cons: [
-                // [Cons(3, _), (self) => true],
-                // [Cons(_, _), ({ tail }) => contains3(tail)]
-                (self = Cons(3, _)) => true,
-                (self = Cons(_, _)) => contains3(self.tail)
+                [f.Cons(3, _), (self) => true],
+                [f.Cons(_, _), ({ tail }) => contains3(tail)]
             ]
-        })
+        }))
 
         const list = complect(listData, { contains3, length, tell }),
             { Nil, Cons } = list

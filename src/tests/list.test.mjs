@@ -15,15 +15,13 @@ describe('List tests', () => {
         Nil: () => true
     });
 
-    const isThree = trait(listData, {
-        _: (self) => false,
+    const isThree = trait(listData, (f) => ({
+        _: (_self) => false,
         Cons: [
-            //[[_, [_, [_, this.Nil]]], (self) => true],
-            (self = [_, [_, [_, Nil]]]) => true,
-            //[_, (self) => false]
-            (_) => (self) => false
+            [[_, [_, [_, f.Nil]]], (_self) => true],
+            [_, (_self) => false]
         ]
-    })
+    }))
 
     const length = trait(listData, {
         Nil(self) { return 0 },

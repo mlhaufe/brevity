@@ -25,10 +25,16 @@ const Point = data({
 })
 ```
 
-- Deprecated and removed symbols `data`, `isData`, `isSingleton`, `isTrait`, `variant`, `variantName`
+- Deprecated and removed symbols `data`, `isSingleton`, `variant`, `variantName`
 - Updated README
-- Updated package keywords
-- The trait declaration no longer returns a function. See the README for more details.
+- Introduced `complect` to combine data and trait declarations
+- Updated package keywords to include `Family Polymorphism`
+- The trait declaration no longer returns a function.
+- Traits can now be parameterized with a family reference to utilize the ultimately complected object:
+
+```js
+const myTrait = trait(dataDecl, (family) => ({ ... }))
+```
 
 ## v0.9.0
 

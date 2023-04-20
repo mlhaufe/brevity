@@ -102,13 +102,13 @@ export function data(def) {
         const pool = new BoxedMultiKeyMap();
 
         if (propNames.length === 0)
-            dataFactory[VName] = Object.freeze(Object.create(protoVariant));
+            dataFactory[VName] = readonly(Object.create(protoVariant));
         else
             dataFactory[VName] = (...args) => {
                 const normalizedArgs = normalizeArgs(propNames, args, VName),
                     cached = pool.get(...normalizedArgs);
                 if (cached) return cached;
-                const obj = Object.defineProperties(Object.create(protoVariant),
+                const obj = readonly(Object.defineProperties(Object.create(protoVariant),
                     propNames.reduce((acc, propName, i) => {
                         if (typeof normalizedArgs[i] === 'function')
                             acc[propName] = { get: normalizedArgs[i], enumerable: true };
@@ -116,16 +116,15 @@ export function data(def) {
                             acc[propName] = { value: normalizedArgs[i], enumerable: true };
                         return acc;
                     }, {})
-                )
+                ))
                 pool.set(...[...normalizedArgs, obj])
 
-                return readonly(obj)
+                return obj
             }
     }
 
-    return dataFactory;
+    return readonly(dataFactory);
 }
-
 
 /**
  * Create a readonly object.
