@@ -18,7 +18,7 @@ const isCapitalized = str => /^[A-Z][A-Za-z0-9]*/.test(str);
 const isCamelCase = str => /^[a-z][A-Za-z0-9]*/.test(str);
 
 const variantHandler = {
-    apply(target, thisArg, argumentsList) {
+    apply(target, _thisArg, argumentsList) {
         return Reflect.apply(target[apply], target.constructor.prototype, argumentsList)
     }
 }
@@ -64,10 +64,9 @@ function normalizeArgs(propNames, args, VName) {
     } else {
         if (args.length === 1) {
             const objArg = args[0];
-            if (!isObjectLiteral(objArg))
-                throw new TypeError(
-                    `Wrong number of arguments. expected: ${VName}(${propNames}) got: ${VName}(${args})`
-                );
+            if (typeof objArg !== 'object' || objArg == null)
+                throw new TypeError(`Object expected, got ${objArg}`)
+
             if (Object.keys(objArg).length !== propNames.length)
                 throw new TypeError(
                     `Wrong number of arguments. expected: ${VName}(${propNames}) got: ${VName}(${Object.keys(objArg)})`

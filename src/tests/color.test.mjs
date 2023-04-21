@@ -1,11 +1,11 @@
-import { complect, data, extend, isData, trait } from "../index.mjs"
+import { complect, data, Data, extend, trait } from "../index.mjs"
 
 describe('Color tests', () => {
     const rgbData = data({ Red: {}, Green: {}, Blue: {} });
 
     test('rgbData', () => {
         expect(rgbData).toBeDefined();
-        expect(isData(rgbData)).toBe(true);
+        expect(rgbData).toBeInstanceOf(Data);
         expect(rgbData.Red).toBeDefined();
         expect(rgbData.Green).toBeDefined();
         expect(rgbData.Blue).toBeDefined();

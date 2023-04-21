@@ -39,49 +39,52 @@ export class Trait extends Function {
     }
 
     [apply](instance, ...args) {
-        return this[instance.constructor.name](instance, ...args)
+        const expected = this.constructor[dataDecl]
+
+        if (expected) {
+            if (isPrimitive(instance)) {
+                if (!satisfiesPrimitive(expected, instance))
+                    throw new TypeError(`Trait cannot be applied. Expected ${expected.name} but got ${String(instance)}`)
+            } else if (!(instance instanceof expected))
+                throw new TypeError(`Trait cannot be applied. Expected ${expected.name} but got ${instance.constructor.name}`)
+        }
+
+        let vName
+        if (isPrimitive(instance))
+            vName = typeof instance == 'bigint' ? `${instance}n` : String(instance)
+        else
+            vName = instance.constructor.name
+
+        const f = this[vName],
+            fWild = this['_']
+
+        if (!f && !fWild)
+            throw new TypeError(`Trait cannot be applied. No variant for ${vName} found`)
+
+        return (f ?? fWild)(instance, ...args)
     }
 }
-
-/*
-const protoTrait = Object.assign(function (instance, ...args) {
-
-}, {
-    [apply]() {
-        if ('init' in this) {
-            // @ts-ignore: init is not a function
-            return this.init(this)[apply](instance, ...args)
-        }
-        if (isPrimitive(instance)) {
-            if (!satisfiesPrimitive(this[dataDecl], instance))
-                throw new TypeError(`Trait cannot be applied. Expected ${this[dataDecl].name} but got ${instance}`)
-            const vName = typeof instance == 'bigint' ? `${instance}n` : instance
-            return (this[vName] ?? this['_'])(instance, ...args)
-        }
-        else
-            throw new TypeError('Trait cannot be applied. It must be complected first')
-    }
-})
-*/
 
 /**
  * Defines a trait
  * @param {object} data
- * @param {object|((family: object) => object)} traitDef
+ * @param {object|((family: object) => object)} traitCfg
  * @returns {object} The trait
  */
-export const trait = (data, traitDef) => {
-    if (!isObjectLiteral(traitDef))
+export const trait = (data, traitCfg) => {
+    if (!isObjectLiteral(traitCfg))
         throw new TypeError('Trait declaration must be an object literal');
+    const traitDef = Object.assign(Object.create(traitCfg[extend] ?? null), traitCfg)
+
+    validateDefs(data, traitDef);
+
     if (traitDef[extend] && !(traitDef[extend] instanceof Trait))
         throw new TypeError('A Trait can only extend another Trait declaration');
 
-    class SubTrait extends (traitDef[extend] ?? Trait) {
-        [dataDecl] = data
+    class SubTrait extends (traitDef[extend]?.constructor ?? Trait) {
+        static [dataDecl] = data
 
         static {
-            validateDefs(data, traitDef);
-
             for (const [name, f] of Object.entries(traitDef)) {
                 this.prototype[name] = f;
                 Object.defineProperty(f, 'name', { value: name })
@@ -109,10 +112,9 @@ function validateDefs(data, traitDef) {
     else if (data instanceof Data) {
         if (!('_' in traitDef)) {
             // every key in data must be in traitDef
-            Object.keys(data).forEach(name => {
+            for (let name in data)
                 if (!traitDef[name])
                     throw new TypeError(`Invalid Trait declaration. Missing definition for '${String(name)}'`);
-            });
         }
     } else if (primCons.includes(data)) {
         if (data === Boolean && !('_' in traitDef)) {

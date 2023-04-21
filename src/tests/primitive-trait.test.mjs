@@ -18,21 +18,21 @@ describe('Primitive traits', () => {
         })
 
         expect(printNumber).toBeDefined()
-        expect(printNumber[apply](1)).toBe('one')
-        expect(printNumber[apply](15)).toBe('fifteen')
-        expect(printNumber[apply](Infinity)).toBe('positive infinity')
-        expect(printNumber[apply](Number.EPSILON)).toBe('epsilon')
-        expect(printNumber[apply](Number.MAX_SAFE_INTEGER)).toBe('max safe integer')
-        expect(printNumber[apply](Number.MAX_VALUE)).toBe('max value')
-        expect(printNumber[apply](Number.MIN_VALUE)).toBe('min value')
-        expect(printNumber[apply](Number.NaN)).toBe('not a number')
-        expect(printNumber[apply](NaN)).toBe('not a number')
-        expect(printNumber[apply](Number.POSITIVE_INFINITY)).toBe('positive infinity')
-        expect(printNumber[apply](Number.NEGATIVE_INFINITY)).toBe('negative infinity')
-        expect(printNumber[apply](0)).toBe('0')
-        expect(printNumber[apply](123)).toBe('123')
+        expect(printNumber(1)).toBe('one')
+        expect(printNumber(15)).toBe('fifteen')
+        expect(printNumber(Infinity)).toBe('positive infinity')
+        expect(printNumber(Number.EPSILON)).toBe('epsilon')
+        expect(printNumber(Number.MAX_SAFE_INTEGER)).toBe('max safe integer')
+        expect(printNumber(Number.MAX_VALUE)).toBe('max value')
+        expect(printNumber(Number.MIN_VALUE)).toBe('min value')
+        expect(printNumber(Number.NaN)).toBe('not a number')
+        expect(printNumber(NaN)).toBe('not a number')
+        expect(printNumber(Number.POSITIVE_INFINITY)).toBe('positive infinity')
+        expect(printNumber(Number.NEGATIVE_INFINITY)).toBe('negative infinity')
+        expect(printNumber(0)).toBe('0')
+        expect(printNumber(123)).toBe('123')
 
-        expect(() => printNumber[apply]('hello')).toThrow()
+        expect(() => printNumber('hello')).toThrow()
     })
 
     test('String trait', () => {
@@ -43,10 +43,10 @@ describe('Primitive traits', () => {
         })
 
         expect(printString).toBeDefined()
-        expect(printString[apply]('')).toBe('empty string')
-        expect(printString[apply]('hello')).toBe('hello')
+        expect(printString('')).toBe('empty string')
+        expect(printString('hello')).toBe('hello')
 
-        expect(() => printString[apply](2)).toThrow()
+        expect(() => printString(2)).toThrow()
     })
 
     test('Boolean trait', () => {
@@ -56,8 +56,8 @@ describe('Primitive traits', () => {
         })
 
         expect(printBoolean).toBeDefined()
-        expect(printBoolean[apply](true)).toBe('true')
-        expect(printBoolean[apply](false)).toBe('false')
+        expect(printBoolean(true)).toBe('true')
+        expect(printBoolean(false)).toBe('false')
 
         expect(() => printBoolean(NaN)).toThrow()
     })
@@ -71,10 +71,10 @@ describe('Primitive traits', () => {
         })
 
         expect(printBigInt).toBeDefined()
-        expect(printBigInt[apply](0n)).toBe('zero')
-        expect(printBigInt[apply](1n)).toBe('one')
-        expect(printBigInt[apply](1234567890123456789012345678901234567890n)).toBe('a big number')
+        expect(printBigInt(0n)).toBe('zero')
+        expect(printBigInt(1n)).toBe('one')
+        expect(printBigInt(1234567890123456789012345678901234567890n)).toBe('a big number')
 
-        expect(() => printBigInt[apply](1)).toThrow()
+        expect(() => printBigInt(1)).toThrow()
     })
 })

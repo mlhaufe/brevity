@@ -1,4 +1,4 @@
-import { complect, data, isData, isTrait, trait } from "../index.mjs"
+import { complect, Complected, data, Data, Trait, trait } from "../index.mjs"
 
 describe('Point tests', () => {
     const pointData = data({
@@ -15,11 +15,9 @@ describe('Point tests', () => {
         { Point2, Point3 } = point
 
     test('Point data', () => {
-        expect(isData(pointData)).toBe(true);
-        expect(isData(printable)).toBe(false);
-
-        expect(isTrait(printable)).toBe(true);
-        expect(isTrait(pointData)).toBe(false);
+        expect(pointData).toBeInstanceOf(Data);
+        expect(printable).toBeInstanceOf(Trait);
+        expect(point).toBeInstanceOf(Complected);
 
         const p2 = Point2({ x: 1, y: 2 });
         expect(p2).toBeDefined();

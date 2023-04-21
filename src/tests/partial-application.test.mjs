@@ -1,4 +1,4 @@
-import { data, trait, _, apply, extend } from '../index.mjs'
+import { data, trait, _, extend } from '../index.mjs'
 
 describe('Partial Application', () => {
     test('add 3 numbers', () => {
@@ -6,16 +6,16 @@ describe('Partial Application', () => {
             _: (a, b, c) => a + b + c
         })
 
-        expect(add3[apply](1, 2, 3)).toBe(6)
-        expect(add3[apply](_, 2, 3)(1)).toBe(6)
-        expect(add3[apply](1, _, 3)(2)).toBe(6)
-        expect(add3[apply](1, 2, _)(3)).toBe(6)
-        expect(add3[apply](1, _, _)(2, 3)).toBe(6)
-        expect(add3[apply](_, 2, _)(1, 3)).toBe(6)
-        expect(add3[apply](_, _, 3)(1, 2)).toBe(6)
-        expect(add3[apply](_, _, _)(1, 2, _)(3)).toBe(6)
-        expect(add3[apply](_, _, _)(_, 2, _)(1, _)(3)).toBe(6);
-        expect(add3[apply](_, _, _)(_, 2, _)(_, 3)(1)).toBe(6);
+        expect(add3(1, 2, 3)).toBe(6)
+        expect(add3(_, 2, 3)(1)).toBe(6)
+        expect(add3(1, _, 3)(2)).toBe(6)
+        expect(add3(1, 2, _)(3)).toBe(6)
+        expect(add3(1, _, _)(2, 3)).toBe(6)
+        expect(add3(_, 2, _)(1, 3)).toBe(6)
+        expect(add3(_, _, 3)(1, 2)).toBe(6)
+        expect(add3(_, _, _)(1, 2, _)(3)).toBe(6)
+        expect(add3(_, _, _)(_, 2, _)(1, _)(3)).toBe(6);
+        expect(add3(_, _, _)(_, 2, _)(_, 3)(1)).toBe(6);
     })
 
     test('Linked List', () => {

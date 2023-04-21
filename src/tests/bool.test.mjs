@@ -34,5 +34,7 @@ describe('Bool tests', () => {
 
         expect(f.not()).toBe(t)
         expect(t.not()).toBe(f)
+
+        expect(() => and('string', f)).toThrow(TypeError)
     })
 })
