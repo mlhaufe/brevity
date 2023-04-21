@@ -19,6 +19,12 @@ const satisfiesPrimitive = (Cons, value) => {
 }
 
 const traitHandler = {
+    get(target, prop, receiver) {
+        if (prop === 'length')
+            return target.constructor.length
+
+        return Reflect.get(target, prop, receiver)
+    },
     apply(target, thisArg, argumentsList) {
         if (thisArg instanceof Complected) {
             return Reflect.apply(target[apply], thisArg, [thisArg, ...argumentsList])
@@ -85,12 +91,18 @@ export const trait = (data, traitCfg) => {
         static [dataDecl] = data
 
         static {
-            for (const [name, f] of Object.entries(traitDef)) {
+            const entries = Object.entries(traitDef),
+                arity = entries[0]?.[1]?.length ?? 0
+
+            for (const [name, f] of entries) {
+                if (f.length !== arity)
+                    throw new TypeError(`Invalid Trait declaration. All functions must have the same arity`);
                 this.prototype[name] = f;
                 Object.defineProperty(f, 'name', { value: name })
             }
-        }
 
+            Object.defineProperty(this, 'length', { value: arity })
+        }
     }
 
     /*
@@ -130,7 +142,7 @@ function validateDefs(data, traitDef) {
     }
 }
 
-/********
+/*
 const getAncestorFunctions = (() => {
     const cache = new WeakMap()
     return (obj) => {
@@ -145,6 +157,8 @@ const getAncestorFunctions = (() => {
         return cache.get(obj)
     }
 })()
+
+*/
 
 function accumulator(fn, savedArgs, remainingCount) {
     return function (...args) {
@@ -169,6 +183,7 @@ function partial(fn) {
         accumulator(fn, Array.from({ length: fn.length }, wildcardFn), fn.length);
 }
 
+/*
 // const isPattern = (p) => {
 //     return isPrimitive(p) || variant in p || isObjectLiteral(p) || Array.isArray(p)
 // }
@@ -344,16 +359,7 @@ export function trait(dataDec, traitDef) {
       if ("_" in traitDef)
         localTraits['_'] = createTraitFn('_', traitDef['_'])
 
-    // determine the arity of the trait by iterating over every function
-    // while also enforcing an equal arity for all functions
-    const fns = Object.values(localTraits).filter(fn => typeof fn === 'function')
-    const arity = fns.reduce((max, fn) => {
-        assert(fn.length === max,
-            `Invalid Trait declaration. All functions must have the same arity`);
-        return Math.max(max, fn.length)
-    }, fns[0]?.length ?? 0)
 
-    Object.defineProperty(localTraits, 'length', { value: arity })
 
     return new Proxy(partial(localTraits), {
         get(target, prop) { return Reflect.get(localTraits, prop) }

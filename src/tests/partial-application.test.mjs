@@ -6,6 +6,8 @@ describe('Partial Application', () => {
             _: (a, b, c) => a + b + c
         })
 
+        expect(add3.length).toBe(3)
+
         expect(add3(1, 2, 3)).toBe(6)
         expect(add3(_, 2, 3)(1)).toBe(6)
         expect(add3(1, _, 3)(2)).toBe(6)
@@ -26,11 +28,15 @@ describe('Partial Application', () => {
             Cons: ({ head, tail }, fn, z) => fn(head, tail.foldRight(fn, z))
         })
 
+        expect(foldRight.length).toBe(3)
+
         //const concat = foldRight(_, Cons, _)
         const concat = trait(listData, {
             [extend]: foldRight,
             _: (self, other) => self.foldRight(Cons, other)
         })
+
+        expect(concat.length).toBe(2)
 
         //const length = foldRight(_, (x, acc) => acc + 1, 0)
         const length = trait(listData, {
@@ -38,6 +44,9 @@ describe('Partial Application', () => {
             _: (self) => self.foldRight((x, acc) => acc + 1, 0)
         })
 
+        expect(length.length).toBe(1)
+
+        // FIXME: This mistake should throw
         const list = trait(listData, { concat, foldRight, length }),
             { Nil, Cons } = list
 
