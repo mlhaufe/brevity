@@ -1,9 +1,5 @@
-export { data, isData } from './data.mjs';
-export { apply, trait, isTrait, _ } from './trait.mjs';
-export { complect } from './complect.mjs';
 //export { memoFix } from './memoFix.mjs';
-
-/**
- * Used to declare inheritance from a parent.
- */
-export const extend = Symbol('extend');
+export { apply, extend } from './symbols.mjs';
+export { data, Data } from './data.mjs';
+export { trait, Trait, _ } from './trait.mjs';
+export { complect } from './complect.mjs';

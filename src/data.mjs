@@ -1,7 +1,7 @@
 import { BoxedMultiKeyMap } from "./BoxedMultiKeyMap.mjs";
+import { callable } from "./callable.mjs";
 import { isObjectLiteral } from "./isObjectLiteral.mjs";
-import { extend } from "./index.mjs";
-import { hasPrototype } from "./hasPrototype.mjs";
+import { apply, extend } from "./symbols.mjs";
 
 /**
  * Tests if the given string is capitalized
@@ -17,17 +17,33 @@ const isCapitalized = str => /^[A-Z][A-Za-z0-9]*/.test(str);
  */
 const isCamelCase = str => /^[a-z][A-Za-z0-9]*/.test(str);
 
-const protoData = Object.create(null),
-    protoVariant = Object.assign(Object.create(null), {
-        /* Enables array destructuring */
-        *[Symbol.iterator]() {
-            for (const key in this) {
-                const value = this[key];
-                if (typeof value !== 'function')
-                    yield this[key];
-            }
+const variantHandler = {
+    apply(target, thisArg, argumentsList) {
+        return Reflect.apply(target[apply], target.constructor.prototype, argumentsList)
+    }
+}
+
+export class Data { }
+
+// TODO: extends Data and Function
+class BaseVariant {
+    constructor() {
+        return new Proxy(this, variantHandler)
+    }
+
+    /* Enables array destructuring */
+    *[Symbol.iterator]() {
+        for (const key in this) {
+            const value = this[key];
+            if (typeof value !== 'function')
+                yield this[key];
         }
-    })
+    }
+
+    [apply](instance, ...args) {
+        return this[instance.constructor.name](instance, ...args)
+    }
+}
 
 /**
  * Normalizes the arguments passed to a variant constructor to an array of values
@@ -70,13 +86,6 @@ function normalizeArgs(propNames, args, VName) {
 }
 
 /**
- * Tests if the given object is a data object
- * @param {*} obj - The object to test
- * @returns {boolean} - True if the object is a data object
- */
-export const isData = obj => hasPrototype(obj, protoData)
-
-/**
  * Defines a data type
  * @param def The variants definition
  * @returns The data type
@@ -84,46 +93,53 @@ export const isData = obj => hasPrototype(obj, protoData)
 export function data(def) {
     if (!isObjectLiteral(def))
         throw new TypeError('Data declaration must be an object literal');
-    if (def[extend] && !isData(def[extend]))
+    if (def[extend] && !(def[extend] instanceof Data))
         throw new TypeError('Data can only extend another Data declaration');
 
-    const dataFactory = Object.create(def[extend] ?? protoData);
+    class Factory extends (def[extend]?.constructor ?? Data) {
+        static {
+            for (const [VName, props] of Object.entries(def)) {
+                if (!isCapitalized(VName))
+                    throw new TypeError(`variant name must be capitalized: ${VName}`);
+                if (!isObjectLiteral(props))
+                    throw new TypeError(`variant properties must be an object literal: ${VName}`);
 
-    for (const [VName, props] of Object.entries(def)) {
-        if (!isCapitalized(VName))
-            throw new TypeError(`variant name must be capitalized: ${VName}`);
-        if (!isObjectLiteral(props))
-            throw new TypeError(`variant properties must be an object literal: ${VName}`);
+                const propNames = Object.keys(props)
+                if (!propNames.every(isCamelCase))
+                    throw new TypeError(`variant properties must be camelCase strings: ${VName}: ${props}`);
 
-        const propNames = Object.keys(props)
-        if (!propNames.every(isCamelCase))
-            throw new TypeError(`variant properties must be camelCase strings: ${VName}: ${props}`);
+                const pool = new BoxedMultiKeyMap();
 
-        const pool = new BoxedMultiKeyMap();
+                const Variant = callable(class extends BaseVariant {
+                    constructor(...args) {
+                        super()
+                        const normalizedArgs = normalizeArgs(propNames, args, VName);
+                        const cached = pool.get(...normalizedArgs);
+                        if (cached) return cached;
 
-        if (propNames.length === 0)
-            dataFactory[VName] = readonly(Object.create(protoVariant));
-        else
-            dataFactory[VName] = (...args) => {
-                const normalizedArgs = normalizeArgs(propNames, args, VName),
-                    cached = pool.get(...normalizedArgs);
-                if (cached) return cached;
-                const obj = readonly(Object.defineProperties(Object.create(protoVariant),
-                    propNames.reduce((acc, propName, i) => {
-                        if (typeof normalizedArgs[i] === 'function')
-                            acc[propName] = { get: normalizedArgs[i], enumerable: true };
-                        else
-                            acc[propName] = { value: normalizedArgs[i], enumerable: true };
-                        return acc;
-                    }, {})
-                ))
-                pool.set(...[...normalizedArgs, obj])
+                        Object.defineProperties(this,
+                            propNames.reduce((acc, propName, i) => {
+                                if (typeof normalizedArgs[i] === 'function')
+                                    acc[propName] = { get: normalizedArgs[i], enumerable: true };
+                                else
+                                    acc[propName] = { value: normalizedArgs[i], enumerable: true };
+                                return acc;
+                            }, {})
+                        )
+                        pool.set(...[...normalizedArgs, this])
+                    }
+                })
+                Object.defineProperty(Variant, 'name', { value: VName });
 
-                return obj
+                if (propNames.length === 0)
+                    this.prototype[VName] = Variant();
+                else
+                    this.prototype[VName] = Variant
             }
+        }
     }
 
-    return readonly(dataFactory);
+    return new Factory();
 }
 
 /**

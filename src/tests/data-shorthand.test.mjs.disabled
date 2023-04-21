@@ -1,4 +1,4 @@
-import { data, trait, variant, variantName } from "../index.mjs"
+import { data, trait } from "../index.mjs"
 
 describe('Data shorthand tests', () => {
     const Disk = data({ position: {}, velocity: {}, radius: {}, item: {} })

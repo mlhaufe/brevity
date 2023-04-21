@@ -64,7 +64,7 @@ describe('Arithmetic', () => {
         expect(() => Add(Lit(1), Lit(2), Lit(3))).toThrow()
     })
 
-    test('evaluate', () => {
+    test('evaluate as trait', () => {
         const exp = complect(expData, { evaluate })
         const { Lit, Add } = exp
 
@@ -81,14 +81,28 @@ describe('Arithmetic', () => {
 
         // 1 + (2 + 3) + 4
         // with positional parameters
-        const exp2 = Add(
+        const e2 = Add(
             Add(Lit(1),
                 Add(Lit(2), Lit(3))
             ),
             Lit(4)
         )
 
-        expect(exp2.evaluate()).toBe(10)
+        expect(e2.evaluate()).toBe(10)
+    })
+
+    test('evaluate applied to complected as function', () => {
+        const exp = complect(expData, { evaluate })
+        const { Lit, Add } = exp
+
+        // 1 + (2 + 3)
+        const e = Add(
+            Lit(1),
+            Add(Lit(2), Lit(3))
+        )
+
+        expect(evaluate(e)).toBe(6)
+        expect(e.evaluate()).toBe(6)
     })
 
     const print = trait(expData, {

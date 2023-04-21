@@ -1,6 +1,67 @@
-import { BoxedMultiKeyMap } from "./BoxedMultiKeyMap.mjs";
-import { isTrait } from "./index.mjs";
+import { callable } from "./callable.mjs";
+import { Data } from "./data.mjs";
+import { isObjectLiteral } from "./isObjectLiteral.mjs";
 
+export class Complected { }
+
+/**
+ * Combines a data declaration with traits
+ * @param {object} dataDecl - The data declaration
+ * @param {Record<PropertyKey,object>} traits - The trait configuration
+ * @returns {object} - The complected data type
+ */
+export const complect = (dataDecl, traits) => {
+    if (!(dataDecl instanceof Data))
+        throw new TypeError('Data declaration must be a Data object')
+    if (!isObjectLiteral(traits))
+        throw new TypeError('Traits must be an object literal')
+
+    class ComplectedFactory extends Complected {
+        static {
+            for (let consName in dataDecl) {
+                const Cons = dataDecl[consName]
+                const ComplectedVariant = callable(class extends ComplectedFactory {
+                    static {
+                        Object.assign(this.prototype, traits)
+                        Object.defineProperty(this, 'name', { value: consName });
+                    }
+                    constructor(...args) {
+                        super()
+                        Object.assign(this, new Cons(...args))
+                    }
+                })
+
+                this[consName] = typeof Cons === 'function' ? ComplectedVariant : ComplectedVariant()
+            }
+        }
+    }
+
+    return new ComplectedFactory()
+}
+
+// /**
+//  * Intercepts the call to the trait method and passes the self object as the first argument
+//  * @param {*} factory - The factory object
+//  * @param {*} trait - The trait object
+//  */
+// const decorateSelf = (vName, factory, trait) => {
+//     return new Proxy(trait, {
+//         get(target, prop, receiver) {
+//             const maybeTrait = Reflect.get(target, prop, receiver);
+
+//             if (isTrait(maybeTrait)) {
+//                 if (!(vName in maybeTrait) && !('_' in maybeTrait))
+//                     throw new Error(`Trait ${maybeTrait(prop)} does not have a variant ${vName}`)
+//                 // makes 'this' refer to the family and the first argument refer to the data instance (self)
+//                 return (maybeTrait[vName] ?? maybeTrait['_']).bind(factory, receiver)
+//             } else {
+//                 return maybeTrait
+//             }
+//         }
+//     })
+// }
+
+/*
 function getDesc(obj, prop) {
     const desc = Object.getOwnPropertyDescriptor(obj, prop);
     return desc || (obj = Object.getPrototypeOf(obj) ? getDesc(obj, prop) : void 0);
@@ -42,73 +103,4 @@ const merge = (...protos) => {
     }));
 }
 
-/**
- * Combines a data declaration with traits
- * @param {object} dataDecl - The data declaration
- * @param {Record<PropertyKey,object>} traits - The trait configuration
- * @returns {object} - The complected data type
- */
-export const complect = (dataDecl, traits) => {
-    const constructorPool = new BoxedMultiKeyMap();
-    let initTraits = traits
-    const merged = new Proxy({}, {
-        get(target, prop, receiver) {
-            const cached = constructorPool.get(dataDecl, prop, receiver);
-            if (cached) return cached;
-
-            //const VCons = Reflect.get(target, prop, receiver);
-            const VCons = Reflect.get(dataDecl, prop, receiver);
-            if (typeof VCons === 'function') {
-                const fnResult = function (...args) {
-                    const vt = VCons(...args)
-
-                    const cached = fnResult.instancePool.get(vt);
-                    if (cached) return cached;
-
-                    const instance = merge(vt, initTraits),
-                        result = decorateSelf(prop, merged, instance);
-
-                    fnResult.instancePool.set(vt, result);
-                    return result
-                }
-                fnResult.instancePool = new BoxedMultiKeyMap();
-
-                constructorPool.set(dataDecl, prop, receiver, fnResult);
-                return fnResult
-            }
-            const instance = merge(VCons, initTraits),
-                result = decorateSelf(prop, merged, instance);
-
-            constructorPool.set(dataDecl, prop, receiver, result);
-            return result;
-        }
-    })
-
-    // Initialize any traits that have been delayed (have an init method)
-    // This ties the recursive knot for the family
-    initTraits = Object.fromEntries(Object.entries(traits).map(([k, t]) => [k, 'init' in t ? t.init(merged) : t]))
-
-    return merged
-}
-
-/**
- * Intercepts the call to the trait method and passes the self object as the first argument
- * @param {*} factory - The factory object
- * @param {*} trait - The trait object
- */
-const decorateSelf = (vName, factory, trait) => {
-    return new Proxy(trait, {
-        get(target, prop, receiver) {
-            const maybeTrait = Reflect.get(target, prop, receiver);
-
-            if (isTrait(maybeTrait)) {
-                if (!(vName in maybeTrait) && !('_' in maybeTrait))
-                    throw new Error(`Trait ${maybeTrait(prop)} does not have a variant ${vName}`)
-                // makes 'this' refer to the family and the first argument refer to the data instance (self)
-                return (maybeTrait[vName] ?? maybeTrait['_']).bind(factory, receiver)
-            } else {
-                return maybeTrait
-            }
-        }
-    })
-}
+*/

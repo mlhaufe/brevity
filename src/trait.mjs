@@ -1,9 +1,9 @@
+import { Data } from './data.mjs';
+import { Complected } from './complect.mjs';
 import { isObjectLiteral } from './isObjectLiteral.mjs';
-import { extend, isData } from './index.mjs';
-import { hasPrototype } from './hasPrototype.mjs';
+import { apply, extend } from './symbols.mjs';
 
 export const _ = Symbol('_'),
-    apply = Symbol('apply'),
     dataDecl = Symbol('dataDecl')
 
 const primCons = [Number, String, Boolean, BigInt],
@@ -18,8 +18,36 @@ const satisfiesPrimitive = (Cons, value) => {
     return (typeof value === typeString || value instanceof Cons)
 }
 
-const protoTrait = Object.assign(Object.create(null), {
+const traitHandler = {
+    apply(target, thisArg, argumentsList) {
+        if (thisArg instanceof Complected) {
+            return Reflect.apply(target[apply], thisArg, [thisArg, ...argumentsList])
+        }
+
+        return Reflect.apply(
+            target[apply],
+            thisArg ?? target.constructor.prototype,
+            argumentsList
+        )
+    }
+}
+
+export class Trait extends Function {
+    constructor() {
+        super()
+        return new Proxy(this, traitHandler)
+    }
+
     [apply](instance, ...args) {
+        return this[instance.constructor.name](instance, ...args)
+    }
+}
+
+/*
+const protoTrait = Object.assign(function (instance, ...args) {
+
+}, {
+    [apply]() {
         if ('init' in this) {
             // @ts-ignore: init is not a function
             return this.init(this)[apply](instance, ...args)
@@ -34,8 +62,7 @@ const protoTrait = Object.assign(Object.create(null), {
             throw new TypeError('Trait cannot be applied. It must be complected first')
     }
 })
-
-export const isTrait = obj => hasPrototype(obj, protoTrait)
+*/
 
 /**
  * Defines a trait
@@ -44,51 +71,61 @@ export const isTrait = obj => hasPrototype(obj, protoTrait)
  * @returns {object} The trait
  */
 export const trait = (data, traitDef) => {
-    if (typeof traitDef === 'function') {
-        // Create just enough of an object so that it isTrait returns true
-        // The complect function utilze this to initialize properly
-        return Object.assign(Object.create(protoTrait), {
-            init: (family) => trait(data, traitDef(family))
-        })
-    }
-
     if (!isObjectLiteral(traitDef))
         throw new TypeError('Trait declaration must be an object literal');
-    if (traitDef[extend] && !isTrait(traitDef[extend]))
+    if (traitDef[extend] && !(traitDef[extend] instanceof Trait))
         throw new TypeError('A Trait can only extend another Trait declaration');
 
-    const dataTrait = Object.assign(Object.create(traitDef[extend] ?? protoTrait), {
-        [dataDecl]: data
-    })
+    class SubTrait extends (traitDef[extend] ?? Trait) {
+        [dataDecl] = data
 
+        static {
+            validateDefs(data, traitDef);
+
+            for (const [name, f] of Object.entries(traitDef)) {
+                this.prototype[name] = f;
+                Object.defineProperty(f, 'name', { value: name })
+            }
+        }
+
+    }
+
+    /*
+        if (typeof traitDef === 'function') {
+            // Create just enough of an object so that it isTrait returns true
+            // The complect function utilze this to initialize properly
+            return Object.assign(Object.create(protoTrait), {
+                init: (family) => trait(data, traitDef(family))
+            })
+        }
+    */
+
+    return new SubTrait()
+}
+
+function validateDefs(data, traitDef) {
     if (data == undefined && !('_' in traitDef))
         throw new TypeError("Wildcard '_' must be defined if data is undefined");
-    else if (isData(data)) {
+    else if (data instanceof Data) {
         if (!('_' in traitDef)) {
             // every key in data must be in traitDef
             Object.keys(data).forEach(name => {
                 if (!traitDef[name])
                     throw new TypeError(`Invalid Trait declaration. Missing definition for '${String(name)}'`);
-            })
+            });
         }
     } else if (primCons.includes(data)) {
         if (data === Boolean && !('_' in traitDef)) {
             ['true', 'false'].forEach(name => {
                 if (!traitDef[name])
                     throw new TypeError(`Invalid Trait declaration. Missing definition for '${String(name)}'`);
-            })
+            });
         } else if (!('_' in traitDef)) {
             throw new TypeError(`Invalid Trait declaration. Missing definition for '${String(data.name)}'`);
         }
     } else {
-        throw new TypeError(`Invalid data declaration. Expected data, primitive constructor or undefined`)
+        throw new TypeError(`Invalid data declaration. Expected data, primitive constructor or undefined`);
     }
-
-    for (const [name, f] of Object.entries(traitDef)) {
-        dataTrait[name] = f;
-    }
-
-    return Object.freeze(dataTrait)
 }
 
 /********
@@ -134,7 +171,6 @@ function partial(fn) {
 //     return isPrimitive(p) || variant in p || isObjectLiteral(p) || Array.isArray(p)
 // }
 
-const protoTrait = () => { }
 protoTrait[apply] = function self(instance, ...args) {
     let fn
     const dataType = this[dataDecl]
