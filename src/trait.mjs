@@ -1,10 +1,10 @@
 import { Data } from './data.mjs';
 import { Complected } from './complect.mjs';
 import { isObjectLiteral } from './isObjectLiteral.mjs';
-import { apply, extend } from './symbols.mjs';
+import { apply, extend, _ } from './symbols.mjs';
+import { partial } from './partial.mjs';
 
-export const _ = Symbol('_'),
-    dataDecl = Symbol('dataDecl')
+export const dataDecl = Symbol('dataDecl')
 
 const primCons = [Number, String, Boolean, BigInt],
     typeofList = ['boolean', 'bigint', 'number', 'string', 'symbol', 'undefined']
@@ -20,15 +20,15 @@ const satisfiesPrimitive = (Cons, value) => {
 
 const traitHandler = {
     get(target, prop, receiver) {
+        // TODO: this may be unnecessary if 'length' is defined on the prototype
         if (prop === 'length')
             return target.constructor.length
 
         return Reflect.get(target, prop, receiver)
     },
     apply(target, thisArg, argumentsList) {
-        if (thisArg instanceof Complected) {
+        if (thisArg instanceof Complected)
             return Reflect.apply(target[apply], thisArg, [thisArg, ...argumentsList])
-        }
 
         return Reflect.apply(
             target[apply],
@@ -105,17 +105,15 @@ export const trait = (data, traitCfg) => {
         }
     }
 
-    /*
-        if (typeof traitDef === 'function') {
-            // Create just enough of an object so that it isTrait returns true
-            // The complect function utilze this to initialize properly
-            return Object.assign(Object.create(protoTrait), {
-                init: (family) => trait(data, traitDef(family))
-            })
+    const t = new SubTrait()
+    return new Proxy(partial(t), {
+        get(target, prop, receiver) {
+            return Reflect.get(t, prop, receiver)
+        },
+        getPrototypeOf() {
+            return SubTrait.prototype
         }
-    */
-
-    return new SubTrait()
+    })
 }
 
 function validateDefs(data, traitDef) {
@@ -140,47 +138,6 @@ function validateDefs(data, traitDef) {
     } else {
         throw new TypeError(`Invalid data declaration. Expected data, primitive constructor or undefined`);
     }
-}
-
-/*
-const getAncestorFunctions = (() => {
-    const cache = new WeakMap()
-    return (obj) => {
-        if (cache.has(obj))
-            return cache.get(obj)
-        const fnValues = Object.values(obj).filter(v => typeof v === 'function'),
-            proto = Reflect.getPrototypeOf(obj)
-        if (proto !== null && isTrait in proto)
-            cache.set(obj, fnValues.concat(getAncestorFunctions(proto)))
-        else
-            cache.set(obj, fnValues)
-        return cache.get(obj)
-    }
-})()
-
-*/
-
-function accumulator(fn, savedArgs, remainingCount) {
-    return function (...args) {
-        const newRemainingCount = args.reduce(
-            (sum, arg) => arg !== _ ? sum - 1 : sum,
-            remainingCount
-        );
-        const argClone = [...args];
-        const newSavedArgs = savedArgs.map(
-            arg => arg === _ ? argClone.shift() : arg
-        );
-
-        return newRemainingCount === 0 ? fn(...newSavedArgs) :
-            accumulator(fn, newSavedArgs, newRemainingCount);
-    };
-}
-
-const wildcardFn = () => _
-
-function partial(fn) {
-    return fn.length === 0 ? fn :
-        accumulator(fn, Array.from({ length: fn.length }, wildcardFn), fn.length);
 }
 
 /*

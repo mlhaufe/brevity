@@ -31,6 +31,7 @@ export const complect = (dataDecl, traits) => {
                 const ComplectedVariant = callable(class extends ComplectedFactory {
                     static {
                         for (let traitName in traits) {
+                            // WHat if traits[traitName] is a partial function?
                             const trait = traits[traitName][consName] ?? traits[traitName]['_']
                             if (!trait)
                                 throw new Error(`Trait ${traitName} does not have a definition for ${consName}`)
