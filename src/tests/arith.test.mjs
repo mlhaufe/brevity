@@ -68,6 +68,8 @@ describe('Arithmetic', () => {
         const exp = complect(expData, { evaluate })
         const { Lit, Add } = exp
 
+        expect(Lit(4).evaluate()).toBe(4)
+
         // 1 + (2 + 3)
         const e = Add({
             left: Lit({ value: 1 }),
@@ -94,6 +96,8 @@ describe('Arithmetic', () => {
     test('evaluate applied to complected as function', () => {
         const exp = complect(expData, { evaluate })
         const { Lit, Add } = exp
+
+        expect(evaluate(Lit(4))).toBe(4)
 
         // 1 + (2 + 3)
         const e = Add(

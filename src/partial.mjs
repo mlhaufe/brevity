@@ -2,19 +2,14 @@ import { _ } from './symbols.mjs'
 
 const wildcardFn = () => _
 
+const sub1 = (total, arg) => (arg !== _ ? total - 1 : total);
+
 function accumulator(fn, savedArgs, remainingCount) {
     function _partial(...args) {
-        const newRemainingCount = args.reduce(
-            (sum, arg) => arg !== _ ? sum - 1 : sum,
-            remainingCount
-        );
+        const newRemainingCount = args.reduce(sub1, remainingCount),
+            newSavedArgs = savedArgs.map((arg) => (arg === _ ? args.shift() : arg));
 
-        const argClone = [...args];
-        const newSavedArgs = savedArgs.map(
-            arg => arg === _ ? argClone.shift() : arg
-        );
-
-        return newRemainingCount === 0 ? fn(...newSavedArgs) :
+        return newRemainingCount === 0 ? fn.apply(this, newSavedArgs) :
             accumulator(fn, newSavedArgs, newRemainingCount);
     };
 

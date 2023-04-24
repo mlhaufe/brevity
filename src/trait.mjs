@@ -18,21 +18,42 @@ const satisfiesPrimitive = (Cons, value) => {
     return (typeof value === typeString || value instanceof Cons)
 }
 
+function validateDefs(data, traitDef) {
+    if (data == undefined && !('_' in traitDef))
+        throw new TypeError("Wildcard '_' must be defined if data is undefined");
+    else if (data instanceof Data) {
+        if (!('_' in traitDef)) {
+            // every key in data must be in traitDef
+            for (let name in data)
+                if (!traitDef[name])
+                    throw new TypeError(`Invalid Trait declaration. Missing definition for '${String(name)}'`);
+        }
+    } else if (primCons.includes(data)) {
+        if (data === Boolean && !('_' in traitDef)) {
+            ['true', 'false'].forEach(name => {
+                if (!traitDef[name])
+                    throw new TypeError(`Invalid Trait declaration. Missing definition for '${String(name)}'`);
+            });
+        } else if (!('_' in traitDef)) {
+            throw new TypeError(`Invalid Trait declaration. Missing definition for '${String(data.name)}'`);
+        }
+    } else {
+        throw new TypeError(`Invalid data declaration. Expected data, primitive constructor or undefined`);
+    }
+}
+
 const traitHandler = {
     get(target, prop, receiver) {
-        // TODO: this may be unnecessary if 'length' is defined on the prototype
         if (prop === 'length')
             return target.constructor.length
 
         return Reflect.get(target, prop, receiver)
     },
     apply(target, thisArg, argumentsList) {
-        if (thisArg instanceof Complected)
-            return Reflect.apply(target[apply], thisArg, [thisArg, ...argumentsList])
-
         return Reflect.apply(
             target[apply],
-            thisArg ?? target.constructor.prototype,
+            // thisArg ?? target.constructor.prototype, // Should this just be (thisArg ?? target) ?
+            thisArg ?? target, // TODO: is this always target?
             argumentsList
         )
     }
@@ -45,15 +66,22 @@ export class Trait extends Function {
     }
 
     [apply](instance, ...args) {
-        const expected = this.constructor[dataDecl]
+        // FIXME: should not be undefined when called from complect. Did complect not copy the dataDecl?
+        // for complected, is expected: instance instanceof this.constructor?
 
-        if (expected) {
-            if (isPrimitive(instance)) {
-                if (!satisfiesPrimitive(expected, instance))
-                    throw new TypeError(`Trait cannot be applied. Expected ${expected.name} but got ${String(instance)}`)
-            } else if (!(instance instanceof expected))
-                throw new TypeError(`Trait cannot be applied. Expected ${expected.name} but got ${instance.constructor.name}`)
-        }
+        // const expected = this.constructor[dataDecl]
+
+        // if (expected) {
+        //     if (isPrimitive(instance)) {
+        //         if (!satisfiesPrimitive(expected, instance))
+        //             throw new TypeError(`Trait cannot be applied. Expected ${expected.name} but got ${String(instance)}`)
+        //     } else if (!(instance instanceof expected))
+        //         throw new TypeError(`Trait cannot be applied. Expected ${expected.name} but got ${instance.constructor.name}`)
+        // }
+
+        // FIXME: this is broken when trait called as a function
+        if (!(instance instanceof this.constructor))
+            throw new TypeError(`Trait cannot be applied. Expected ${this.constructor.name} but got ${instance.constructor.name}`)
 
         let vName
         if (isPrimitive(instance))
@@ -61,7 +89,7 @@ export class Trait extends Function {
         else
             vName = instance.constructor.name
 
-        const f = this[vName],
+        const f = this[vName], // FIXME: this needs to reference the trait[vName] and not the complected[vname]
             fWild = this['_']
 
         if (!f && !fWild)
@@ -114,30 +142,6 @@ export const trait = (data, traitCfg) => {
             return SubTrait.prototype
         }
     })
-}
-
-function validateDefs(data, traitDef) {
-    if (data == undefined && !('_' in traitDef))
-        throw new TypeError("Wildcard '_' must be defined if data is undefined");
-    else if (data instanceof Data) {
-        if (!('_' in traitDef)) {
-            // every key in data must be in traitDef
-            for (let name in data)
-                if (!traitDef[name])
-                    throw new TypeError(`Invalid Trait declaration. Missing definition for '${String(name)}'`);
-        }
-    } else if (primCons.includes(data)) {
-        if (data === Boolean && !('_' in traitDef)) {
-            ['true', 'false'].forEach(name => {
-                if (!traitDef[name])
-                    throw new TypeError(`Invalid Trait declaration. Missing definition for '${String(name)}'`);
-            });
-        } else if (!('_' in traitDef)) {
-            throw new TypeError(`Invalid Trait declaration. Missing definition for '${String(data.name)}'`);
-        }
-    } else {
-        throw new TypeError(`Invalid data declaration. Expected data, primitive constructor or undefined`);
-    }
 }
 
 /*
