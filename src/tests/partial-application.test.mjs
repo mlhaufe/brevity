@@ -72,8 +72,8 @@ describe('Partial Application', () => {
         const list1 = Cons(1, Cons(2, Cons(3, Nil))),
             list2 = Cons(4, Cons(5, Cons(6, Nil)))
 
-        // expect(length(list1)).toBe(3)
-        // expect(length(list2)).toBe(3)
+        expect(length(list1)).toBe(3)
+        expect(length(list2)).toBe(3)
 
         expect(list1.length()).toBe(3)
         expect(list2.length()).toBe(3)

@@ -32,9 +32,15 @@ export const complect = (dataDecl, traits) => {
                     static {
                         for (let traitName in traits) {
                             const trait = traits[traitName]
-                            this.prototype[traitName] = function (...args) {
-                                //return trait.call(this, this, ...args)
-                                return trait[consName].call(this, this, ...args)
+                            if (trait.name === '_partial') {
+                                this.prototype[traitName] = function (...args) {
+                                    return trait.call(this, this, ...args)
+                                }
+                            } else {
+                                this.prototype[traitName] = function (...args) {
+                                    // FIXME: if trait is a partial, then trait[consName] is undefined
+                                    return trait[consName].call(this, this, ...args)
+                                }
                             }
                         }
 

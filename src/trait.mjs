@@ -1,5 +1,4 @@
 import { Data } from './data.mjs';
-import { Complected } from './complect.mjs';
 import { isObjectLiteral } from './isObjectLiteral.mjs';
 import { apply, extend, _ } from './symbols.mjs';
 import { partial } from './partial.mjs';
@@ -52,8 +51,7 @@ const traitHandler = {
     apply(target, thisArg, argumentsList) {
         return Reflect.apply(
             target[apply],
-            // thisArg ?? target.constructor.prototype, // Should this just be (thisArg ?? target) ?
-            thisArg ?? target, // TODO: is this always target?
+            thisArg ?? target,
             argumentsList
         )
     }
@@ -66,22 +64,16 @@ export class Trait extends Function {
     }
 
     [apply](instance, ...args) {
-        // FIXME: should not be undefined when called from complect. Did complect not copy the dataDecl?
-        // for complected, is expected: instance instanceof this.constructor?
-
         // const expected = this.constructor[dataDecl]
 
         // if (expected) {
         //     if (isPrimitive(instance)) {
         //         if (!satisfiesPrimitive(expected, instance))
         //             throw new TypeError(`Trait cannot be applied. Expected ${expected.name} but got ${String(instance)}`)
-        //     } else if (!(instance instanceof expected))
+        //     } else if (!(instance instanceof expected)) {
         //         throw new TypeError(`Trait cannot be applied. Expected ${expected.name} but got ${instance.constructor.name}`)
+        //     }
         // }
-
-        // FIXME: this is broken when trait called as a function
-        if (!(instance instanceof this.constructor))
-            throw new TypeError(`Trait cannot be applied. Expected ${this.constructor.name} but got ${instance.constructor.name}`)
 
         let vName
         if (isPrimitive(instance))
@@ -89,7 +81,7 @@ export class Trait extends Function {
         else
             vName = instance.constructor.name
 
-        const f = this[vName], // FIXME: this needs to reference the trait[vName] and not the complected[vname]
+        const f = this[vName],
             fWild = this['_']
 
         if (!f && !fWild)
