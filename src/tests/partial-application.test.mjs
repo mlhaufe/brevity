@@ -42,31 +42,25 @@ describe('Partial Application', () => {
         const listData = data({ Nil: {}, Cons: { head: {}, tail: {} } })
 
         const foldRight = trait(listData, {
-            Nil: (_self, _fn, z) => z,
-            Cons: ({ head, tail }, fn, z) => fn(head, tail.foldRight(fn, z))
+            Nil: (_self, unit, _merge) => unit,
+            Cons: ({ head, tail }, unit, merge) => merge(head, tail.foldRight(unit, merge))
         })
 
         expect(foldRight).toBeInstanceOf(Trait)
-
         expect(foldRight.length).toBe(3)
 
-        //const concat = foldRight(_, Cons, _)
-        // const concat = trait(listData, {
-        //     [extend]: foldRight,
-        //     _: (self, other) => self.foldRight(Cons, other)
-        // })
+        // TODO: can the thunk be replaced with a wildcard?
+        // const concat = foldRight(_, _, _.Cons)
+        // where _.Cons === this.Cons ? But how in a partial?
+        const concat = foldRight(_, _, (h, t) => Cons(h, t))
 
-        // expect(concat.length).toBe(2)
+        expect(concat.length).toBe(2)
 
-        const length = foldRight(_, (x, acc) => acc + 1, 0)
-        // const length = trait(listData, {
-        //     [extend]: foldRight,
-        //     _: (self) => self.foldRight((x, acc) => acc + 1, 0)
-        // })
+        const length = foldRight(_, 0, (x, acc) => acc + 1)
 
         expect(length.length).toBe(1)
 
-        const list = complect(listData, { /* concat, */ foldRight, length }),
+        const list = complect(listData, { concat, foldRight, length }),
             { Nil, Cons } = list
 
         const list1 = Cons(1, Cons(2, Cons(3, Nil))),
@@ -77,8 +71,17 @@ describe('Partial Application', () => {
 
         expect(list1.length()).toBe(3)
         expect(list2.length()).toBe(3)
-        // expect(list1.concat(list2)).toEqual(
-        //     Cons(1, Cons(2, Cons(3, Cons(4, Cons(5, Cons(6, Nil))))))
-        // )
+
+        const list3 = Cons(1, Nil)
+
+        expect(Nil.concat(Nil)).toBe(Nil)
+        expect(Nil.concat(list3)).toBe(list3)
+
+        expect(list3.concat(Nil)).toBe(list3)
+
+        expect(Cons(1, Nil).concat(Cons(2, Nil))).toBe(Cons(1, Cons(2, Nil)))
+        expect(list1.concat(list2)).toBe(
+            Cons(1, Cons(2, Cons(3, Cons(4, Cons(5, Cons(6, Nil))))))
+        )
     })
 })
