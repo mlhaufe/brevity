@@ -1,3 +1,4 @@
+import { BoxedMultiKeyMap } from "./BoxedMultiKeyMap.mjs";
 import { callable } from "./callable.mjs";
 import { Data } from "./data.mjs";
 import { isObjectLiteral } from "./isObjectLiteral.mjs";
@@ -27,18 +28,19 @@ export const complect = (dataDecl, traits) => {
     class ComplectedFactory extends Complected {
         static {
             for (let consName in dataDecl) {
-                const Cons = dataDecl[consName]
+                const Cons = dataDecl[consName],
+                    pool = new BoxedMultiKeyMap();
+
                 const ComplectedVariant = callable(class extends ComplectedFactory {
                     static {
                         for (let traitName in traits) {
                             const trait = traits[traitName]
                             if (trait.name === '_partial') {
                                 this.prototype[traitName] = function (...args) {
-                                    return trait.call(this, this, ...args)
+                                    return trait(this, ...args)
                                 }
                             } else {
                                 this.prototype[traitName] = function (...args) {
-                                    // FIXME: if trait is a partial, then trait[consName] is undefined
                                     return trait[consName].call(this, this, ...args)
                                 }
                             }
@@ -48,7 +50,15 @@ export const complect = (dataDecl, traits) => {
                     }
                     constructor(...args) {
                         super()
-                        Object.assign(this, typeof Cons === 'function' ? new Cons(...args) : Cons)
+                        const vt = typeof Cons === 'function' ? new Cons(...args) : Cons
+
+                        const cached = pool.get(vt);
+                        if (cached) return cached;
+
+                        const result = Object.assign(this, vt)
+                        pool.set(vt, result)
+
+                        return result
                     }
                 })
 
