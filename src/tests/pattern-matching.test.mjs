@@ -8,25 +8,25 @@ describe('Pattern matching', () => {
             Mul: { left: {}, right: {} }
         })
 
-        const simplify1 = trait(exprData, (f) => ({
+        const simplify1 = trait(exprData, {
             _: (self) => self,
             Mul: [
-                [{ left: f.Num(1) }, ({ right }) => right],
-                [{ right: f.Num(1) }, ({ left }) => left],
-                [{ left: f.Num(0) }, ({ left }) => left],
-                [{ right: f.Num(0) }, ({ right }) => right]
+                [{ left: $.Num(1) }, ({ right }) => right],
+                [{ right: $.Num(1) }, ({ left }) => left],
+                [{ left: $.Num(0) }, ({ left }) => left],
+                [{ right: $.Num(0) }, ({ right }) => right]
             ]
-        }))
+        })
 
-        const simplify2 = trait(exprData, (f) => ({
+        const simplify2 = trait(exprData, {
             _: (self) => self,
             Mul: [
-                [f.Mul(f.Num(1), _), ({ right }) => right],
-                [f.Mul(_, f.Num(1)), ({ left }) => left],
-                [f.Mul(f.Num(0), _), ({ left }) => left],
-                [f.Mul(_, f.Num(0)), ({ right }) => right]
+                [$.Mul($.Num(1), _), ({ right }) => right],
+                [$.Mul(_, $.Num(1)), ({ left }) => left],
+                [$.Mul($.Num(0), _), ({ left }) => left],
+                [$.Mul(_, $.Num(0)), ({ right }) => right]
             ]
-        }))
+        })
 
         const expr = complect(exprData, { simplify1, simplify2 }),
             { Num, Var, Mul } = expr

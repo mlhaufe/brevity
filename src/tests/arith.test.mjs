@@ -120,6 +120,9 @@ describe('Arithmetic', () => {
         const exp = complect(expData, { print })
         const { Lit, Add } = exp
 
+        expect(Lit(4).print()).toBe('4')
+        expect(Add(Lit(1), Lit(2)).print()).toBe('1 + 2')
+
         // 1 + (2 + 3)
         const e = Add({
             left: Lit({ value: 1 }),
