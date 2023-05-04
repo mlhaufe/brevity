@@ -1,4 +1,4 @@
-import { data, trait, Trait, _, extend, complect } from '../index.mjs'
+import { data, trait, _, complect } from '../index.mjs'
 
 describe('Partial Application', () => {
     test('add 3 numbers', () => {
@@ -46,7 +46,6 @@ describe('Partial Application', () => {
             Cons: ({ head, tail }, unit, merge) => merge(head, tail.foldRight(unit, merge))
         })
 
-        expect(foldRight).toBeInstanceOf(Trait)
         expect(foldRight.length).toBe(3)
 
         // TODO: can the thunk be replaced with a wildcard?

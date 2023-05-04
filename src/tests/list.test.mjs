@@ -1,43 +1,44 @@
 import { complect, data, trait, _ } from "../index.mjs";
 
 describe('List tests', () => {
-    const listData = data({ Nil: {}, Cons: { head: {}, tail: {} } });
+    const listData = data((List, T) => ({
+        Nil: {}, Cons: { head: T, tail: List(T) }
+    }));
 
-    const concat = trait(listData, {
+    const concat = trait(listData(_), {
         Nil(self, ys) { return ys },
         Cons({ head, tail }, ys) {
             return this.Cons({ head, tail: tail.concat(ys) })
         }
     })
 
-    const isNil = trait(listData, {
+    const isNil = trait(listData(_), {
         _: () => false,
         Nil: () => true
     });
 
-    const isThree = trait(listData, (f) => ({
+    const isThree = trait(listData(_), (family) => ({
         _: (_self) => false,
         Cons: [
-            [[_, [_, [_, f.Nil]]], (_self) => true],
+            [[_, [_, [_, family.Nil]]], (_self) => true],
             [_, (_self) => false]
         ]
     }))
 
-    const length = trait(listData, {
+    const length = trait(listData(_), {
         Nil(self) { return 0 },
         Cons({ head, tail }) { return 1 + tail.length() }
     });
 
-    const list = complect(listData, { concat, isNil, isThree, length }),
-        { Nil, Cons } = list;
+    const NumList = complect(listData(Number), { concat, isNil, isThree, length }),
+        { Nil, Cons } = NumList;
 
     test('List data', () => {
-        const nil = Nil,
-            cons = Cons({ head: 1, tail: nil })
+        const xs = Cons({ head: 1, tail: Nil })
 
-        expect(nil).toBe(list.Nil)
-        expect(cons.head).toBe(1)
-        expect(cons.tail).toBe(list.Nil)
+        expect(Nil).toBe(Nil)
+        expect(xs.head).toBe(1)
+        expect(xs.tail).toBe(Nil)
     })
 
     test('List Concat', () => {

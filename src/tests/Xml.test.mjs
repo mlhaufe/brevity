@@ -2,9 +2,9 @@ import { data, trait, complect } from "../index.mjs"
 
 describe('Simplified Xml Tests', () => {
     const xmlData = data({
-        Attr: { name: {}, value: {} },
-        Element: { name: {}, attrs: {}, children: {} },
-        Text: { text: {} }
+        Attr: { name: String, value: String },
+        Element: { name: String, attrs: {}, children: {} },
+        Text: { text: String }
     })
 
     const printable = trait(xmlData, {

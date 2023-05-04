@@ -1,3 +1,5 @@
+import { isComplectedVariant } from "./complect.mjs";
+import { isDataVariant } from "./data.mjs";
 import { isConstructor } from "./isConstructor.mjs";
 import { isObjectLiteral } from "./isObjectLiteral.mjs";
 import { isPrimitive } from "./isPrimitive.mjs";
@@ -32,6 +34,7 @@ import { _ } from "./symbols.mjs";
 const isPattern = (p) => {
     return isPrimitive(p) || isObjectLiteral(p)
         || Array.isArray(p) || isConstructor(p) || p === _
+        || isDataVariant(p) || isComplectedVariant(p)
 }
 
 const satisfiesPrimitive = (Cons, value) => {
@@ -50,13 +53,12 @@ const unify = (p, a) => {
         return true
     } else if (isPrimitive(p)) {
         return p === a
-    } /*else if (p instanceof ConsPattern) {
-        if (typeof a !== 'object' || a == null)
+    } else if (isDataVariant(p) || isComplectedVariant(p)) {
+        if (!isDataVariant(a) && !isComplectedVariant(a))
             return false
-
+        // TODO: need a dataDecl comparison and not just a name comparison
         if (p.constructor.name !== a.constructor.name)
             return false
-
         for (const [k, v] of Object.entries(p)) {
             if (!(k in a))
                 return false
@@ -64,10 +66,9 @@ const unify = (p, a) => {
                 return false
         }
         return true
-    } */else if (isConstructor(p)) {
+    } else if (isConstructor(p)) {
         if (isPrimitive(a))
             return satisfiesPrimitive(p, a)
-        // @ts-ignore
         return a instanceof p
     } else if (isObjectLiteral(p)) {
         if (typeof a !== 'object' || a === null)
@@ -80,28 +81,17 @@ const unify = (p, a) => {
         }
         return true
     } else if (Array.isArray(p)) {
-        // argument must be an array or a variant
-        // if it's a variant, compare the properties to the array elements
-        if (typeof a !== 'object' || a === null)
+        // argument must be iterable
+        if (!a?.[Symbol.iterator])
             return false
-        /*if (a instanceof Complected) {
-            const aKeys = Object.keys(a),
-                pKeys = Object.keys(p)
-            if (pKeys.length !== aKeys.length)
-                return false
-            for (let i = 0; i < pKeys.length; i++) {
-                const k = aKeys[i]
-                if (!unify(p[pKeys[i]], a[k]))
-                    return false
-            }
-            return true
-        } */
-        if (!Array.isArray(a))
+
+        const aKeys = Object.keys(a),
+            pKeys = Object.keys(p)
+        if (pKeys.length !== aKeys.length)
             return false
-        if (p.length !== a.length)
-            return false
-        for (let i = 0; i < p.length; i++) {
-            if (!unify(p[i], a[i]))
+        for (let i = 0; i < pKeys.length; i++) {
+            const k = aKeys[i]
+            if (!unify(p[pKeys[i]], a[k]))
                 return false
         }
         return true
@@ -144,7 +134,7 @@ export const defPatternFunc = (name, patternDefOrFn) => {
     if (!Array.isArray(patternDefOrFn))
         throw new TypeError(`Invalid Trait declaration. '${String(name)}' must be a function or pattern`);
 
-    const badPatternMsg = `Invalid Trait declaration for '${String(name)}'. `
+    const badPatternMsg = `Invalid Trait declaration for '${String(name)}'.`
 
     // [...[p1, p2, ... pn, fn]]
     const patterns = patternDefOrFn;

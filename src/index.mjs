@@ -1,5 +1,4 @@
-//export { memoFix } from './memoFix.mjs';
-export { apply, extend, _ } from './symbols.mjs';
-export { data } from './data.mjs';
-export { trait } from './trait.mjs';
-export { complect } from './complect.mjs';
+export { extend, _ } from './symbols.mjs';
+export { data, isDataVariant, isDataDecl } from './data.mjs';
+export { trait, isTrait, memoFix } from './trait.mjs';
+export { complect, isComplectedVariant } from './complect.mjs';

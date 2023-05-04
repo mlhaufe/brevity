@@ -9,6 +9,19 @@ import { isConstructor } from "./isConstructor.mjs";
 import { normalizeArgs } from "./normalizeArgs.mjs";
 import { satisfiesPrimitive } from "./satisfiesPrimitive.mjs";
 
+const baseVariant = Symbol('baseVariant')
+
+export const protoData = Object.assign(Object.create(null), {
+    *[Symbol.iterator]() {
+        for (let k in this)
+            yield this[k]
+    }
+})
+
+export const protoFactory = Object.create(null),
+    isDataVariant = (obj) => isPrototypeOf(obj, protoData),
+    isDataDecl = (obj) => isPrototypeOf(obj, protoFactory)
+
 function assignProps(obj, propNames, args) {
     Object.defineProperties(obj,
         propNames.reduce((acc, propName, i) => {
@@ -53,22 +66,11 @@ function guardCheck(factory, args, props) {
             if (typeof guard === 'function' && !(value instanceof guard))
                 throw new TypeError(errMsg(guard.name, JSON.stringify(value)))
 
-            if (isPrototypeOf(guard, protoFactory) && !isPrototypeOf(value, guard[baseVariant]))
+            if (isDataDecl(guard) && !isPrototypeOf(value, guard[baseVariant]))
                 throw new TypeError(errMsg(guard, JSON.stringify(value)))
         }
     })
 }
-
-const baseVariant = Symbol('baseVariant')
-
-export const protoData = Object.assign(Object.create(null), {
-    *[Symbol.iterator]() {
-        for (let k in this)
-            yield this[k]
-    }
-})
-
-export const protoFactory = Object.create(null)
 
 function TypeRecursion(...args) {
     if (!new.target)
@@ -97,56 +99,49 @@ export function data(dataDecl) {
 
     if (!isObjectLiteral(dataDef))
         throw new TypeError('Invalid data declaration. Object literal expected')
-    if (dataDef[extend] && !isPrototypeOf(dataDef[extend], protoFactory))
+    if (dataDef[extend] && !isDataDecl(dataDef[extend]))
         throw new TypeError('Invalid [extend] reference. A data declaration was expected')
 
-    const protoVariant = Object.create(protoData),
-        memo = new BoxedMultiKeyMap()
+    const protoVariant = Object.assign(Object.create(protoData), {
+        *[Symbol.iterator]() { for (let k in this) yield this[k] }
+    }),
+        factory = Object.create(dataDef[extend] ?? protoFactory)
 
-    const factory = Object.create(dataDef[extend] ?? protoFactory)
     factory[baseVariant] = protoVariant // for guard checking
 
-    Object.assign(factory,
-        Object.entries(dataDef).reduce((acc, [vName, props]) => {
-            if (!isCapitalized(vName))
-                throw new TypeError(`variant name must be capitalized: ${vName}`);
-            if (!isObjectLiteral(props))
-                throw new TypeError(`Invalid variant '${vName}'. Object literal expected`)
+    for (let [vName, props] of Object.entries(dataDef)) {
+        if (!isCapitalized(vName))
+            throw new TypeError(`variant name must be capitalized: ${vName}`);
+        if (!isObjectLiteral(props))
+            throw new TypeError(`Invalid variant '${vName}'. Object literal expected`)
 
-            const propNames = Object.keys(props)
-            if (!propNames.every(isCamelCase))
-                throw new TypeError(`variant properties must be camelCase strings: ${vName}: ${props}`);
+        const propNames = Object.keys(props)
+        if (!propNames.every(isCamelCase))
+            throw new TypeError(`variant properties must be camelCase strings: ${vName}: ${props}`);
 
+        const memo = new BoxedMultiKeyMap()
 
-            function Variant(...args) {
-                if (new.target !== Variant)
-                    return new Variant(...args)
-                const normalizedArgs = normalizeArgs(propNames, args, vName),
-                    cached = memo.get(...normalizedArgs);
-                if (cached)
-                    return cached;
-                guardCheck(factory, normalizedArgs, props)
-                assignProps(this, propNames, normalizedArgs)
-                memo.set(...[...normalizedArgs, this])
-            }
-
-            Variant.prototype = Object.create(protoVariant)
-            Object.defineProperties(Variant, {
-                name: { value: vName },
-                length: { value: propNames.length }
-            })
-            Object.defineProperties(Variant.prototype, {
-                constructor: { value: Variant },
-                [Symbol.iterator]: {
-                    value: function* () { for (let k in this) yield this[k] }
-                }
-            })
-
-            acc[vName] = propNames.length === 0 ? new Variant() : Variant
-
-            return acc
-        }, Object.create(null))
-    )
+        const Variant = function (...args) {
+            if (new.target !== Variant)
+                return new Variant(...args)
+            const normalizedArgs = normalizeArgs(propNames, args, vName),
+                cached = memo.get(...normalizedArgs);
+            if (cached)
+                return cached;
+            guardCheck(factory, normalizedArgs, props)
+            assignProps(this, propNames, normalizedArgs)
+            Object.freeze(this)
+            memo.set(...[...normalizedArgs, this])
+        }
+        Variant.prototype = Object.defineProperty(
+            Object.create(protoVariant), 'constructor', { value: Variant, enumerable: false }
+        )
+        Object.defineProperties(Variant, {
+            name: { value: vName },
+            length: { value: propNames.length }
+        })
+        factory[vName] = propNames.length === 0 ? new Variant() : Variant
+    }
 
     return factory
 }

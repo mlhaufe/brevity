@@ -1,4 +1,4 @@
-import { trait, apply } from "../index.mjs"
+import { trait } from "../index.mjs"
 
 describe('Primitive traits', () => {
     test('Number trait', () => {
@@ -32,7 +32,9 @@ describe('Primitive traits', () => {
         expect(printNumber(0)).toBe('0')
         expect(printNumber(123)).toBe('123')
 
-        expect(() => printNumber('hello')).toThrow()
+        // TODO: revisit this if/when trait signatures are introduced.
+        // Don't want to put in guard checking just for the first argument and ignore the rest...
+        // expect(() => printNumber('hello')).toThrow()
     })
 
     test('String trait', () => {
@@ -46,7 +48,9 @@ describe('Primitive traits', () => {
         expect(printString('')).toBe('empty string')
         expect(printString('hello')).toBe('hello')
 
-        expect(() => printString(2)).toThrow()
+        // TODO: revisit this if/when trait signatures are introduced.
+        // Don't want to put in guard checking just for the first argument and ignore the rest...
+        // expect(() => printString(2)).toThrow()
     })
 
     test('Boolean trait', () => {
@@ -75,6 +79,8 @@ describe('Primitive traits', () => {
         expect(printBigInt(1n)).toBe('one')
         expect(printBigInt(1234567890123456789012345678901234567890n)).toBe('a big number')
 
-        expect(() => printBigInt(1)).toThrow()
+        // TODO: revisit this if/when trait signatures are introduced.
+        // Don't want to put in guard checking just for the first argument and ignore the rest...
+        // expect(() => printBigInt(1)).toThrow()
     })
 })

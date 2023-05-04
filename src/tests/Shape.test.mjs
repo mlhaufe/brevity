@@ -1,9 +1,9 @@
-import { complect, data, Data, trait } from "../index.mjs";
+import { complect, data, trait } from "../index.mjs";
 
 describe('Shape tests', () => {
     const shapeData = data({
-        Circle: { radius: {} },
-        Rectangle: { width: {}, height: {} }
+        Circle: { radius: Number },
+        Rectangle: { width: Number, height: Number }
     })
 
     const area = trait(shapeData, {
@@ -15,8 +15,6 @@ describe('Shape tests', () => {
         { Circle, Rectangle } = shape;
 
     test('Shape data', () => {
-        expect(shapeData).toBeInstanceOf(Data);
-
         const circle = Circle({ radius: 1 });
 
         expect(circle).toBeDefined();

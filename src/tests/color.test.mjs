@@ -1,11 +1,10 @@
-import { complect, data, Data, extend, trait } from "../index.mjs"
+import { complect, data, extend, trait } from "../index.mjs"
 
 describe('Color tests', () => {
     const rgbData = data({ Red: {}, Green: {}, Blue: {} });
 
     test('rgbData', () => {
         expect(rgbData).toBeDefined();
-        expect(rgbData).toBeInstanceOf(Data);
         expect(rgbData.Red).toBeDefined();
         expect(rgbData.Green).toBeDefined();
         expect(rgbData.Blue).toBeDefined();
@@ -24,18 +23,17 @@ describe('Color tests', () => {
     })
 
     test('rgbPrintable', () => {
+        const { Red, Green, Blue } = rgbData;
+
         expect(rgbPrintable).toBeDefined();
-        expect(rgbPrintable.Red).toBeDefined();
-        expect(rgbPrintable.Green).toBeDefined();
-        expect(rgbPrintable.Blue).toBeDefined();
-        expect(rgbPrintable.Red()).toBe('#FF0000');
-        expect(rgbPrintable.Green()).toBe('#00FF00');
-        expect(rgbPrintable.Blue()).toBe('#0000FF');
+        expect(rgbPrintable(Red)).toBe('#FF0000');
+        expect(rgbPrintable(Green)).toBe('#00FF00');
+        expect(rgbPrintable(Blue)).toBe('#0000FF');
     })
 
     test('rgbColor', () => {
-        const color = complect(rgbData, { print: rgbPrintable });
-        const { Red, Green, Blue } = color;
+        const color = complect(rgbData, { print: rgbPrintable }),
+            { Red, Green, Blue } = color;
 
         expect(Red).toBeDefined();
         expect(Green).toBeDefined();

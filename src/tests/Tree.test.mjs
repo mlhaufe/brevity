@@ -1,18 +1,18 @@
-import { complect, data, trait } from "../index.mjs"
+import { complect, data, trait, _ } from "../index.mjs"
 
 describe('Tree Tests', () => {
-    const treeData = data({
-        Leaf: { value: {} },
-        Branch: { left: {}, right: {} }
-    });
+    const treeData = data((Tree, T) => ({
+        Leaf: { value: T },
+        Branch: { left: Tree(T), right: Tree(T) }
+    }));
 
-    const printable = trait(treeData, {
+    const printable = trait(treeData(_), {
         Leaf({ value }) { return `${value}` },
         Branch({ left, right }) { return `(${left.print()}, ${right.print()})` }
     });
 
-    const tree = complect(treeData, { print: printable }),
-        { Leaf, Branch } = tree;
+    const NumTree = complect(treeData(Number), { print: printable }),
+        { Leaf, Branch } = NumTree;
 
     test('Tree data', () => {
         const t = Branch(Leaf(1), Leaf(2));

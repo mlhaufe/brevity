@@ -2,17 +2,18 @@ import { extend } from "./symbols.mjs"
 import { isObjectLiteral } from "./isObjectLiteral.mjs";
 import { isPrototypeOf } from "./isPrototypeOf.mjs";
 import { partial } from './partial.mjs';
-import { protoFactory } from "./data.mjs";
+import { isDataDecl } from "./data.mjs";
 import { defPatternFunc } from "./patterns.mjs";
 import { isPrimitive } from "./isPrimitive.mjs";
 
-export const primCons = [Number, String, Boolean, BigInt],
-    dataDecl = Symbol('dataDecl')
+export const dataDecl = Symbol('dataDecl')
+
+const primCons = [Number, String, Boolean, BigInt]
 
 function validateCases(data, cases) {
     if (data == undefined && !('_' in cases))
         throw new TypeError("Wildcard '_' must be defined if data is undefined");
-    else if (isPrototypeOf(data, protoFactory)) {
+    else if (isDataDecl(data)) {
         if (!('_' in cases)) {
             // every key in data must be in traitDef
             for (let name in data)
@@ -35,17 +36,27 @@ function validateCases(data, cases) {
 
 function protoTrait() { }
 
+export const isTrait = (obj) => isPrototypeOf(obj, protoTrait.prototype)
+
 /**
  * Defines a trait
  * @param {object} dataDef - The data declaration
- * @param {object} cases
+ * @param {object|Function} traitDecl
  * @returns {object} The trait
  */
-export function trait(dataDef, cases) {
+export function trait(dataDef, traitDecl) {
+    if (!isDataDecl(dataDef) && !primCons.includes(dataDef))
+        throw new TypeError(
+            'Invalid dataDef declaration.' +
+            `${typeof dataDef === 'function' ? ` Did you forget to call with a parameter?` : ''}`
+        );
+
+    const cases = typeof traitDecl === 'function' ? traitDecl(dataDef) : traitDecl
+
     if (!isObjectLiteral(cases))
         throw new TypeError('Trait declaration must be an object literal');
 
-    if (cases[extend] && !(isPrototypeOf(cases[extend], protoTrait.prototype)))
+    if (cases[extend] && !(isTrait(cases[extend])))
         throw new TypeError('A Trait can only extend another Trait declaration');
 
     validateCases(dataDef, cases);
@@ -65,7 +76,7 @@ export function trait(dataDef, cases) {
             throw new TypeError(`Trait cannot be applied. No variant for ${vName} found`)
 
         return (strategy ?? strategyWild).call(
-            this ?? context, this ?? context, ...args
+            this ?? context, context, ...args
         )
     }
     subTrait.prototype = Object.create(cases[extend]?.prototype ?? protoTrait.prototype)
