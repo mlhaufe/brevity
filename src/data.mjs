@@ -105,9 +105,8 @@ export function data(dataDecl) {
     const protoVariant = Object.assign(Object.create(protoData), {
         *[Symbol.iterator]() { for (let k in this) yield this[k] }
     }),
-        factory = Object.create(dataDef[extend] ?? protoFactory)
-
-    factory[baseVariant] = protoVariant // for guard checking
+        factory = dataDef[extend] ? Object.create(dataDef[extend]) :
+            Object.assign(Object.create(protoFactory), { [baseVariant]: protoVariant })
 
     for (let [vName, props] of Object.entries(dataDef)) {
         if (!isCapitalized(vName))
@@ -143,5 +142,5 @@ export function data(dataDecl) {
         factory[vName] = propNames.length === 0 ? new Variant() : Variant
     }
 
-    return factory
+    return Object.freeze(factory)
 }
