@@ -5,8 +5,10 @@ import { partial } from './partial.mjs';
 import { isDataDecl } from "./data.mjs";
 import { defPatternFunc } from "./patterns.mjs";
 import { isPrimitive } from "./isPrimitive.mjs";
+import { BoxedMultiKeyMap } from "./BoxedMultiKeyMap.mjs";
 
-export const dataDecl = Symbol('dataDecl')
+export const dataDecl = Symbol('dataDecl'),
+    memoFix = Symbol('memoFix');
 
 const primCons = [Number, String, Boolean, BigInt]
 
@@ -26,7 +28,7 @@ function validateCases(data, cases) {
                 if (!cases[name])
                     throw new TypeError(`Invalid Trait declaration. Missing definition for '${String(name)}'`);
             });
-        } else if (!('_' in cases)) {
+        } else if (!cases['_'] && !cases[extend]?.prototype['_']) {
             throw new TypeError(`Invalid Trait declaration. Missing definition for '${String(data.name)}'`);
         }
     } else {
@@ -61,32 +63,59 @@ export function trait(dataDef, traitDecl) {
 
     validateCases(dataDef, cases);
 
+    const visited = new BoxedMultiKeyMap();
+
+    const memoFixHandler = {
+        get(target, prop, receiver) {
+            const value = Reflect.get(target, prop, receiver)
+
+            if (typeof value === 'function') {
+                const { bottom } = traitDecl[memoFix]
+                function fn(...args) {
+                    if (!visited.has(...args)) {
+                        visited.set(...args, typeof bottom === 'function' ? bottom(...args) : bottom);
+                        visited.set(...args, value.apply(this, args));
+                    }
+                    return visited.get(...args);
+                }
+                Object.defineProperty(fn, 'length', { value: value.length })
+                return fn
+            }
+        }
+    }
+
     function subTrait(context, ...args) {
-        let vName
-        if (isPrimitive(context))
+        let vName,
+            isPrim = isPrimitive(context)
+        if (isPrim)
             vName = typeof context == 'bigint' ? `${context}n` : String(context)
         else
             vName = context.constructor.name
 
         const proto = subTrait.prototype,
-            strategy = proto[vName],
-            strategyWild = proto['_']
+            strategy = proto[vName] ?? proto['_']
 
-        if (!strategy && !strategyWild)
+        if (!strategy)
             throw new TypeError(`Trait cannot be applied. No variant for ${vName} found`)
 
-        return (strategy ?? strategyWild).call(
-            this ?? context, context, ...args
+        return strategy.call(
+            this ?? (isPrim ? proto : context),
+            context,
+            ...args
         )
     }
-    subTrait.prototype = Object.create(cases[extend]?.prototype ?? protoTrait.prototype)
+    const proto = Object.create(cases[extend]?.prototype ?? protoTrait.prototype)
+    if (cases[memoFix] && !('bottom' in cases[memoFix]))
+        throw new TypeError("Invalid Trait declaration. Missing 'bottom' property in memoFix");
+
+    subTrait.prototype = cases[memoFix] ? new Proxy(proto, memoFixHandler) : proto
     subTrait[dataDecl] = dataDef
 
     const entries = Object.entries(cases),
         patternOrFunc = entries[0]?.[1],
         arity = typeof patternOrFunc === 'function' ? patternOrFunc.length :
             Array.isArray(patternOrFunc) ? patternOrFunc[0].length - 1 :
-                NaN
+                (cases[extend]?.length ?? NaN)
 
     Object.assign(subTrait.prototype,
         entries.reduce((acc, [vName, fnOrPattern]) => {

@@ -1,26 +1,34 @@
-import { memoFix, trait, apply } from '../index.mjs'
+import { extend, memoFix, trait } from '../index.mjs'
 
 describe('least fixed point', () => {
     test('returning bottom on infinite recursion', () => {
-        const omega = trait(undefined, {
-            [apply](x) { return this[apply](x); }
+        const omega = trait(Number, {
+            _(x) { return this._(x); }
         })
 
-        expect(() => omega('x')).toThrowError(new Error('Maximum call stack size exceeded'));
+        expect(() =>
+            omega(2)
+        ).toThrowError(new Error('Maximum call stack size exceeded'));
 
-        const omegaFix = memoFix(omega, 'bottom');
+        const omegaFix = trait(Number, {
+            [extend]: omega,
+            [memoFix]: { bottom: 'bottom' }
+        })
 
-        expect(omegaFix('x')).toBe('bottom');
+        expect(omegaFix(2)).toBe('bottom');
     })
 
     test('memo performance', () => {
-        const fib = trait(undefined, {
-            [apply](n) {
-                return n < 2 ? n : this[apply](n - 1) + this[apply](n - 2);
+        const fib = trait(Number, {
+            _(n) {
+                return n < 2 ? n : this._(n - 1) + this._(n - 2);
             }
         })
 
-        const fibFix = memoFix(fib);
+        const fibFix = trait(Number, {
+            [extend]: fib,
+            [memoFix]: { bottom: 0 },
+        })
 
         let start, end;
 
@@ -38,19 +46,22 @@ describe('least fixed point', () => {
     })
 
     test('computed bottom', () => {
-        const foo = trait(undefined, {
-            [apply](x) {
+        const foo = trait(Number, {
+            _(x) {
                 if (x <= 3) {
-                    return 1 + this[apply](x + 1);
+                    return 1 + this._(x + 1);
                 } else {
-                    return this[apply](x);
+                    return this._(x);
                 }
             }
         })
 
         expect(() => foo(1)).toThrowError(new Error('Maximum call stack size exceeded'));
 
-        const fooFix = memoFix(foo, (x) => x ** 2)
+        const fooFix = trait(Number, {
+            [extend]: foo,
+            [memoFix]: { bottom: (x) => x ** 2 }
+        })
 
         expect(fooFix(1)).toBe(19);
         expect(fooFix(2)).toBe(18);
