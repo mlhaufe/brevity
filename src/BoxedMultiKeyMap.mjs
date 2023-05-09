@@ -12,7 +12,7 @@ export class BoxedMultiKeyMap {
      * @param {any} key The value to box
      * @returns {any} The boxed value or the original value if it is already an object
      */
-    #objKey(key) {
+    #boxKey(key) {
         if (key === null) return this.#null;
         if (key === undefined) return this.#undefined;
         if (typeof key === 'number')
@@ -27,7 +27,7 @@ export class BoxedMultiKeyMap {
         // https://github.com/tc39/proposal-symbols-as-weakmap-keys
         if (typeof key === 'symbol')
             return this.#primitiveMap.get(key) ?? this.#primitiveMap.set(key, Object(key)).get(key);
-        // This may be a mistake in general, but for use in the Data module it is necessary
+        // This may be a mistake in general, but for use in the data module it is necessary
         // for supporting strict equality
         if (typeof key === 'function' && key.toString().startsWith('(')) {
             const strFunc = key.toString();
@@ -51,14 +51,14 @@ export class BoxedMultiKeyMap {
         const lastMap = keys.reduce((map, key) => {
             if (map === undefined)
                 return undefined;
-            const objKey = this.#objKey(key);
+            const objKey = this.#boxKey(key);
             return map.get(objKey);
         }, this.#map);
 
         if (lastMap === undefined)
             return undefined;
 
-        return lastMap.get(this.#objKey(keys[keys.length - 1]));
+        return lastMap.get(this.#boxKey(keys[keys.length - 1]));
     }
 
     /**
@@ -76,7 +76,7 @@ export class BoxedMultiKeyMap {
             value = keysAndValue[keysAndValue.length - 1];
 
         const lastMap = keys.reduce((map, key) => {
-            const objKey = this.#objKey(key);
+            const objKey = this.#boxKey(key);
             if (!map.has(objKey)) {
                 const newMap = new WeakMap();
                 map.set(objKey, newMap);
@@ -84,7 +84,7 @@ export class BoxedMultiKeyMap {
             return map.get(objKey);
         }, this.#map);
 
-        lastMap.set(this.#objKey(keys[keys.length - 1]), value);
+        lastMap.set(this.#boxKey(keys[keys.length - 1]), value);
     }
 
     /**
@@ -104,7 +104,7 @@ export class BoxedMultiKeyMap {
         const lastMap = keys.reduce((map, key) => {
             if (map === undefined)
                 return undefined;
-            const objKey = this.#objKey(key);
+            const objKey = this.#boxKey(key);
             if (!map.has(objKey))
                 return undefined;
             return map.get(objKey);
@@ -113,7 +113,7 @@ export class BoxedMultiKeyMap {
         if (lastMap === undefined)
             return;
 
-        lastMap.delete(this.#objKey(keys[keys.length - 1]));
+        lastMap.delete(this.#boxKey(keys[keys.length - 1]));
     }
 
     /**
@@ -131,7 +131,7 @@ export class BoxedMultiKeyMap {
         const lastMap = keys.reduce((map, key) => {
             if (map === undefined)
                 return undefined;
-            const objKey = this.#objKey(key);
+            const objKey = this.#boxKey(key);
             if (!map.has(objKey))
                 return undefined;
             return map.get(objKey);
@@ -140,6 +140,6 @@ export class BoxedMultiKeyMap {
         if (lastMap === undefined)
             return false;
 
-        return lastMap.has(this.#objKey(keys[keys.length - 1]));
+        return lastMap.has(this.#boxKey(keys[keys.length - 1]));
     }
 }

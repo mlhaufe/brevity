@@ -1,8 +1,8 @@
-import { Trait, data } from "../index.mjs"
+import { trait } from "../index.mjs"
 
 describe('Primitive traits', () => {
     test('Number trait', () => {
-        const printNumber = Trait(Number, {
+        const printNumber = trait(Number, {
             1: (n) => 'one',
             15: (n) => 'fifteen',
             [Infinity]: (n) => 'infinity',
@@ -18,7 +18,6 @@ describe('Primitive traits', () => {
         })
 
         expect(printNumber).toBeDefined()
-        expect(printNumber[data]).toBe(Number)
         expect(printNumber(1)).toBe('one')
         expect(printNumber(15)).toBe('fifteen')
         expect(printNumber(Infinity)).toBe('positive infinity')
@@ -33,32 +32,34 @@ describe('Primitive traits', () => {
         expect(printNumber(0)).toBe('0')
         expect(printNumber(123)).toBe('123')
 
-        expect(() => printNumber('hello')).toThrow()
+        // TODO: revisit this if/when trait signatures are introduced.
+        // Don't want to put in guard checking just for the first argument and ignore the rest...
+        // expect(() => printNumber('hello')).toThrow()
     })
 
     test('String trait', () => {
-        const printString = Trait(String, {
+        const printString = trait(String, {
             '': (s) => 'empty string',
             'hello': (s) => s,
             _: (s) => s
         })
 
         expect(printString).toBeDefined()
-        expect(printString[data]).toBe(String)
         expect(printString('')).toBe('empty string')
         expect(printString('hello')).toBe('hello')
 
-        expect(() => printString(2)).toThrow()
+        // TODO: revisit this if/when trait signatures are introduced.
+        // Don't want to put in guard checking just for the first argument and ignore the rest...
+        // expect(() => printString(2)).toThrow()
     })
 
     test('Boolean trait', () => {
-        const printBoolean = Trait(Boolean, {
+        const printBoolean = trait(Boolean, {
             true: () => 'true',
             false: () => 'false'
         })
 
         expect(printBoolean).toBeDefined()
-        expect(printBoolean[data]).toBe(Boolean)
         expect(printBoolean(true)).toBe('true')
         expect(printBoolean(false)).toBe('false')
 
@@ -66,7 +67,7 @@ describe('Primitive traits', () => {
     })
 
     test('BigInt trait', () => {
-        const printBigInt = Trait(BigInt, {
+        const printBigInt = trait(BigInt, {
             '0n': (n) => 'zero',
             '1n': (n) => 'one',
             '1234567890123456789012345678901234567890n': (n) => 'a big number',
@@ -74,11 +75,12 @@ describe('Primitive traits', () => {
         })
 
         expect(printBigInt).toBeDefined()
-        expect(printBigInt[data]).toBe(BigInt)
         expect(printBigInt(0n)).toBe('zero')
         expect(printBigInt(1n)).toBe('one')
         expect(printBigInt(1234567890123456789012345678901234567890n)).toBe('a big number')
 
-        expect(() => printBigInt(1)).toThrow()
+        // TODO: revisit this if/when trait signatures are introduced.
+        // Don't want to put in guard checking just for the first argument and ignore the rest...
+        // expect(() => printBigInt(1)).toThrow()
     })
 })

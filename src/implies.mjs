@@ -1,1 +1,0 @@
-export const implies = (p, q) => !p || q;

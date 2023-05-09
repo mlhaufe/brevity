@@ -1,9 +1,9 @@
-import { Data, Trait, variant, variantName } from "../index.mjs"
+import { data, trait } from "../index.mjs"
 
 describe('Data shorthand tests', () => {
-    const Disk = Data({ position: {}, velocity: {}, radius: {}, item: {} })
+    const Disk = data({ position: {}, velocity: {}, radius: {}, item: {} })
 
-    test('Disk Data', () => {
+    test('Disk data', () => {
         expect(Disk).toBeDefined();
 
         const disk = Disk({ position: [0, 0], velocity: [0, 0], radius: 1, item: 'apple' });
@@ -17,7 +17,7 @@ describe('Data shorthand tests', () => {
     })
 
     test('print Disk', () => {
-        const toString = Trait(Disk, {
+        const toString = trait(Disk, {
             Disk: (self) => {
                 const p = JSON.stringify(self.position),
                     v = JSON.stringify(self.velocity),
