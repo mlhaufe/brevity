@@ -27,6 +27,8 @@ describe('Point tests', () => {
         expect(p3.x).toBe(3);
         expect(p3.y).toBe(4);
         expect(p3.z).toBe(5);
+
+        expect(() => Point2(1, '2')).toThrow();
     })
 
     test('Point print', () => {

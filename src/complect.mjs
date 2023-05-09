@@ -2,6 +2,7 @@ import { BoxedMultiKeyMap } from "./BoxedMultiKeyMap.mjs";
 import { isDataDecl } from "./data.mjs";
 import { isObjectLiteral } from "./isObjectLiteral.mjs";
 import { isPrototypeOf } from "./isPrototypeOf.mjs";
+import { dataDecl, dataVariant, traitDecl } from "./symbols.mjs";
 
 export const protoComplected = Object.assign(Object.create(null), {
     *[Symbol.iterator]() { for (let k in this) yield this[k] }
@@ -17,7 +18,10 @@ export function complect(dataDef, traitCfg) {
         );
     if (!isObjectLiteral(traitCfg))
         throw new TypeError('Invalid traitCfg declaration');
-    const complected = Object.create(protoComplected)
+    const complected = Object.assign(Object.create(protoComplected), {
+        [dataDecl]: dataDef,
+        [traitDecl]: traitCfg
+    })
 
     for (let consName in dataDef) {
         const DataCons = dataDef[consName]
@@ -30,7 +34,7 @@ export function complect(dataDef, traitCfg) {
                 cached = memo.get(dataInstance);
             if (cached)
                 return cached;
-            Object.assign(this, dataInstance)
+            Object.assign(this, dataInstance, { [dataVariant]: dataInstance })
             Object.freeze(this)
             memo.set(dataInstance, this)
         }

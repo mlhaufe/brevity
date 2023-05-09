@@ -1,11 +1,12 @@
 import { BoxedMultiKeyMap } from "./BoxedMultiKeyMap.mjs";
 import { isCamelCase } from "./isCamelCase.mjs";
 import { isCapitalized } from "./isCapitalized.mjs";
-import { isObjectLiteral } from "./isObjectLiteral.mjs";
-import { extend } from "./symbols.mjs";
-import { isPrototypeOf } from "./isPrototypeOf.mjs";
-import { isPrimitive } from "./isPrimitive.mjs";
+import { isComplectedVariant } from "./complect.mjs";
 import { isConstructor } from "./isConstructor.mjs";
+import { isObjectLiteral } from "./isObjectLiteral.mjs";
+import { isPrimitive } from "./isPrimitive.mjs";
+import { isPrototypeOf } from "./isPrototypeOf.mjs";
+import { dataVariant, extend } from "./symbols.mjs";
 import { normalizeArgs } from "./normalizeArgs.mjs";
 import { satisfiesPrimitive } from "./satisfiesPrimitive.mjs";
 
@@ -19,8 +20,8 @@ export const protoData = Object.assign(Object.create(null), {
 })
 
 export const protoFactory = Object.create(null),
-    isDataVariant = (obj) => isPrototypeOf(obj, protoData),
-    isDataDecl = (obj) => isPrototypeOf(obj, protoFactory)
+    isDataDecl = (obj) => isPrototypeOf(obj, protoFactory),
+    isDataVariant = (obj) => isPrototypeOf(obj, protoData)
 
 function assignProps(obj, propNames, args) {
     Object.defineProperties(obj,
@@ -50,7 +51,13 @@ function guardCheck(factory, args, props) {
             // TODO: if wildcard: return
         } else if (isConstructor(guard)) {
             if (guard === TypeRecursion) { // singleton types
-                if (!isPrototypeOf(value, factory[baseVariant]))
+                const isData = isDataVariant(value),
+                    isComplected = isComplectedVariant(value)
+                if (!isData && !isComplected)
+                    throw new TypeError(errMsg('TypeRecursion', JSON.stringify(value)))
+                if (isData && !isPrototypeOf(value, factory[baseVariant]))
+                    throw new TypeError(errMsg('TypeRecursion', JSON.stringify(value)))
+                if (isComplected && !isPrototypeOf(value[dataVariant], factory[baseVariant]))
                     throw new TypeError(errMsg('TypeRecursion', JSON.stringify(value)))
             } else if (guard instanceof TypeRecursion) { // parameterized types
                 if (!isPrototypeOf(value, factory[baseVariant]))
@@ -105,6 +112,8 @@ export function data(dataDecl) {
     const protoVariant = Object.assign(Object.create(protoData), {
         *[Symbol.iterator]() { for (let k in this) yield this[k] }
     }),
+        // TODO: dataDecl subtype checking and alternative method for
+        // associating baseVariant with factory
         factory = dataDef[extend] ? Object.create(dataDef[extend]) :
             Object.assign(Object.create(protoFactory), { [baseVariant]: protoVariant })
 

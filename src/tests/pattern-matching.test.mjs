@@ -18,6 +18,10 @@ describe('Pattern matching', () => {
             ]
         }))
 
+        // 1 * x = x
+        // x * 1 = x
+        // 0 * x = 0
+        // x * 0 = 0
         const simplify2 = trait(exprData, ($) => ({
             _: (self) => self,
             Mul: [

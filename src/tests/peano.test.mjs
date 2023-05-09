@@ -1,7 +1,31 @@
 import { complect, data, trait } from "../index.mjs";
 
 describe('Peano tests', () => {
-    const peanoData = data({ Zero: {}, Succ: { pred: {} } });
+    const peanoData = data((Peano) => ({
+        Zero: {},
+        Succ: { pred: Peano }
+    }));
+
+    test('Guard test', () => {
+        const { Zero, Succ } = peanoData;
+
+        expect(Zero).toBeDefined();
+        expect(Succ).toBeDefined();
+
+        const z = Zero,
+            one = Succ(z),
+            two = Succ(one)
+
+        expect(z).toBeDefined();
+        expect(one).toBeDefined();
+        expect(two).toBeDefined();
+
+        expect(z.pred).toBeUndefined();
+        expect(one.pred).toBe(z);
+        expect(two.pred).toBe(one);
+
+        expect(() => Succ(1)).toThrow();
+    })
 
     const value = trait(peanoData, {
         Zero(self) { return 0 },

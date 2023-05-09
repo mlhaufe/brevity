@@ -2,8 +2,21 @@ import { complect, data, trait, _ } from "../index.mjs";
 
 describe('List tests', () => {
     const listData = data((List, T) => ({
-        Nil: {}, Cons: { head: T, tail: List(T) }
+        Nil: {},
+        Cons: { head: T, tail: List(T) }
     }));
+
+    test('List data', () => {
+        const { Nil, Cons } = listData(Number);
+
+        expect(() => {
+            Cons(1, Cons(2, Cons(3, Nil)));
+        }).not.toThrow();
+
+        expect(() => {
+            Cons(1, Cons(2, Cons('3', Nil)));
+        }).toThrow();
+    })
 
     const concat = trait(listData(_), {
         Nil(self, ys) { return ys },
@@ -33,12 +46,20 @@ describe('List tests', () => {
     const NumList = complect(listData(Number), { concat, isNil, isThree, length }),
         { Nil, Cons } = NumList;
 
-    test('List data', () => {
+    test('List complect', () => {
         const xs = Cons({ head: 1, tail: Nil })
 
         expect(Nil).toBe(Nil)
         expect(xs.head).toBe(1)
         expect(xs.tail).toBe(Nil)
+
+        expect(() => {
+            Cons(1, Cons(2, Cons(3, Nil)));
+        }).not.toThrow();
+
+        expect(() => {
+            Cons(1, Cons(2, Cons('3', Nil)));
+        }).toThrow();
     })
 
     test('List Concat', () => {

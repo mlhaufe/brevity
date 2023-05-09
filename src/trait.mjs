@@ -1,4 +1,4 @@
-import { extend } from "./symbols.mjs"
+import { dataDecl, extend } from "./symbols.mjs"
 import { isObjectLiteral } from "./isObjectLiteral.mjs";
 import { isPrototypeOf } from "./isPrototypeOf.mjs";
 import { partial } from './partial.mjs';
@@ -7,8 +7,7 @@ import { defPatternFunc } from "./patterns.mjs";
 import { isPrimitive } from "./isPrimitive.mjs";
 import { BoxedMultiKeyMap } from "./BoxedMultiKeyMap.mjs";
 
-export const dataDecl = Symbol('dataDecl'),
-    memoFix = Symbol('memoFix');
+export const memoFix = Symbol('memoFix');
 
 const primCons = [Number, String, Boolean, BigInt]
 

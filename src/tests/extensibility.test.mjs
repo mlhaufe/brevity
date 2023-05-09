@@ -1,4 +1,4 @@
-import { data, trait, extend, complect } from "../index.mjs"
+import { data, trait, extend, complect, dataDecl, traitDecl } from "../index.mjs"
 
 describe('Extensibility for the Masses', () => {
     const intExpData = data({
@@ -253,5 +253,86 @@ describe('Extensibility for the Masses', () => {
         })
 
         expect(e3.evaluate()).toBe(11)
+    })
+
+    test('data extend complected', () => {
+        const intExp = complect(intExpData, { print: intPrint, evaluate: intEval })
+
+        const intBoolExpData = data({
+            [extend]: intExp[dataDecl],
+            Bool: { value: {} },
+            IIf: { pred: {}, ifTrue: {}, ifFalse: {} }
+        })
+
+        expect(intBoolExpData.Lit).toBeDefined()
+        expect(intBoolExpData.Add).toBeDefined()
+        expect(intBoolExpData.Bool).toBeDefined()
+        expect(intBoolExpData.IIf).toBeDefined()
+    })
+
+    test('trait extend complected', () => {
+        const intExp = complect(intExpData, { print: intPrint, evaluate: intEval })
+
+        const intBoolExpData = data({
+            [extend]: intExp[dataDecl],
+            Bool: { value: {} },
+            IIf: { pred: {}, ifTrue: {}, ifFalse: {} }
+        })
+
+        const intBoolPrint = trait(intBoolExpData, {
+            [extend]: intExp[traitDecl].print,
+            Bool({ value }) { return value ? 'true' : 'false' },
+            IIf({ pred, ifTrue, ifFalse }) {
+                return `if (${pred.print()}) { ${ifTrue.print()} } else { ${ifFalse.print()} }`
+            }
+        })
+
+        const intBoolEval = trait(intBoolExpData, {
+            [extend]: intExp[traitDecl].evaluate,
+            Bool({ value }) { return value },
+            IIf({ pred, ifTrue, ifFalse }) {
+                return pred.evaluate() ? ifTrue.evaluate() : ifFalse.evaluate()
+            }
+        })
+
+        const intBoolExp = complect(intBoolExpData, { print: intBoolPrint, evaluate: intBoolEval })
+
+        const { Lit, Add, Bool, IIf } = intBoolExp
+
+        // if (true) { 1 + 2 } else { 3 + 4 }
+        const e = IIf({
+            pred: Bool(true),
+            ifTrue: Add(Lit(1), Lit(2)),
+            ifFalse: Add(Lit(3), Lit(4))
+        })
+
+        expect(e.print()).toBe('if (true) { (1 + 2) } else { (3 + 4) }')
+        expect(e.evaluate()).toBe(3)
+    })
+
+    test("'super' trait call", () => {
+        const fooData = data({
+            Foo: { value: String }
+        })
+
+        const fooBaseTrait = trait(fooData, {
+            Foo({ value }) { return `Base: ${value}` }
+        })
+
+        const fooOverrideTrait = trait(fooData, {
+            [extend]: fooBaseTrait,
+            Foo({ value }) { return `Override: ${value}` }
+        })
+
+        const fooSuperTrait = trait(fooData, {
+            [extend]: fooBaseTrait,
+            Foo(self) { return `Super: ${fooBaseTrait(self)}` }
+        })
+
+        const fooOverride = complect(fooData, { foo: fooOverrideTrait })
+        const fooSuper = complect(fooData, { foo: fooSuperTrait })
+
+        expect(fooOverride.Foo('A').foo()).toBe('Override: A')
+        expect(fooSuper.Foo('A').foo()).toBe('Super: Base: A')
     })
 })

@@ -3,33 +3,15 @@
 ## v0.10.0
 
 - `Data` and `Trait` are now lowercase: `data`and `trait`
-- Property declarations must now be object literals instead of arrays:
-
-```js
-// before
-const Point3 = Data(['x', 'y', 'z'])
-// after
-const Point3 = data([{x: {}, y: {}, z: {}}])
-```
-
-```js
-// before
-const Point = Data({
-    Point2: ['x', 'y'],
-    Point3: ['x', 'y', 'z']
-})
-// after
-const Point = data({
-    Point2: {x: {}, y: {}},
-    Point3: {x: {}, y: {}, z: {}}
-})
-```
-
+- Removed data-shorthand syntax
+- Property declarations must now be object literals instead of arrays.
+- Property Guards now available.
 - Deprecated and removed symbols `data`, `isSingleton`, `variant`, `variantName`
+- Added utility functions: `isDataVariant`, `isDataDecl`, `isTrait`, `isComplectedVariant`
 - Updated README
+- Updated dependencies
 - Introduced `complect` to combine data and trait declarations
 - Updated package keywords to include `Family Polymorphism`
-- The trait declaration no longer returns a function.
 - Traits can now be parameterized with a family reference to utilize the ultimately complected object:
 
 ```js
