@@ -29,6 +29,7 @@ export function complect(dataDef, traitCfg) {
         const memo = new BoxedMultiKeyMap()
         function ConsComplected(...args) {
             if (!new.target)
+                // @ts-ignore: function as constructor
                 return new ConsComplected(...args);
             const dataInstance = typeof DataCons === 'function' ? DataCons(...args) : DataCons,
                 cached = memo.get(dataInstance);
@@ -52,7 +53,7 @@ export function complect(dataDef, traitCfg) {
             name: { value: consName },
             length: { value: typeof DataCons === 'function' ? DataCons.length : 0 }
         })
-        complected[consName] = ConsComplected.length === 0 ? new ConsComplected() : ConsComplected
+        complected[consName] = ConsComplected.length === 0 ? ConsComplected() : ConsComplected
     }
 
     return Object.freeze(complected)

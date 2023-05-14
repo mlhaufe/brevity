@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.11.0
+
+- Defined *.d.ts
+
 ## v0.10.0
 
 - `Data` and `Trait` are now lowercase: `data`and `trait`
