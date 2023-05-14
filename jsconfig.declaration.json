@@ -5,12 +5,13 @@
         "declaration": true,
         "esModuleInterop": true,
         "experimentalDecorators": true,
+        "emitDeclarationOnly": true,
         "target": "ES2022",
         "module": "ES2022",
         "moduleResolution": "nodenext",
-        "outDir": "dist",
+        "outDir": "dist"
     },
     "include": [
-        "src/**/*"
+        "src/index.mjs"
     ]
 }

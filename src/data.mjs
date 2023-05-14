@@ -131,6 +131,7 @@ export function data(dataDecl) {
 
         const Variant = function (...args) {
             if (new.target !== Variant)
+                // @ts-ignore: function as constructor
                 return new Variant(...args)
             const normalizedArgs = normalizeArgs(propNames, args, vName),
                 cached = memo.get(...normalizedArgs);
@@ -148,7 +149,7 @@ export function data(dataDecl) {
             name: { value: vName },
             length: { value: propNames.length }
         })
-        factory[vName] = propNames.length === 0 ? new Variant() : Variant
+        factory[vName] = propNames.length === 0 ? Variant() : Variant
     }
 
     return Object.freeze(factory)

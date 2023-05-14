@@ -1,6 +1,6 @@
 {
     "name": "@mlhaufe/brevity",
-    "version": "0.10.0",
+    "version": "0.11.0",
     "description": "A library for Feature-Oriented Programming",
     "keywords": [
         "Object Algebra",
@@ -17,7 +17,8 @@
     "module": "dist/index.mjs",
     "type": "module",
     "scripts": {
-        "build": "webpack && npm install --prefix dist --package-lock-only",
+        "build": "webpack && npm install --prefix dist --package-lock-only && npm run emit-types",
+        "emit-types": "tsc -p jsconfig.declaration.json",
         "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage"
     },
     "repository": {
@@ -35,6 +36,7 @@
         "@types/jest": "^29.2.3",
         "copy-webpack-plugin": "^11.0.0",
         "jest": "^29.3.1",
+        "typescript": "^5.0.4",
         "webpack": "^5.75.0",
         "webpack-cli": "^5.0.1"
     }
