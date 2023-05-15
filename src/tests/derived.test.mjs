@@ -30,17 +30,21 @@ describe('Derived field tests', () => {
     })
 
     test('Bad derived field', () => {
-        expect(() => {
-            data({
-                Employee: {
-                    firstName: String,
-                    lastName: String,
-                    fullName: {
-                        guard: String,
-                        get() { return 12 }
-                    }
+        const { Employee } = data({
+            Employee: {
+                firstName: String,
+                lastName: String,
+                fullName: {
+                    guard: String,
+                    get() { return 12 }
                 }
-            })
-        }).toThrow()
+            }
+        })
+
+        const johnDoe = Employee({
+            firstName: 'John',
+            lastName: 'Doe'
+        })
+        expect(() => johnDoe.fullName).toThrow()
     })
 })

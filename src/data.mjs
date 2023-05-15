@@ -35,6 +35,11 @@ function assignProps(obj, propNames, args) {
     )
 }
 
+const isValidGuard = (guard) =>
+    isConstructor(guard) ||
+    isObjectLiteral(guard) && Object.keys(guard).length === 0 ||
+    isDataDecl(guard)
+
 /**
  * @param {object} factory
  * @param {any[]} args
@@ -124,7 +129,12 @@ export function data(dataDecl) {
         if (!isObjectLiteral(props))
             throw new TypeError(`Invalid variant '${vName}'. Object literal expected`)
 
-        const propNames = Object.keys(props),
+        const propNames = Object.keys(props).filter(propName => {
+            const guard = props[propName]
+            if (isObjectLiteral(guard) && typeof guard.get === 'function')
+                return false
+            return true
+        }),
             memo = new BoxedMultiKeyMap()
 
         function Variant(...args) {
@@ -147,9 +157,24 @@ export function data(dataDecl) {
             if (!isCamelCase(propName))
                 throw new TypeError(`variant properties must be camelCase strings: ${vName}: ${props}`);
             if (isObjectLiteral(prop)) {
+                if (isValidGuard(prop))
+                    continue
+                if (prop.guard && !isValidGuard(prop.guard))
+                    throw new TypeError(`Invalid guard property on variant '${vName}'. Expected a constructor, empty object literal, or data declaration`)
+                if (prop.guard && !prop.get)
+                    throw new TypeError(`Invalid get property on variant '${vName}'. Expected a function`)
                 if (typeof prop.get === 'function') {
+                    let _result
+                    const getter = function () {
+                        if (_result)
+                            return _result
+                        _result = prop.get.apply(this)
+                        guardCheck(factory, [_result], { [propName]: prop.guard })
+                        return _result
+                    }
+
                     Object.defineProperty(Variant.prototype, propName, {
-                        get: prop.get,
+                        get: getter,
                         enumerable: true
                     })
                 }
