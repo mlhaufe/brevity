@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.11.1
+
+- Fixed package.json module export configuration
+
 ## v0.11.0
 
 - Defined *.d.ts
