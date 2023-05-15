@@ -133,6 +133,33 @@ const ys = Cons(1, Cons(2, Cons('3', Nil)))
 // TypeError: Guard mismatch on property 'head'. Expected: Number, got: "3"
 ```
 
+### Derived properties
+
+Data definitions support the declaration of derived fields with an optional `guard`:
+
+```js
+const { Employee } = data({
+    Employee: {
+        firstName: String,
+        lastName: String,
+        fullName: {
+            guard: String, // Optional
+            get() { return `${this.firstName} ${this.lastName}` }
+        }
+    }
+})
+
+const johnDoe = Employee({
+    firstName: 'John',
+    lastName: 'Doe'
+    // Note that fullName is not specified and cannot be set
+})
+
+johnDoe.fullName === 'John Doe'
+```
+
+The derived field is evaluated only once and cached for future access.
+
 ### Destructuring
 
 Variants support both object and array destructuring:

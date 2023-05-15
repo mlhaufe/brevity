@@ -35,6 +35,11 @@ function assignProps(obj, propNames, args) {
     )
 }
 
+const isValidGuard = (guard) =>
+    isConstructor(guard) ||
+    isObjectLiteral(guard) && Object.keys(guard).length === 0 ||
+    isDataDecl(guard)
+
 /**
  * @param {object} factory
  * @param {any[]} args
@@ -47,6 +52,7 @@ function guardCheck(factory, args, props) {
                 `Guard mismatch on property '${prop}'. Expected: ${expected}, got: ${actual}`
 
         if (isObjectLiteral(guard) && Object.keys(guard).length === 0) {
+            // TODO: { guard: {}, get(){} }
             return
             // TODO: if wildcard: return
         } else if (isConstructor(guard)) {
@@ -123,13 +129,15 @@ export function data(dataDecl) {
         if (!isObjectLiteral(props))
             throw new TypeError(`Invalid variant '${vName}'. Object literal expected`)
 
-        const propNames = Object.keys(props)
-        if (!propNames.every(isCamelCase))
-            throw new TypeError(`variant properties must be camelCase strings: ${vName}: ${props}`);
+        const propNames = Object.keys(props).filter(propName => {
+            const guard = props[propName]
+            if (isObjectLiteral(guard) && typeof guard.get === 'function')
+                return false
+            return true
+        }),
+            memo = new BoxedMultiKeyMap()
 
-        const memo = new BoxedMultiKeyMap()
-
-        const Variant = function (...args) {
+        function Variant(...args) {
             if (new.target !== Variant)
                 // @ts-ignore: function as constructor
                 return new Variant(...args)
@@ -145,6 +153,34 @@ export function data(dataDecl) {
         Variant.prototype = Object.defineProperty(
             Object.create(protoVariant), 'constructor', { value: Variant, enumerable: false }
         )
+        for (let [propName, prop] of Object.entries(props)) {
+            if (!isCamelCase(propName))
+                throw new TypeError(`variant properties must be camelCase strings: ${vName}: ${props}`);
+            if (isObjectLiteral(prop)) {
+                if (isValidGuard(prop))
+                    continue
+                if (prop.guard && !isValidGuard(prop.guard))
+                    throw new TypeError(`Invalid guard property on variant '${vName}'. Expected a constructor, empty object literal, or data declaration`)
+                if (prop.guard && !prop.get)
+                    throw new TypeError(`Invalid get property on variant '${vName}'. Expected a function`)
+                if (typeof prop.get === 'function') {
+                    let _result
+                    const getter = function () {
+                        if (_result)
+                            return _result
+                        _result = prop.get.apply(this)
+                        guardCheck(factory, [_result], { [propName]: prop.guard })
+                        return _result
+                    }
+
+                    Object.defineProperty(Variant.prototype, propName, {
+                        get: getter,
+                        enumerable: true
+                    })
+                }
+            }
+        }
+
         Object.defineProperties(Variant, {
             name: { value: vName },
             length: { value: propNames.length }

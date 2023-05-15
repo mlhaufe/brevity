@@ -3,6 +3,8 @@
 ## v0.11.0
 
 - Defined *.d.ts
+- Implemented derived fields
+- Updated README
 
 ## v0.10.0
 
