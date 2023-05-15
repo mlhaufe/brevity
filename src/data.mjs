@@ -47,6 +47,7 @@ function guardCheck(factory, args, props) {
                 `Guard mismatch on property '${prop}'. Expected: ${expected}, got: ${actual}`
 
         if (isObjectLiteral(guard) && Object.keys(guard).length === 0) {
+            // TODO: { guard: {}, get(){} }
             return
             // TODO: if wildcard: return
         } else if (isConstructor(guard)) {
@@ -123,13 +124,10 @@ export function data(dataDecl) {
         if (!isObjectLiteral(props))
             throw new TypeError(`Invalid variant '${vName}'. Object literal expected`)
 
-        const propNames = Object.keys(props)
-        if (!propNames.every(isCamelCase))
-            throw new TypeError(`variant properties must be camelCase strings: ${vName}: ${props}`);
+        const propNames = Object.keys(props),
+            memo = new BoxedMultiKeyMap()
 
-        const memo = new BoxedMultiKeyMap()
-
-        const Variant = function (...args) {
+        function Variant(...args) {
             if (new.target !== Variant)
                 // @ts-ignore: function as constructor
                 return new Variant(...args)
@@ -145,6 +143,19 @@ export function data(dataDecl) {
         Variant.prototype = Object.defineProperty(
             Object.create(protoVariant), 'constructor', { value: Variant, enumerable: false }
         )
+        for (let [propName, prop] of Object.entries(props)) {
+            if (!isCamelCase(propName))
+                throw new TypeError(`variant properties must be camelCase strings: ${vName}: ${props}`);
+            if (isObjectLiteral(prop)) {
+                if (typeof prop.get === 'function') {
+                    Object.defineProperty(Variant.prototype, propName, {
+                        get: prop.get,
+                        enumerable: true
+                    })
+                }
+            }
+        }
+
         Object.defineProperties(Variant, {
             name: { value: vName },
             length: { value: propNames.length }
