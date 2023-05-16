@@ -1,14 +1,11 @@
 import { BoxedMultiKeyMap } from "./BoxedMultiKeyMap.mjs";
-import { isCamelCase } from "./isCamelCase.mjs";
-import { isCapitalized } from "./isCapitalized.mjs";
+import {
+    isCamelCase, isCapitalized, isConstructor, isObjectLiteral,
+    isPrimitive, isPrototypeOf, satisfiesPrimitive
+} from "./predicates.mjs";
 import { isComplectedVariant } from "./complect.mjs";
-import { isConstructor } from "./isConstructor.mjs";
-import { isObjectLiteral } from "./isObjectLiteral.mjs";
-import { isPrimitive } from "./isPrimitive.mjs";
-import { isPrototypeOf } from "./isPrototypeOf.mjs";
 import { dataVariant, extend } from "./symbols.mjs";
 import { normalizeArgs } from "./normalizeArgs.mjs";
-import { satisfiesPrimitive } from "./satisfiesPrimitive.mjs";
 
 const baseVariant = Symbol('baseVariant')
 

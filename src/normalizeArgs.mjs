@@ -1,4 +1,4 @@
-import { isObjectLiteral } from "./isObjectLiteral.mjs";
+import { isObjectLiteral } from "./predicates.mjs";
 
 /**
  * Normalizes the arguments passed to a variant constructor to an array of values

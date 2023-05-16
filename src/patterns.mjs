@@ -1,8 +1,6 @@
 import { isComplectedVariant } from "./complect.mjs";
 import { isDataVariant } from "./data.mjs";
-import { isConstructor } from "./isConstructor.mjs";
-import { isObjectLiteral } from "./isObjectLiteral.mjs";
-import { isPrimitive } from "./isPrimitive.mjs";
+import { isConstructor, isObjectLiteral, isPrimitive } from "./predicates.mjs";
 import { _ } from "./symbols.mjs";
 
 /**

@@ -1,10 +1,8 @@
 import { dataDecl, extend } from "./symbols.mjs"
-import { isObjectLiteral } from "./isObjectLiteral.mjs";
-import { isPrototypeOf } from "./isPrototypeOf.mjs";
+import { isObjectLiteral, isPrototypeOf, isPrimitive } from "./predicates.mjs";
 import { partial } from './partial.mjs';
 import { isDataDecl } from "./data.mjs";
 import { defPatternFunc } from "./patterns.mjs";
-import { isPrimitive } from "./isPrimitive.mjs";
 import { BoxedMultiKeyMap } from "./BoxedMultiKeyMap.mjs";
 
 export const memoFix = Symbol('memoFix');

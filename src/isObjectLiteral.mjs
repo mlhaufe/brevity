@@ -1,1 +1,0 @@
-export const isObjectLiteral = obj => obj !== null && Object.getPrototypeOf(obj) === Object.prototype;

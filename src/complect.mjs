@@ -1,7 +1,6 @@
 import { BoxedMultiKeyMap } from "./BoxedMultiKeyMap.mjs";
 import { isDataDecl } from "./data.mjs";
-import { isObjectLiteral } from "./isObjectLiteral.mjs";
-import { isPrototypeOf } from "./isPrototypeOf.mjs";
+import { isObjectLiteral, isPrototypeOf } from "./predicates.mjs";
 import { dataDecl, dataVariant, traitDecl } from "./symbols.mjs";
 
 export const protoComplected = Object.assign(Object.create(null), {
