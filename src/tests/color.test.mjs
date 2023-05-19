@@ -16,23 +16,14 @@ describe('Color tests', () => {
         expect(Blue).toEqual({});
     })
 
-    const rgbPrintable = trait(rgbData, {
+    const RgbPrintable = trait('print', {
         Red() { return '#FF0000' },
         Green() { return '#00FF00' },
         Blue() { return '#0000FF' }
     })
 
-    test('rgbPrintable', () => {
-        const { Red, Green, Blue } = rgbData;
-
-        expect(rgbPrintable).toBeDefined();
-        expect(rgbPrintable(Red)).toBe('#FF0000');
-        expect(rgbPrintable(Green)).toBe('#00FF00');
-        expect(rgbPrintable(Blue)).toBe('#0000FF');
-    })
-
     test('rgbColor', () => {
-        const color = complect(rgbData, { print: rgbPrintable }),
+        const color = complect(rgbData, [RgbPrintable]),
             { Red, Green, Blue } = color;
 
         expect(Red).toBeDefined();
@@ -51,8 +42,8 @@ describe('Color tests', () => {
         Black: {}
     });
 
-    const rgbCmykPrintable = trait(rgbCmykColor, {
-        [extend]: rgbPrintable,
+    const RgbCmykPrintable = trait('print', {
+        [extend]: RgbPrintable,
         Cyan() { return '#00FFFF' },
         Magenta() { return '#FF00FF' },
         Yellow() { return '#FFFF00' },
@@ -60,8 +51,8 @@ describe('Color tests', () => {
     })
 
     test('CmykColor', () => {
-        const color = complect(rgbCmykColor, { print: rgbCmykPrintable });
-        const { Cyan, Magenta, Yellow, Black, Red, Green, Blue } = color;
+        const color = complect(rgbCmykColor, [RgbCmykPrintable]),
+            { Cyan, Magenta, Yellow, Black, Red, Green, Blue } = color;
 
         expect(Cyan).toBeDefined();
         expect(Magenta).toBeDefined();

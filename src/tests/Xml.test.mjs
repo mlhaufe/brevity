@@ -7,7 +7,7 @@ describe('Simplified Xml Tests', () => {
         Text: { text: String }
     })
 
-    const printable = trait(xmlData, {
+    const Printable = trait('print', {
         Attr({ name, value }) { return `${name}="${value}"` },
         Element: ({ name, attrs, children }) => {
             const attrsText = attrs.length == 0 ?
@@ -18,11 +18,11 @@ describe('Simplified Xml Tests', () => {
         Text: ({ text }) => text
     })
 
-    const nodeName = trait(xmlData, {
+    const NodeNameTrait = trait('nodeName', {
         _: ({ name }) => name
     })
 
-    const xml = complect(xmlData, { print: printable, nodeName }),
+    const xml = complect(xmlData, [Printable, NodeNameTrait]),
         { Attr, Element, Text } = xml;
 
     // <html lang="en">

@@ -6,12 +6,12 @@ describe('Tree Tests', () => {
         Branch: { left: Tree(T), right: Tree(T) }
     }));
 
-    const printable = trait(treeData(_), {
+    const Printable = trait('print', {
         Leaf({ value }) { return `${value}` },
         Branch({ left, right }) { return `(${left.print()}, ${right.print()})` }
     });
 
-    const NumTree = complect(treeData(Number), { print: printable }),
+    const NumTree = complect(treeData(Number), [Printable]),
         { Leaf, Branch } = NumTree;
 
     test('Tree data', () => {

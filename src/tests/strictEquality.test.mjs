@@ -16,13 +16,13 @@ describe('Equality tests', () => {
     test('complected equality', () => {
         const colorData = data({ Red: {}, Green: {}, Blue: {} })
 
-        const print = trait(colorData, {
+        const Printable = trait('print', {
             Red: () => 'Red',
             Green: () => 'Green',
             Blue: () => 'Blue'
         })
 
-        const color = complect(colorData, { print }),
+        const color = complect(colorData, [Printable]),
             { Red, Green, Blue } = color;
 
         expect(Red).toBe(Red);
@@ -61,12 +61,12 @@ describe('Equality tests', () => {
             Point3: { x: {}, y: {}, z: {} }
         })
 
-        const print = trait(pointData, {
+        const Printable = trait('print', {
             Point2: ({ x, y }) => `Point2(${x}, ${y})`,
             Point3: ({ x, y, z }) => `Point3(${x}, ${y}, ${z})`
         })
 
-        const point = complect(pointData, { print }),
+        const point = complect(pointData, [Printable]),
             { Point2, Point3 } = point;
 
         const p2 = Point2({ x: 1, y: 2 }),

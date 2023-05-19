@@ -1,13 +1,8 @@
+import { callable } from "./callable.mjs";
 import { isComplectedVariant } from "./complect.mjs";
 import { isDataVariant } from "./data.mjs";
 import { isConstructor, isObjectLiteral, isPrimitive } from "./predicates.mjs";
 import { _ } from "./symbols.mjs";
-
-/**
- * A constructor function that creates instances of type `T`.
- * @template T The type of instances created by the constructor.
- * @typedef {new (...args: any[]) => T} Constructor
- */
 
 /**
  * A Primitive value
@@ -21,12 +16,17 @@ import { _ } from "./symbols.mjs";
 
 /**
  * A pattern that can be used in a pattern matching expression.
- * @typedef {Primitive | object | Constructor<any> | any[] | ObjectLiteral} Pattern
+ * @typedef {Primitive | object | import("./symbols.mjs").Constructor<any> | any[] | ObjectLiteral} Patt
+ */
+
+/**
+ * A pattern case is an array of patterns followed by a function.
+ * @typedef {[...Patt[], (...args: any[]) => any]} PattCase
  */
 
 /**
  * Tests if a value is a pattern
- * @param {Pattern} p
+ * @param {Patt} p
  * @returns {boolean}
  */
 const isPattern = (p) => {
@@ -42,7 +42,7 @@ const satisfiesPrimitive = (Cons, value) => {
 
 /**
  * Unifies a pattern with an argument.
- * @param {Pattern} p The pattern to unify with.
+ * @param {Patt} p The pattern to unify with.
  * @param {*} a The argument to unify with.
  * @returns {boolean} True if the pattern and argument unify, false otherwise.
  */
@@ -115,65 +115,70 @@ const containsWildcard = (arg) => {
 }
 
 /**
- * A pattern case is an array of patterns followed by a function.
- * @typedef {[...Pattern[], (...args: any[]) => any]} PatternCase
+ * Pattern Matching Declaration
+ *
+ * @example
+ * const Evaluable = trait('evaluate', {
+ *   Fib: Pattern(($) => [
+ *     [{ n: 0 }, (self) => 0],
+ *     [{ n: 1 }, (self) => 1],
+ *     [_, ({ n }) => $.Fib(n - 1).evaluate() + $.Fib(n - 2).evaluate()]
+ *   ])
+ * })
+ *
  */
+export const Pattern = callable(class {
+    #fnPatternDecl
 
-/**
- * Converts a pattern declaration into a function.
- * @param {string} name - The ultimate name of the function
- * @param {((...args: any[]) => any) | PatternCase[]} patternDefOrFn - The pattern declaration or function
- * @returns {(...args: any[]) => any} A function that performs pattern matching.
- */
-export const defPatternFunc = (name, patternDefOrFn) => {
-    if (typeof patternDefOrFn === 'function')
-        return patternDefOrFn;
-
-    if (!Array.isArray(patternDefOrFn))
-        throw new TypeError(`Invalid Trait declaration. '${String(name)}' must be a function or pattern`);
-
-    const badPatternMsg = `Invalid Trait declaration for '${String(name)}'.`
-
-    // [...[p1, p2, ... pn, fn]]
-    const patterns = patternDefOrFn;
-    if (patterns.length === 0)
-        throw new TypeError(`${badPatternMsg} A pattern must be an array of length >= 2: ${JSON.stringify(patterns)}`);
-
-    for (const pf of patterns) {
-        // [p1, p2, ... pn, fn]
-        if (!Array.isArray(pf) || pf.length < 2)
-            throw new TypeError(`${badPatternMsg} pattern must be an array of length >= 2: ${JSON.stringify(pf)}`);
-        // p1, p2, ... pn
-        if (!pf.slice(0, -1).every(isPattern))
-            throw new TypeError(`${badPatternMsg} A pattern must be a primitive, variant, object literal, or array: ${JSON.stringify(pf)}`);
-
-        if (typeof pf[pf.length - 1] !== 'function')
-            throw new TypeError(`${badPatternMsg} The last element of a pattern must be a function: ${JSON.stringify(pf)}`);
-
-        // Every pf must have the same length
-        if (pf.length !== patterns[0].length)
-            throw new TypeError(`${badPatternMsg} All patterns must have the same arity: ${JSON.stringify(pf)}`);
+    /**
+     * @param {(family: any) => PattCase[]} fnPatternDecl
+     */
+    constructor(fnPatternDecl) {
+        this.#fnPatternDecl = fnPatternDecl
     }
 
-    function fn(...args) {
-        // find the first pattern that unifies with the args
-        // then return the result of calling the function with the args
+    match(family) {
+        const patternDef = this.#fnPatternDecl(family),
+            badPatternMsg = `Invalid Pattern declaration.`
+        if (!Array.isArray(patternDef))
+            throw new TypeError(`${badPatternMsg} Must be an array: ${JSON.stringify(patternDef)}`);
+        if (patternDef.length === 0)
+            throw new TypeError(`${badPatternMsg} Must have at least one pattern: ${JSON.stringify(patternDef)}`);
+        // [...[p1, p2, ... pn, fn]]
+        const patterns = patternDef,
+            arity = patterns[0].length - 1
+
         for (const pf of patterns) {
-            /** @type {Pattern[]} */
-            const ps = pf.slice(0, -1),
-                /** @type {*} */
-                f = pf.at(-1);
-            if (ps.every((p, i) => unify(p, args[i])))
-                return f.apply(this, args);
+            // [p1, p2, ... pn, fn]
+            if (!Array.isArray(pf) || pf.length < 2)
+                throw new TypeError(`${badPatternMsg} A pattern must be an array of length >= 2: ${JSON.stringify(pf)}`);
+            // p1, p2, ... pn
+            if (!pf.slice(0, -1).every(isPattern))
+                throw new TypeError(`${badPatternMsg} A pattern must be a primitive, variant, object literal, or array: ${JSON.stringify(pf)}`);
+            if (typeof pf[pf.length - 1] !== 'function')
+                throw new TypeError(`${badPatternMsg} The last element of a pattern must be a function: ${JSON.stringify(pf)}`);
+            if (pf.length - 1 !== arity)
+                throw new TypeError(`${badPatternMsg} All patterns must have the same arity. Expected ${arity}, got ${pf.length - 1}: ${JSON.stringify(pf)}`);
         }
 
-        throw new TypeError(
-            `no matching pattern defined for ${args[0]} with arguments ${JSON.stringify(args)}`
-        );
-    }
-    // change the argument length of the function to match the pattern length
-    // so that partial application knows how many to expect
-    Object.defineProperty(fn, 'length', { value: patterns[0].length - 1 })
+        function fn(...args) {
+            // find the first pattern that unifies with the args
+            // then return the result of calling the function with the args
+            for (const pf of patterns) {
+                /** @type {Patt[]} */
+                const ps = pf.slice(0, -1),
+                    /** @type {*} */
+                    f = pf.at(-1);
+                if (ps.every((p, i) => unify(p, args[i])))
+                    return f.apply(this, args);
+            }
 
-    return fn
-}
+            throw new TypeError(
+                `no matching pattern defined for ${args[0]} with arguments ${JSON.stringify(args)}`
+            );
+        }
+        Object.defineProperty(fn, 'length', { value: arity })
+
+        return fn
+    }
+})

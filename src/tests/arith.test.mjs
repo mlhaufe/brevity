@@ -8,7 +8,7 @@ describe('Arithmetic', () => {
     })
 
     // operations
-    const evaluate = trait(expData, {
+    const Evaluable = trait('evaluate', {
         Lit({ value }) { return value },
         Add({ left, right }) {
             return left.evaluate() + right.evaluate()
@@ -64,8 +64,8 @@ describe('Arithmetic', () => {
         expect(() => Add(Lit(1), Lit(2), Lit(3))).toThrow()
     })
 
-    test('evaluate as trait', () => {
-        const exp = complect(expData, { evaluate })
+    test('complect', () => {
+        const exp = complect(expData, [Evaluable])
         const { Lit, Add } = exp
 
         expect(Lit(4).evaluate()).toBe(4)
@@ -93,23 +93,7 @@ describe('Arithmetic', () => {
         expect(e2.evaluate()).toBe(10)
     })
 
-    test('evaluate applied to complected as function', () => {
-        const exp = complect(expData, { evaluate })
-        const { Lit, Add } = exp
-
-        expect(evaluate(Lit(4))).toBe(4)
-
-        // 1 + (2 + 3)
-        const e = Add(
-            Lit(1),
-            Add(Lit(2), Lit(3))
-        )
-
-        expect(evaluate(e)).toBe(6)
-        expect(e.evaluate()).toBe(6)
-    })
-
-    const print = trait(expData, {
+    const Printable = trait('print', {
         Lit([value]) { return `${value}` },
         Add([left, right]) {
             return `${left.print()} + ${right.print()}`
@@ -117,7 +101,7 @@ describe('Arithmetic', () => {
     })
 
     test('print', () => {
-        const exp = complect(expData, { print })
+        const exp = complect(expData, [Printable])
         const { Lit, Add } = exp
 
         expect(Lit(4).print()).toBe('4')
@@ -146,7 +130,7 @@ describe('Arithmetic', () => {
         expect(e2.print()).toBe('1 + 2 + 3 + 4')
     })
 
-    const evalPrint = trait(expData, {
+    const EvaluablePrintable = trait('evalPrint', {
         Add({ left, right }) {
             return `${left.print()} + ${right.print()} = ${left.evaluate() + right.evaluate()}`
         },
@@ -154,7 +138,7 @@ describe('Arithmetic', () => {
     })
 
     test('evalPrint', () => {
-        const exp = complect(expData, { evalPrint, evaluate, print })
+        const exp = complect(expData, [EvaluablePrintable, Evaluable, Printable])
         const { Lit, Add } = exp
 
         // 1 + (2 + 3)
@@ -183,13 +167,13 @@ describe('Arithmetic', () => {
         expect(e.right.right.value).toBe(3)
     })
 
-    const evalMul = trait(mulExpData, {
-        [extend]: evaluate,
+    const EvaluableMul = trait('evaluate', {
+        [extend]: Evaluable,
         Mul({ left, right }) { return left.evaluate() * right.evaluate() }
     })
 
     test('evalMul', () => {
-        const exp = complect(mulExpData, { evaluate: evalMul }),
+        const exp = complect(mulExpData, [EvaluableMul]),
             { Lit, Add, Mul } = exp
 
         // 1 + (2 * 3)
@@ -198,13 +182,13 @@ describe('Arithmetic', () => {
         expect(e.evaluate()).toBe(7)
     })
 
-    const printMul = trait(mulExpData, {
-        [extend]: print,
+    const MulPrintable = trait('print', {
+        [extend]: Printable,
         Mul([left, right]) { return `${left.print()} * ${right.print()}` }
     })
 
     test('printMul', () => {
-        const exp = complect(mulExpData, { print: printMul }),
+        const exp = complect(mulExpData, [MulPrintable]),
             { Lit, Add, Mul } = exp
 
         // 1 + (2 * 3)
@@ -213,14 +197,14 @@ describe('Arithmetic', () => {
         expect(e.print()).toBe('1 + 2 * 3')
     })
 
-    const isValue = trait(mulExpData, {
+    const IsValuable = trait('isValue', {
         Lit() { return true },
         Add() { return false },
         Mul() { return false }
     })
 
     test('isValue', () => {
-        const exp = complect(mulExpData, { isValue }),
+        const exp = complect(mulExpData, [IsValuable]),
             { Lit, Add, Mul } = exp
 
         // 1 + (2 * 3)

@@ -6,12 +6,12 @@ describe('Point tests', () => {
         Point3: { x: Number, y: Number, z: Number }
     })
 
-    const printable = trait(pointData, {
+    const Printable = trait('print', {
         Point2({ x, y }) { return `(${x}, ${y})` },
         Point3({ x, y, z }) { return `(${x}, ${y}, ${z})` }
     })
 
-    const point = complect(pointData, { print: printable }),
+    const point = complect(pointData, [Printable]),
         { Point2, Point3 } = point
 
     test('Point data', () => {

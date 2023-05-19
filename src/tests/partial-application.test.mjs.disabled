@@ -2,7 +2,7 @@ import { data, trait, _, complect } from '../index.mjs'
 
 describe('Partial Application', () => {
     test('add 3 numbers', () => {
-        const add3 = trait(Number, {
+        const add3 = trait({
             _: (a, b, c) => a + b + c
         })
 
@@ -41,7 +41,7 @@ describe('Partial Application', () => {
     test('Linked List', () => {
         const listData = data({ Nil: {}, Cons: { head: {}, tail: {} } })
 
-        const foldRight = trait(listData, {
+        const foldRight = trait({
             Nil: (_self, unit, _merge) => unit,
             Cons: ({ head, tail }, unit, merge) => merge(head, tail.foldRight(unit, merge))
         })

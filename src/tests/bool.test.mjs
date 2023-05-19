@@ -4,23 +4,22 @@ describe('Bool tests', () => {
     const boolData = data({ False: {}, True: {} })
 
     test('Bool traits', () => {
-        const and = trait(boolData, {
+        const Andable = trait('and', {
             False(left, _) { return left },
             True(_, right) { return right }
         })
 
-        const or = trait(boolData, {
+        const Orable = trait('or', {
             False(_, right) { return right },
             True(left, _) { return left }
         })
 
-        const not = trait(boolData, {
+        const Notable = trait('not', {
             False() { return this.True },
             True() { return this.False }
         })
 
-        const bool = complect(boolData, { and, or, not })
-        const { False: f, True: t } = bool
+        const { False: f, True: t } = complect(boolData, [Andable, Orable, Notable])
 
         expect(f.and(f)).toBe(f)
         expect(f.and(t)).toBe(f)
@@ -34,7 +33,5 @@ describe('Bool tests', () => {
 
         expect(f.not()).toBe(t)
         expect(t.not()).toBe(f)
-
-        expect(() => and('string', f)).toThrow(TypeError)
     })
 })

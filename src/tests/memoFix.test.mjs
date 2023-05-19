@@ -1,44 +1,58 @@
-import { extend, memoFix, trait } from '../index.mjs'
+import { complect, data, extend, memoFix, trait } from '../index.mjs'
 
 describe('least fixed point', () => {
     test('returning bottom on infinite recursion', () => {
-        const omega = trait(Number, {
-            _(x) { return this._(x); }
+        const numData = data({
+            Num: { n: Number }
         })
+
+        const OmegaTrait = trait('omega', {
+            Num({ n }) { return this.Num(n).omega(); }
+        })
+
+        const OmegaFixTrait = trait('omegaFix', {
+            [memoFix]: { bottom: 'bottom' },
+            Num({ n }) { return this.Num(n).omegaFix(); }
+        })
+
+        const { Num } = complect(numData, [OmegaTrait, OmegaFixTrait])
 
         expect(() =>
-            omega(2)
+            Num(2).omega()
         ).toThrowError(new Error('Maximum call stack size exceeded'));
 
-        const omegaFix = trait(Number, {
-            [extend]: omega,
-            [memoFix]: { bottom: 'bottom' }
-        })
-
-        expect(omegaFix(2)).toBe('bottom');
+        expect(Num(2).omegaFix()).toBe('bottom');
     })
 
     test('memo performance', () => {
-        const fib = trait(Number, {
-            _(n) {
-                return n < 2 ? n : this._(n - 1) + this._(n - 2);
+        const fibData = data({
+            Fib: { n: Number }
+        })
+
+        const Evaluable = trait('evaluate', {
+            Fib({ n }) {
+                return n < 2 ? n : this.Fib(n - 1).evaluate() + this.Fib(n - 2).evaluate();
             }
         })
 
-        const fibFix = trait(Number, {
-            [extend]: fib,
+        const FixEvalTrait = trait('fixEval', {
             [memoFix]: { bottom: 0 },
+            Fib({ n }) {
+                return n < 2 ? n : this.Fib(n - 1).fixEval() + this.Fib(n - 2).fixEval();
+            }
         })
+
+        const { Fib } = complect(fibData, [Evaluable, FixEvalTrait])
 
         let start, end;
 
         start = performance.now();
-        fib(30);
+        Fib(30).evaluate();
         end = performance.now();
         const time = end - start;
 
         start = performance.now();
-        fibFix(30);
+        Fib(30).fixEval();
         end = performance.now();
         const memoTime = end - start;
 
@@ -46,26 +60,37 @@ describe('least fixed point', () => {
     })
 
     test('computed bottom', () => {
-        const foo = trait(Number, {
-            _(x) {
-                if (x <= 3) {
-                    return 1 + this._(x + 1);
-                } else {
-                    return this._(x);
-                }
+        const fooData = data({
+            Foo: { n: Number }
+        })
+
+        const FooTrait = trait('foo', {
+            Foo({ n }) {
+                if (n <= 3)
+                    return 1 + this.Foo(n + 1).foo();
+                else
+                    return this.Foo(n).foo();
+            }
+        })
+        const { Foo } = complect(fooData, [FooTrait])
+
+        expect(() => Foo(1).foo()).toThrowError(new Error('Maximum call stack size exceeded'));
+
+        const FooFixTrait = trait('foo', {
+            [memoFix]: { bottom: ({ n }) => n ** 2 },
+            Foo({ n }) {
+                if (n <= 3)
+                    return 1 + this.Foo(n + 1).foo();
+                else
+                    return this.Foo(n).foo();
             }
         })
 
-        expect(() => foo(1)).toThrowError(new Error('Maximum call stack size exceeded'));
+        const { Foo: FooFix } = complect(fooData, [FooFixTrait])
 
-        const fooFix = trait(Number, {
-            [extend]: foo,
-            [memoFix]: { bottom: (x) => x ** 2 }
-        })
-
-        expect(fooFix(1)).toBe(19);
-        expect(fooFix(2)).toBe(18);
-        expect(fooFix(3)).toBe(17);
-        expect(fooFix(4)).toBe(16);
+        expect(FooFix(1).foo()).toBe(19);
+        expect(FooFix(2).foo()).toBe(18);
+        expect(FooFix(3).foo()).toBe(17);
+        expect(FooFix(4).foo()).toBe(16);
     })
 })

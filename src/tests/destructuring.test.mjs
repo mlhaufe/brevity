@@ -38,14 +38,12 @@ describe('Destructuring', () => {
             Point3: { x: {}, y: {}, z: {} }
         })
 
-        const printable = trait(pointData, {
+        const Printable = trait('print', {
             Point2({ x, y }) { return `Point2(${x}, ${y})` },
             Point3({ x, y, z }) { return `Point3(${x}, ${y}, ${z})` }
         })
 
-        const point = complect(pointData, { print: printable })
-
-        const { Point2, Point3 } = point
+        const { Point2, Point3 } = complect(pointData, [Printable])
 
         const p2 = Point2({ x: 1, y: 2 }),
             p3 = Point3({ x: 1, y: 2, z: 3 });

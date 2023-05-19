@@ -6,12 +6,12 @@ describe('Shape tests', () => {
         Rectangle: { width: Number, height: Number }
     })
 
-    const area = trait(shapeData, {
+    const Areable = trait('area', {
         Circle({ radius }) { return Math.PI * radius * radius },
         Rectangle({ width, height }) { return width * height }
     })
 
-    const shape = complect(shapeData, { area }),
+    const shape = complect(shapeData, [Areable]),
         { Circle, Rectangle } = shape;
 
     test('Shape data', () => {
