@@ -37,10 +37,4 @@ describe('Shape tests', () => {
         const rectangle = Rectangle({ width: 2, height: 3 });
         expect(rectangle.area()).toBe(6);
     })
-
-    test('Trait with missing variant', () => {
-        expect(() => {
-            const toString = trait(shapeData, {})
-        }).toThrow("Invalid Trait declaration. Missing definition for 'Circle'")
-    })
 })

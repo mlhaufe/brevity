@@ -1,13 +1,13 @@
 import { complect, data, trait, _, Pattern } from "../index.mjs";
 
 describe('List tests', () => {
-    const listData = data((List, T) => ({
+    const ListData = data((List, T) => ({
         Nil: {},
         Cons: { head: T, tail: List(T) }
     }));
 
     test('List data', () => {
-        const { Nil, Cons } = listData(Number);
+        const { Nil, Cons } = ListData(Number);
 
         expect(() => {
             Cons(1, Cons(2, Cons(3, Nil)));
@@ -18,19 +18,19 @@ describe('List tests', () => {
         }).toThrow();
     })
 
-    const Concatenable = trait('concat', {
+    const ConcatTrait = trait('concat', {
         Nil(self, ys) { return ys },
         Cons({ head, tail }, ys) {
             return this.Cons({ head, tail: tail.concat(ys) })
         }
     })
 
-    const IsNilable = trait('isNil', {
+    const IsNilTrait = trait('isNil', {
         _: () => false,
         Nil: () => true
     });
 
-    const IsThreeable = trait('isThree', {
+    const IsThreeTrait = trait('isThree', {
         _: (_self) => false,
         Cons: Pattern(($) => [
             [[_, [_, [_, $.Nil]]], (_self) => true],
@@ -38,13 +38,13 @@ describe('List tests', () => {
         ])
     })
 
-    const Lengthable = trait('length', {
+    const LengthTrait = trait('length', {
         Nil(self) { return 0 },
         Cons({ head, tail }) { return 1 + tail.length() }
     });
 
-    const NumList = complect(listData(Number), [Concatenable, IsNilable, IsThreeable, Lengthable]),
-        { Nil, Cons } = NumList;
+    const List = complect(ListData, [ConcatTrait, IsNilTrait, IsThreeTrait, LengthTrait]),
+        { Nil, Cons } = List(Number);
 
     test('List complect', () => {
         const xs = Cons({ head: 1, tail: Nil })

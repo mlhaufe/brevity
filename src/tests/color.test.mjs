@@ -1,4 +1,5 @@
-import { complect, data, extend, trait } from "../index.mjs"
+import { BaseVariant } from "../data.mjs";
+import { complect, data, trait } from "../index.mjs"
 
 describe('Color tests', () => {
     const rgbData = data({ Red: {}, Green: {}, Blue: {} });
@@ -11,9 +12,12 @@ describe('Color tests', () => {
 
         const { Red, Green, Blue } = rgbData;
 
-        expect(Red).toEqual({});
-        expect(Green).toEqual({});
-        expect(Blue).toEqual({});
+        expect(Red).toBeInstanceOf(rgbData[BaseVariant]);
+        expect(Green).toBeInstanceOf(rgbData[BaseVariant]);
+        expect(Blue).toBeInstanceOf(rgbData[BaseVariant]);
+        expect(Red).not.toBe(Green);
+        expect(Red).not.toBe(Blue);
+        expect(Green).not.toBe(Blue);
     })
 
     const RgbPrintable = trait('print', {
@@ -34,16 +38,14 @@ describe('Color tests', () => {
         expect(Blue.print()).toBe('#0000FF');
     })
 
-    const rgbCmykColor = data({
-        [extend]: rgbData,
+    const rgbCmykColor = data(rgbData, {
         Cyan: {},
         Magenta: {},
         Yellow: {},
         Black: {}
     });
 
-    const RgbCmykPrintable = trait('print', {
-        [extend]: RgbPrintable,
+    const RgbCmykPrintable = trait(RgbPrintable, 'print', {
         Cyan() { return '#00FFFF' },
         Magenta() { return '#FF00FF' },
         Yellow() { return '#FFFF00' },

@@ -1,7 +1,7 @@
 import { complect, data, trait, _ } from "../index.mjs"
 
 describe('Tree Tests', () => {
-    const treeData = data((Tree, T) => ({
+    const TreeData = data((Tree, T) => ({
         Leaf: { value: T },
         Branch: { left: Tree(T), right: Tree(T) }
     }));
@@ -11,8 +11,8 @@ describe('Tree Tests', () => {
         Branch({ left, right }) { return `(${left.print()}, ${right.print()})` }
     });
 
-    const NumTree = complect(treeData(Number), [Printable]),
-        { Leaf, Branch } = NumTree;
+    const Tree = complect(TreeData, [Printable]),
+        { Leaf, Branch } = Tree(Number);
 
     test('Tree data', () => {
         const t = Branch(Leaf(1), Leaf(2));
@@ -21,6 +21,8 @@ describe('Tree Tests', () => {
         expect(t.left.value).toBe(1);
         expect(t.right).toBeDefined();
         expect(t.right.value).toBe(2);
+
+        expect(() => Leaf('1')).toThrow();
     })
 
     test('Tree print', () => {

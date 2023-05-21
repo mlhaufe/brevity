@@ -1,9 +1,11 @@
-import { apply, extend } from "./symbols.mjs"
+import { traitDecls } from "./symbols.mjs"
 import { isObjectLiteral } from "./predicates.mjs";
 import { BoxedMultiKeyMap } from "./BoxedMultiKeyMap.mjs";
 import { Pattern } from "./Pattern.mjs";
+import { Complected } from "./complect.mjs";
 
-export const memoFix = Symbol('memoFix')
+export const memoFix = Symbol('memoFix'),
+    apply = Symbol('apply')
 
 /**
  * @abstract
@@ -17,7 +19,7 @@ export class Trait {
      * @returns {*}
      */
     static [apply](family, variant, ...args) {
-        return new Trait(family)[apply](variant, ...args)
+        return new this(family)[apply](variant, ...args)
     }
 
     __family__
@@ -45,8 +47,7 @@ export class Trait {
  */
 
 /**
- * @typedef {{ [extend]?: import("./symbols.mjs").Constructor<Trait>, [memoFix]?: object} } CaseOptions
- * @property {import("./symbols.mjs").Constructor<Trait>} [extend] - The trait to extend
+ * @typedef {{ [memoFix]?: object } } CaseOptions
  * @property {object} [memoFix] - Memoization options
  * @property {((...args: any[]) => any) | any} memoFix.bottom - The bottom function
  */
@@ -56,16 +57,44 @@ export class Trait {
  */
 
 /**
+ * @overload
  * Defines a trait
  * @param {string} methodName - The method name
  * @param {Cases} cases
  * @returns {typeof Trait}
+ *
+ * @overload
+ * Defines a trait
+ * @param {typeof Trait | typeof Complected} BaseTrait - The base trait to extend
+ * @param {string} methodName - The method name
+ * @param {Cases} cases
+ * @returns {typeof Trait}
  */
-export const trait = (methodName, cases) => {
+export const trait = function (BaseTrait, methodName, cases) {
+    if (arguments.length === 2) {
+        // @ts-ignore
+        cases = methodName
+        // @ts-ignore
+        methodName = BaseTrait
+        BaseTrait = Trait
+    }
+
+    if (BaseTrait.prototype instanceof Complected) {
+        BaseTrait = BaseTrait.prototype[traitDecls].find(traitDecl => traitDecl.name === methodName);
+        if (!BaseTrait)
+            throw new TypeError(`Trait '${methodName}' not found in Complected`);
+    } else if (BaseTrait instanceof Complected) {
+        BaseTrait = BaseTrait[traitDecls].find(traitDecl => traitDecl.name === methodName);
+        if (!BaseTrait)
+            throw new TypeError(`Trait '${methodName}' not found in Complected`);
+    }
+
+    if (typeof methodName !== 'string')
+        throw new TypeError('methodName must be a string');
     if (!isObjectLiteral(cases))
         throw new TypeError('Trait declaration must be an object literal');
-    if (cases[extend] && !(cases[extend].prototype instanceof Trait))
-        throw new TypeError('[extend] property must be a Trait constructor');
+    if (BaseTrait !== Trait && !(BaseTrait.prototype instanceof Trait))
+        throw new TypeError('BaseTrait must be a Trait constructor or a Complected object');
     if (cases[memoFix] && !('bottom' in cases[memoFix]))
         throw new TypeError("Invalid Trait declaration. Missing 'bottom' property in memoFix");
 
@@ -93,9 +122,7 @@ export const trait = (methodName, cases) => {
         }
     }
 
-    const ProtoCons = (cases[extend]) ?? Trait;
-
-    class _Trait extends ProtoCons {
+    class _Trait extends BaseTrait {
         static {
             for (const [vName, descriptor] of Object.entries(Object.getOwnPropertyDescriptors(cases))) {
                 if (typeof descriptor.value !== 'function' && !(descriptor.value instanceof Pattern))
@@ -113,5 +140,5 @@ export const trait = (methodName, cases) => {
     }
     Object.defineProperty(_Trait, 'name', { value: methodName })
 
-    return _Trait
+    return /** @type {typeof Trait} */ (_Trait)
 }

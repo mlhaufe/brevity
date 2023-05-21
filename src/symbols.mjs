@@ -3,13 +3,6 @@
  */
 export const _ = Symbol('_')
 
-export const apply = Symbol('apply')
-
-/**
- * Used to declare inheritance from a parent.
- */
-export const extend = Symbol('extend')
-
 /**
  * Used to reference the data declaration of a feature
  */

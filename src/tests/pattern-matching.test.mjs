@@ -81,38 +81,33 @@ describe('Pattern matching', () => {
         expect(email.show()).toEqual('You got an email from Dad@example.com titled Re: Dinner')
     })
 
-    /*
     test('List', () => {
-        const listData = data({ Nil: {}, Cons: { head: {}, tail: {} } })
+        const ListData = data((List, T) => ({ Nil: {}, Cons: { head: T, tail: List(T) } }))
 
-        const Lengthable = trait('length', {
+        const LengthTrait = trait('length', {
             Nil: (self) => 0,
             Cons: ({ tail }) => 1 + tail.length()
         })
 
-        const Tellable = trait('tell', {
+        const TellTrait = trait('tell', {
             Nil: (self) => 'The list is empty',
-            get Cons() {
-                return [
-                    [this.Cons(_, this.Nil), ({ head }) => `The list has one element: ${head}`],
-                    [this.Cons(_, this.Cons(_, this.Nil)), ({ head, tail }) => `The list has two elements: ${head} and ${tail.head}`],
-                    [this.Cons(_, this.Cons(_, _)), ({ head, tail }) => `This list is long. The first two elements are: ${head} and ${tail.head}`]
-                ]
-            }
+            Cons: Pattern(($) => [
+                [$.Cons(_, $.Nil), ({ head }) => `The list has one element: ${head}`],
+                [$.Cons(_, $.Cons(_, $.Nil)), ({ head, tail }) => `The list has two elements: ${head} and ${tail.head}`],
+                [$.Cons(_, $.Cons(_, _)), ({ head, tail }) => `This list is long. The first two elements are: ${head} and ${tail.head}`]
+            ])
         })
 
-        const Contains3 = trait('contains3', {
+        const Contains3Trait = trait('contains3', {
             Nil: (self) => false,
-            get Cons() {
-                return [
-                    [this.Cons(3, _), (self) => true],
-                    [this.Cons(_, _), ({ tail }) => tail.contains3()]
-                ]
-            }
+            Cons: Pattern(($) => [
+                [$.Cons(3, _), (self) => true],
+                [$.Cons(_, _), ({ tail }) => tail.contains3()]
+            ])
         })
 
-        const list = complect(listData, [Lengthable, Tellable, Contains3]),
-            { Nil, Cons } = list
+        const List = complect(ListData, [LengthTrait, TellTrait, Contains3Trait]),
+            { Nil, Cons } = List(Number)
 
         const l = Cons(1, Cons(2, Cons(3, Nil)))
         expect(l.length()).toEqual(3)
@@ -130,5 +125,4 @@ describe('Pattern matching', () => {
         expect(l2.contains3()).toEqual(false)
         expect(l3.contains3()).toEqual(true)
     })
-    */
 })

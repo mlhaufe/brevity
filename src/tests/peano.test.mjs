@@ -27,12 +27,12 @@ describe('Peano tests', () => {
         expect(() => Succ(1)).toThrow();
     })
 
-    const Valuable = trait('value', {
+    const ValueTrait = trait('value', {
         Zero(self) { return 0 },
         Succ({ pred }) { return 1 + pred.value() }
     })
 
-    const peano = complect(peanoData, [Valuable]),
+    const peano = complect(peanoData, [ValueTrait]),
         { Zero, Succ } = peano;
 
     test('Peano data', () => {

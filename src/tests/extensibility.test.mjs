@@ -1,4 +1,4 @@
-import { apply, data, trait, extend, complect, dataDecl } from "../index.mjs"
+import { apply, data, trait, complect, dataDecl } from "../index.mjs"
 
 describe('Extensibility for the Masses', () => {
     const intExpData = data({
@@ -34,8 +34,7 @@ describe('Extensibility for the Masses', () => {
         expect(e.evaluate()).toBe(6)
     })
 
-    const intBoolExpData = data({
-        [extend]: intExpData,
+    const intBoolExpData = data(intExpData, {
         Bool: { value: {} },
         IIf: { pred: {}, ifTrue: {}, ifFalse: {} }
     })
@@ -56,8 +55,7 @@ describe('Extensibility for the Masses', () => {
         expect(exp.ifFalse.value).toBe(0)
     })
 
-    const IntBoolPrintable = trait('print', {
-        [extend]: IntPrintable,
+    const IntBoolPrintable = trait(IntPrintable, 'print', {
         Bool({ value }) { return value.toString() },
         IIf({ pred, ifTrue, ifFalse }) {
             return `(${pred.print()} ? ${ifTrue.print()} : ${ifFalse.print()})`
@@ -72,8 +70,7 @@ describe('Extensibility for the Masses', () => {
         expect(e.print()).toBe('(true ? 1 : 2)')
     })
 
-    const IntBoolEvaluable = trait('evaluate', {
-        [extend]: IntEvaluable,
+    const IntBoolEvaluable = trait(IntEvaluable, 'evaluate', {
         Bool({ value }) { return value },
         IIf({ pred, ifTrue, ifFalse }) {
             return pred.evaluate() ? ifTrue.evaluate() : ifFalse.evaluate()
@@ -88,8 +85,7 @@ describe('Extensibility for the Masses', () => {
         expect(e.evaluate()).toBe(1)
     })
 
-    const stmtExpData = data({
-        [extend]: intBoolExpData,
+    const stmtExpData = data(intBoolExpData, {
         Assign: { scope: {}, name: {}, value: {} },
         Expr: { value: {} },
         Seq: { first: {}, second: {} },
@@ -128,8 +124,7 @@ describe('Extensibility for the Masses', () => {
         expect(e.value.right.value).toBe(1)
     })
 
-    const StmtPrintable = trait('print', {
-        [extend]: IntBoolPrintable,
+    const StmtPrintable = trait(IntBoolPrintable, 'print', {
         Assign({ name, value }) { return `${name} = ${value.print()}` },
         Expr({ value }) { return value.print() },
         Seq({ first, second }) { return `${first.print()}; ${second.print()}` },
@@ -172,8 +167,7 @@ describe('Extensibility for the Masses', () => {
         expect(exp2.print()).toBe('x = (y + 1); x = (x + 1)')
     })
 
-    const StmtEvaluable = trait('evaluate', {
-        [extend]: IntBoolEvaluable,
+    const StmtEvaluable = trait(IntBoolEvaluable, 'evaluate', {
         Assign({ scope, name, value }) {
             return scope.set(name, value.evaluate()).get(name)
         },
@@ -255,8 +249,7 @@ describe('Extensibility for the Masses', () => {
     test('data extend complected', () => {
         const intExp = complect(intExpData, [IntPrintable, IntEvaluable])
 
-        const intBoolExpData = data({
-            [extend]: intExp[dataDecl],
+        const intBoolExpData = data(intExp, {
             Bool: { value: {} },
             IIf: { pred: {}, ifTrue: {}, ifFalse: {} }
         })
@@ -270,29 +263,26 @@ describe('Extensibility for the Masses', () => {
     test('trait extend complected', () => {
         const intExp = complect(intExpData, [IntPrintable, IntEvaluable])
 
-        const intBoolExpData = data({
-            [extend]: intExp[dataDecl],
+        const IntBoolExpData = data(intExp[dataDecl], {
             Bool: { value: {} },
             IIf: { pred: {}, ifTrue: {}, ifFalse: {} }
         })
 
-        const IntBoolPrintable = trait('print', {
-            [extend]: intExp,
+        const IntBoolPrintable = trait(intExp, 'print', {
             Bool({ value }) { return value ? 'true' : 'false' },
             IIf({ pred, ifTrue, ifFalse }) {
                 return `if (${pred.print()}) { ${ifTrue.print()} } else { ${ifFalse.print()} }`
             }
         })
 
-        const IntBoolEvaluable = trait('evaluate', {
-            [extend]: intExp,
+        const IntBoolEvaluable = trait(intExp, 'evaluate', {
             Bool({ value }) { return value },
             IIf({ pred, ifTrue, ifFalse }) {
                 return pred.evaluate() ? ifTrue.evaluate() : ifFalse.evaluate()
             }
         })
 
-        const intBoolExp = complect(intBoolExpData, [IntBoolPrintable, IntBoolEvaluable])
+        const intBoolExp = complect(IntBoolExpData, [IntBoolPrintable, IntBoolEvaluable])
 
         const { Lit, Add, Bool, IIf } = intBoolExp
 
@@ -316,13 +306,11 @@ describe('Extensibility for the Masses', () => {
             Foo({ value }) { return `Base: ${value}` }
         })
 
-        const OverridePrintable = trait('print', {
-            [extend]: BasePrintable,
+        const OverridePrintable = trait(BasePrintable, 'print', {
             Foo({ value }) { return `Override: ${value}` }
         })
 
-        const SuperPrintable = trait('print', {
-            [extend]: BasePrintable,
+        const SuperPrintable = trait(BasePrintable, 'print', {
             Foo(self) { return `Super: ${BasePrintable[apply](this, self)}` }
         })
 

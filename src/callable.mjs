@@ -19,6 +19,7 @@ export function callable(Clazz) {
     Object.setPrototypeOf(Create.prototype, Clazz.prototype);
     Object.defineProperties(Create, {
         name: { value: Clazz.name },
+        length: { value: Clazz.length },
         [Symbol.hasInstance]: { value(instance) { return instance instanceof Clazz } }
     })
 

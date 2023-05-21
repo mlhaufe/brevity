@@ -3,16 +3,16 @@ import { data, complect } from "../index.mjs";
 describe('Immutability', () => {
 
     test('data/complect declaration is immutable', () => {
-        const colorData = data({ Red: {}, Green: {}, Blue: {} })
-        expect(() => colorData.Red = 1).toThrow(TypeError)
+        const ColorData = data({ Red: {}, Green: {}, Blue: {} })
+        expect(() => ColorData.Red = 1).toThrow(TypeError)
 
-        const pointData = data({ Point: { x: {}, y: {} } })
-        expect(() => pointData.Point = 1).toThrow(TypeError)
+        const PointData = data({ Point: { x: {}, y: {} } })
+        expect(() => PointData.Point = 1).toThrow(TypeError)
 
-        const color = complect(colorData, [])
+        const color = complect(ColorData, [])
         expect(() => color.Red = 1).toThrow(TypeError)
 
-        const point = complect(pointData, [])
+        const point = complect(PointData, [])
         expect(() => point.Point = 1).toThrow(TypeError)
     })
 

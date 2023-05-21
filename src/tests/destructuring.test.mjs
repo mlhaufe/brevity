@@ -1,13 +1,12 @@
 import { complect, data, trait } from "../index.mjs"
 
 describe('Destructuring', () => {
-
     test(`Point data destructuring`, () => {
-        const pointData = data({
+        const PointData = data({
             Point2: { x: {}, y: {} },
             Point3: { x: {}, y: {}, z: {} }
         }),
-            { Point2, Point3 } = pointData;
+            { Point2, Point3 } = PointData;
 
         const p2 = Point2({ x: 1, y: 2 }),
             p3 = Point3({ x: 1, y: 2, z: 3 });
@@ -33,7 +32,7 @@ describe('Destructuring', () => {
     })
 
     test('Complect destructuring', () => {
-        const pointData = data({
+        const PointData = data({
             Point2: { x: {}, y: {} },
             Point3: { x: {}, y: {}, z: {} }
         })
@@ -43,7 +42,7 @@ describe('Destructuring', () => {
             Point3({ x, y, z }) { return `Point3(${x}, ${y}, ${z})` }
         })
 
-        const { Point2, Point3 } = complect(pointData, [Printable])
+        const { Point2, Point3 } = complect(PointData, [Printable])
 
         const p2 = Point2({ x: 1, y: 2 }),
             p3 = Point3({ x: 1, y: 2, z: 3 });
@@ -66,11 +65,5 @@ describe('Destructuring', () => {
         expect(x3a).toBe(1);
         expect(y3a).toBe(2);
         expect(z3a).toBe(3);
-
-        // array destructuring of complected should exclude traits
-        const [x2b, y2b, print] = p2;
-        expect(x2b).toBe(1);
-        expect(y2b).toBe(2);
-        expect(print).toBeUndefined();
     })
 })
