@@ -36,7 +36,7 @@ export class Trait {
         if (typeof strategy === 'function')
             return strategy.call(this.__family__, variant, ...args)
         if (strategy instanceof Pattern)
-            return strategy.match(this.__family__)(variant, ...args)
+            return (/** @type {*} */ (strategy)).match(this.__family__)(variant, ...args)
     }
 }
 
