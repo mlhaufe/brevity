@@ -1,4 +1,5 @@
-export { dataDecl, extend, traitDecl, _ } from './symbols.mjs';
-export { data, isDataVariant, isDataDecl } from './data.mjs';
-export { trait, isTrait, memoFix } from './trait.mjs';
-export { complect, isComplectedVariant } from './complect.mjs';
+export { dataDecl, traitDecls, _ } from './symbols.mjs';
+export { Data, data } from './data.mjs';
+export { Pattern } from './Pattern.mjs';
+export { apply, trait, Trait, memoFix } from './trait.mjs';
+export { complect, Complected } from './complect.mjs';

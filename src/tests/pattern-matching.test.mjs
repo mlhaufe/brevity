@@ -1,4 +1,4 @@
-import { complect, data, trait, _ } from "../index.mjs";
+import { complect, data, trait, _, Pattern } from "../index.mjs";
 
 describe('Pattern matching', () => {
     test('Simplify expression', () => {
@@ -8,31 +8,31 @@ describe('Pattern matching', () => {
             Mul: { left: {}, right: {} }
         })
 
-        const simplify1 = trait(exprData, ($) => ({
+        const Simplifyable1 = trait('simplify1', {
             _: (self) => self,
-            Mul: [
+            Mul: Pattern(($) => [
                 [{ left: $.Num(1) }, ({ right }) => right],
                 [{ right: $.Num(1) }, ({ left }) => left],
                 [{ left: $.Num(0) }, ({ left }) => left],
                 [{ right: $.Num(0) }, ({ right }) => right]
-            ]
-        }))
+            ])
+        })
 
         // 1 * x = x
         // x * 1 = x
         // 0 * x = 0
         // x * 0 = 0
-        const simplify2 = trait(exprData, ($) => ({
+        const Simplifyable2 = trait('simplify2', {
             _: (self) => self,
-            Mul: [
+            Mul: Pattern(($) => [
                 [$.Mul($.Num(1), _), ({ right }) => right],
                 [$.Mul(_, $.Num(1)), ({ left }) => left],
                 [$.Mul($.Num(0), _), ({ left }) => left],
                 [$.Mul(_, $.Num(0)), ({ right }) => right]
-            ]
-        }))
+            ])
+        })
 
-        const expr = complect(exprData, { simplify1, simplify2 }),
+        const expr = complect(exprData, [Simplifyable1, Simplifyable2]),
             { Num, Var, Mul } = expr
 
         const e1 = Mul(Var('x'), Num(1))
@@ -63,51 +63,51 @@ describe('Pattern matching', () => {
             VoiceRecording: { contactName: {}, link: {} }
         })
 
-        const showNotification = trait(notificationData, {
+        const Showable = trait('show', {
             Email: ({ sender, title, }) => `You got an email from ${sender} titled ${title}`,
             SMS: ({ caller, message }) => `You got a text message from ${caller} saying ${message}`,
             VoiceRecording: ({ contactName, link }) => `You received a voice recording from ${contactName}! Click the link to hear it: ${link}`
         })
 
-        const notification = complect(notificationData, { showNotification }),
+        const notification = complect(notificationData, [Showable]),
             { Email, SMS, VoiceRecording } = notification
 
         const sms = SMS('000-0000', 'Call me when you get a chance'),
             email = Email('Dad@example.com', 'Re: Dinner', 'Did you get my email?'),
             voiceRecording = VoiceRecording('Mom', 'https://example.com/voice-recording.mp4')
 
-        expect(sms.showNotification()).toEqual('You got a text message from 000-0000 saying Call me when you get a chance')
-        expect(voiceRecording.showNotification()).toEqual('You received a voice recording from Mom! Click the link to hear it: https://example.com/voice-recording.mp4')
-        expect(email.showNotification()).toEqual('You got an email from Dad@example.com titled Re: Dinner')
+        expect(sms.show()).toEqual('You got a text message from 000-0000 saying Call me when you get a chance')
+        expect(voiceRecording.show()).toEqual('You received a voice recording from Mom! Click the link to hear it: https://example.com/voice-recording.mp4')
+        expect(email.show()).toEqual('You got an email from Dad@example.com titled Re: Dinner')
     })
 
     test('List', () => {
-        const listData = data({ Nil: {}, Cons: { head: {}, tail: {} } })
+        const ListData = data((List, T) => ({ Nil: {}, Cons: { head: T, tail: List(T) } }))
 
-        const length = trait(listData, {
+        const LengthTrait = trait('length', {
             Nil: (self) => 0,
             Cons: ({ tail }) => 1 + tail.length()
         })
 
-        const tell = trait(listData, (f) => ({
+        const TellTrait = trait('tell', {
             Nil: (self) => 'The list is empty',
-            Cons: [
-                [f.Cons(_, f.Nil), ({ head }) => `The list has one element: ${head}`],
-                [f.Cons(_, f.Cons(_, f.Nil)), ({ head, tail }) => `The list has two elements: ${head} and ${tail.head}`],
-                [f.Cons(_, f.Cons(_, _)), ({ head, tail }) => `This list is long. The first two elements are: ${head} and ${tail.head}`]
-            ]
-        }))
+            Cons: Pattern(($) => [
+                [$.Cons(_, $.Nil), ({ head }) => `The list has one element: ${head}`],
+                [$.Cons(_, $.Cons(_, $.Nil)), ({ head, tail }) => `The list has two elements: ${head} and ${tail.head}`],
+                [$.Cons(_, $.Cons(_, _)), ({ head, tail }) => `This list is long. The first two elements are: ${head} and ${tail.head}`]
+            ])
+        })
 
-        const contains3 = trait(listData, (f) => ({
+        const Contains3Trait = trait('contains3', {
             Nil: (self) => false,
-            Cons: [
-                [f.Cons(3, _), (self) => true],
-                [f.Cons(_, _), ({ tail }) => contains3(tail)]
-            ]
-        }))
+            Cons: Pattern(($) => [
+                [$.Cons(3, _), (self) => true],
+                [$.Cons(_, _), ({ tail }) => tail.contains3()]
+            ])
+        })
 
-        const list = complect(listData, { contains3, length, tell }),
-            { Nil, Cons } = list
+        const List = complect(ListData, [LengthTrait, TellTrait, Contains3Trait]),
+            { Nil, Cons } = List(Number)
 
         const l = Cons(1, Cons(2, Cons(3, Nil)))
         expect(l.length()).toEqual(3)

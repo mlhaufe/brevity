@@ -1,27 +1,26 @@
 import { BoxedMultiKeyMap } from "./BoxedMultiKeyMap.mjs";
-import { isCamelCase } from "./isCamelCase.mjs";
-import { isCapitalized } from "./isCapitalized.mjs";
-import { isComplectedVariant } from "./complect.mjs";
-import { isConstructor } from "./isConstructor.mjs";
-import { isObjectLiteral } from "./isObjectLiteral.mjs";
-import { isPrimitive } from "./isPrimitive.mjs";
-import { isPrototypeOf } from "./isPrototypeOf.mjs";
-import { dataVariant, extend } from "./symbols.mjs";
+import {
+    isCamelCase, isCapitalized, isConstructor, isObjectLiteral,
+    isPrimitive, satisfiesPrimitive
+} from "./predicates.mjs";
+import { Complected } from "./complect.mjs";
+import { _, dataDecl, dataVariant } from "./symbols.mjs";
 import { normalizeArgs } from "./normalizeArgs.mjs";
-import { satisfiesPrimitive } from "./satisfiesPrimitive.mjs";
+import { callable } from "./callable.mjs";
 
-const baseVariant = Symbol('baseVariant')
+export const BaseVariant = Symbol('BaseVariant')
 
-export const protoData = Object.assign(Object.create(null), {
-    *[Symbol.iterator]() {
-        for (let k in this)
-            yield this[k]
+export class Data {
+    static [BaseVariant] = class {
+        *[Symbol.iterator]() { for (let k in this) yield this[k] }
+    }
+}
+
+const TypeRecursion = callable(class {
+    constructor(...args) {
+        this.args = args
     }
 })
-
-export const protoFactory = Object.create(null),
-    isDataDecl = (obj) => isPrototypeOf(obj, protoFactory),
-    isDataVariant = (obj) => isPrototypeOf(obj, protoData)
 
 function assignProps(obj, propNames, args) {
     Object.defineProperties(obj,
@@ -35,42 +34,41 @@ function assignProps(obj, propNames, args) {
     )
 }
 
-const isValidGuard = (guard) =>
-    isConstructor(guard) ||
-    isObjectLiteral(guard) && Object.keys(guard).length === 0 ||
-    isDataDecl(guard)
-
 /**
- * @param {object} factory
+ * @param {*} Factory
  * @param {any[]} args
  * @param {Record<string, object | Function>} props
  */
-function guardCheck(factory, args, props) {
+function guardCheck(Factory, args, props) {
     Object.entries(props).forEach(([prop, guard], i) => {
         const value = args[i],
             errMsg = (expected, actual) =>
                 `Guard mismatch on property '${prop}'. Expected: ${expected}, got: ${actual}`
 
-        if (isObjectLiteral(guard) && Object.keys(guard).length === 0) {
+        if (value === _) {
+            return
+        } else if (isObjectLiteral(guard) && Object.keys(guard).length === 0) {
             // TODO: { guard: {}, get(){} }
             return
-            // TODO: if wildcard: return
         } else if (isConstructor(guard)) {
             if (guard === TypeRecursion) { // singleton types
-                const isData = isDataVariant(value),
-                    isComplected = isComplectedVariant(value)
-                if (!isData && !isComplected)
+                const isVariant = value instanceof Data[BaseVariant],
+                    isComplected = value instanceof Complected
+                if (!isVariant && !isComplected)
                     throw new TypeError(errMsg('TypeRecursion', JSON.stringify(value)))
-                if (isData && !isPrototypeOf(value, factory[baseVariant]))
+                if (isVariant && !(value instanceof Factory[BaseVariant]))
                     throw new TypeError(errMsg('TypeRecursion', JSON.stringify(value)))
-                if (isComplected && !isPrototypeOf(value[dataVariant], factory[baseVariant]))
+                if (isComplected && !(value[dataVariant] instanceof Factory[BaseVariant]))
                     throw new TypeError(errMsg('TypeRecursion', JSON.stringify(value)))
             } else if (guard instanceof TypeRecursion) { // parameterized types
-                if (!isPrototypeOf(value, factory[baseVariant]))
+                if (!(value instanceof Factory[BaseVariant]))
                     throw new TypeError(errMsg('TypeRecursion', JSON.stringify(value)))
                 // TODO: utilize args
             } else if (isPrimitive(value)) {
                 if (!satisfiesPrimitive(value, guard))
+                    throw new TypeError(errMsg(guard.name, JSON.stringify(value)))
+            } else if (guard.prototype instanceof Data) {
+                if (!(value instanceof guard[BaseVariant]))
                     throw new TypeError(errMsg(guard.name, JSON.stringify(value)))
             } else if (!(value instanceof guard)) {
                 throw new TypeError(errMsg(guard, JSON.stringify(value)))
@@ -79,114 +77,125 @@ function guardCheck(factory, args, props) {
             if (typeof guard === 'function' && !(value instanceof guard))
                 throw new TypeError(errMsg(guard.name, JSON.stringify(value)))
 
-            if (isDataDecl(guard) && !isPrototypeOf(value, guard[baseVariant]))
+            if (guard instanceof Data && !(value instanceof Factory))
                 throw new TypeError(errMsg(guard, JSON.stringify(value)))
         }
     })
 }
-
-function TypeRecursion(...args) {
-    if (!new.target)
-        return new TypeRecursion(...args)
-    this.args = args
-}
+const isValidGuard = (guard) =>
+    isConstructor(guard) ||
+    isObjectLiteral(guard) && Object.keys(guard).length === 0
 
 /**
  * Defines a data type
+ * @overload
+ * @param {import("./symbols.mjs").Constructor<Data>} BaseData The base data type
+ * @param dataDecl The variants definition
+ * @returns The data type
+ *
+ * @overload
  * @param dataDecl The variants definition
  * @returns The data type
  */
-export function data(dataDecl) {
+export function data(BaseData, dataDec) {
+    if (arguments.length === 1) {
+        dataDec = BaseData
+        BaseData = Data
+    }
+
+    if (BaseData instanceof Complected)
+        BaseData = BaseData[dataDecl]
+    else if (BaseData.prototype instanceof Complected)
+        BaseData = BaseData.prototype[dataDecl]
+
+    // TODO: can the function form be moved into the Factory constructor?
     let dataDef
-    if (typeof dataDecl === 'function') {
-        if (dataDecl.length > 1) {
-            return (...typeParams) => {
-                return data(dataDecl(TypeRecursion, ...typeParams))
+    if (typeof dataDec === 'function') {
+        if (dataDec.length > 1) {
+            const dataCons = (...typeParams) => {
+                return data(dataDec(TypeRecursion, ...typeParams))
             }
+            Object.defineProperty(dataCons, 'length', { value: dataDec.length - 1 })
+            return dataCons
         } else {
-            dataDef = dataDecl(TypeRecursion)
+            dataDef = dataDec(TypeRecursion)
         }
     } else {
-        dataDef = dataDecl
+        dataDef = dataDec
     }
 
     if (!isObjectLiteral(dataDef))
         throw new TypeError('Invalid data declaration. Object literal expected')
-    if (dataDef[extend] && !isDataDecl(dataDef[extend]))
-        throw new TypeError('Invalid [extend] reference. A data declaration was expected')
+    if (isConstructor(BaseData) && !(BaseData.prototype instanceof Data) && BaseData !== Data)
+        throw new TypeError('Invalid Base reference. A Data declaration was expected')
 
-    const protoVariant = Object.assign(Object.create(protoData), {
-        *[Symbol.iterator]() { for (let k in this) yield this[k] }
-    }),
-        // TODO: dataDecl subtype checking and alternative method for
-        // associating baseVariant with factory
-        factory = dataDef[extend] ? Object.create(dataDef[extend]) :
-            Object.assign(Object.create(protoFactory), { [baseVariant]: protoVariant })
+    const Factory = callable(class extends BaseData {
+        static [BaseVariant] = class extends BaseData[BaseVariant] { }
 
-    for (let [vName, props] of Object.entries(dataDef)) {
-        if (!isCapitalized(vName))
-            throw new TypeError(`variant name must be capitalized: ${vName}`);
-        if (!isObjectLiteral(props))
-            throw new TypeError(`Invalid variant '${vName}'. Object literal expected`)
+        static {
+            for (let [vName, props] of Object.entries(dataDef)) {
+                if (!isCapitalized(vName))
+                    throw new TypeError(`variant name must be capitalized: ${vName}`);
+                if (!isObjectLiteral(props))
+                    throw new TypeError(`Invalid variant '${vName}'. Object literal expected`)
 
-        const propNames = Object.keys(props).filter(propName => {
-            const guard = props[propName]
-            if (isObjectLiteral(guard) && typeof guard.get === 'function')
-                return false
-            return true
-        }),
-            memo = new BoxedMultiKeyMap()
+                const propNames = Object.keys(props).filter(propName => {
+                    const guard = props[propName]
+                    if (isObjectLiteral(guard) && typeof guard.get === 'function')
+                        return false
+                    return true
+                }),
+                    memo = new BoxedMultiKeyMap(),
+                    Self = this
 
-        function Variant(...args) {
-            if (new.target !== Variant)
-                // @ts-ignore: function as constructor
-                return new Variant(...args)
-            const normalizedArgs = normalizeArgs(propNames, args, vName),
-                cached = memo.get(...normalizedArgs);
-            if (cached)
-                return cached;
-            guardCheck(factory, normalizedArgs, props)
-            assignProps(this, propNames, normalizedArgs)
-            Object.freeze(this)
-            memo.set(...[...normalizedArgs, this])
-        }
-        Variant.prototype = Object.defineProperty(
-            Object.create(protoVariant), 'constructor', { value: Variant, enumerable: false }
-        )
-        for (let [propName, prop] of Object.entries(props)) {
-            if (!isCamelCase(propName))
-                throw new TypeError(`variant properties must be camelCase strings: ${vName}: ${props}`);
-            if (isObjectLiteral(prop)) {
-                if (isValidGuard(prop))
-                    continue
-                if (prop.guard && !isValidGuard(prop.guard))
-                    throw new TypeError(`Invalid guard property on variant '${vName}'. Expected a constructor, empty object literal, or data declaration`)
-                if (prop.guard && !prop.get)
-                    throw new TypeError(`Invalid get property on variant '${vName}'. Expected a function`)
-                if (typeof prop.get === 'function') {
-                    let _result
-                    const getter = function () {
-                        if (_result)
-                            return _result
-                        _result = prop.get.apply(this)
-                        guardCheck(factory, [_result], { [propName]: prop.guard })
-                        return _result
+                const Variant = callable(class extends this[BaseVariant] {
+                    static {
+                        Object.defineProperties(this, {
+                            name: { value: vName },
+                            length: { value: propNames.length }
+                        })
+                        for (let [propName, prop] of Object.entries(props)) {
+                            if (!isCamelCase(propName))
+                                throw new TypeError(`variant properties must be camelCase strings: ${vName}: ${props}`);
+                            if (isObjectLiteral(prop)) {
+                                if (isValidGuard(prop))
+                                    continue
+                                if (prop.guard && !isValidGuard(prop.guard))
+                                    throw new TypeError(`Invalid guard property on variant '${vName}'. Expected a constructor, empty object literal, or data declaration`)
+                                if (prop.guard && !prop.get)
+                                    throw new TypeError(`Invalid get property on variant '${vName}'. Expected a function`)
+                                if (typeof prop.get === 'function') {
+                                    let _result
+                                    Object.defineProperty(this.prototype, propName, {
+                                        get() {
+                                            if (_result) return _result
+                                            _result = prop.get.apply(this)
+                                            guardCheck(Self, [_result], { [propName]: prop.guard })
+                                            return _result
+                                        },
+                                        enumerable: true
+                                    })
+                                }
+                            }
+                        }
                     }
+                    constructor(...args) {
+                        super()
+                        const normalizedArgs = normalizeArgs(propNames, args, vName),
+                            cached = memo.get(...normalizedArgs);
+                        if (cached)
+                            return cached;
+                        guardCheck(Self, normalizedArgs, props)
+                        assignProps(this, propNames, normalizedArgs)
+                        Object.freeze(this)
+                        memo.set(...[...normalizedArgs, this])
+                    }
+                })
 
-                    Object.defineProperty(Variant.prototype, propName, {
-                        get: getter,
-                        enumerable: true
-                    })
-                }
+                this[vName] = propNames.length === 0 ? Variant() : Variant
             }
         }
+    })
 
-        Object.defineProperties(Variant, {
-            name: { value: vName },
-            length: { value: propNames.length }
-        })
-        factory[vName] = propNames.length === 0 ? Variant() : Variant
-    }
-
-    return Object.freeze(factory)
+    return Object.freeze(Factory)
 }

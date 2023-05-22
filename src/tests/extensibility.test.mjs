@@ -1,4 +1,4 @@
-import { data, trait, extend, complect, dataDecl, traitDecl } from "../index.mjs"
+import { apply, data, trait, complect, dataDecl } from "../index.mjs"
 
 describe('Extensibility for the Masses', () => {
     const intExpData = data({
@@ -6,7 +6,7 @@ describe('Extensibility for the Masses', () => {
         Add: { left: {}, right: {} }
     })
 
-    const intPrint = trait(intExpData, {
+    const IntPrintable = trait('print', {
         Lit({ value }) {
             return value.toString()
         },
@@ -15,7 +15,7 @@ describe('Extensibility for the Masses', () => {
         }
     })
 
-    const intEval = trait(intExpData, {
+    const IntEvaluable = trait('evaluate', {
         Lit({ value }) { return value },
         Add({ left, right }) {
             return left.evaluate() + right.evaluate()
@@ -23,8 +23,7 @@ describe('Extensibility for the Masses', () => {
     })
 
     test('IntExp', () => {
-        const exp = complect(intExpData, { print: intPrint, evaluate: intEval }),
-            { Lit, Add } = exp
+        const { Lit, Add } = complect(intExpData, [IntPrintable, IntEvaluable])
 
         const e = Add({
             left: Lit(1),
@@ -35,8 +34,7 @@ describe('Extensibility for the Masses', () => {
         expect(e.evaluate()).toBe(6)
     })
 
-    const intBoolExpData = data({
-        [extend]: intExpData,
+    const intBoolExpData = data(intExpData, {
         Bool: { value: {} },
         IIf: { pred: {}, ifTrue: {}, ifFalse: {} }
     })
@@ -57,25 +55,22 @@ describe('Extensibility for the Masses', () => {
         expect(exp.ifFalse.value).toBe(0)
     })
 
-    const intBoolPrint = trait(intBoolExpData, {
-        [extend]: intPrint,
+    const IntBoolPrintable = trait(IntPrintable, 'print', {
         Bool({ value }) { return value.toString() },
         IIf({ pred, ifTrue, ifFalse }) {
             return `(${pred.print()} ? ${ifTrue.print()} : ${ifFalse.print()})`
         }
     });
 
-    test('intBoolPrint', () => {
-        const exp = complect(intBoolExpData, { print: intBoolPrint }),
-            { Bool, IIf, Lit } = exp
+    test('IntBoolPrintable', () => {
+        const { Bool, IIf, Lit } = complect(intBoolExpData, [IntBoolPrintable])
 
         const e = IIf(Bool(true), Lit(1), Lit(2))
 
         expect(e.print()).toBe('(true ? 1 : 2)')
     })
 
-    const intBoolEval = trait(intBoolExpData, {
-        [extend]: intEval,
+    const IntBoolEvaluable = trait(IntEvaluable, 'evaluate', {
         Bool({ value }) { return value },
         IIf({ pred, ifTrue, ifFalse }) {
             return pred.evaluate() ? ifTrue.evaluate() : ifFalse.evaluate()
@@ -83,16 +78,14 @@ describe('Extensibility for the Masses', () => {
     })
 
     test('intBoolEval', () => {
-        const exp = complect(intBoolExpData, { evaluate: intBoolEval }),
-            { Bool, IIf, Lit } = exp
+        const { Bool, IIf, Lit } = complect(intBoolExpData, [IntBoolEvaluable])
 
         const e = IIf(Bool(true), Lit(1), Lit(2))
 
         expect(e.evaluate()).toBe(1)
     })
 
-    const stmtExpData = data({
-        [extend]: intBoolExpData,
+    const stmtExpData = data(intBoolExpData, {
         Assign: { scope: {}, name: {}, value: {} },
         Expr: { value: {} },
         Seq: { first: {}, second: {} },
@@ -131,8 +124,7 @@ describe('Extensibility for the Masses', () => {
         expect(e.value.right.value).toBe(1)
     })
 
-    const stmtPrint = trait(stmtExpData, {
-        [extend]: intBoolPrint,
+    const StmtPrintable = trait(IntBoolPrintable, 'print', {
         Assign({ name, value }) { return `${name} = ${value.print()}` },
         Expr({ value }) { return value.print() },
         Seq({ first, second }) { return `${first.print()}; ${second.print()}` },
@@ -140,7 +132,7 @@ describe('Extensibility for the Masses', () => {
     })
 
     test('stmtPrint', () => {
-        const exp = complect(stmtExpData, { print: stmtPrint }),
+        const exp = complect(stmtExpData, [StmtPrintable]),
             { Lit, Add, Bool, IIf, Assign, Expr, Seq, Var } = exp
 
         const scope = new Map()
@@ -175,8 +167,7 @@ describe('Extensibility for the Masses', () => {
         expect(exp2.print()).toBe('x = (y + 1); x = (x + 1)')
     })
 
-    const stmtEval = trait(stmtExpData, {
-        [extend]: intBoolEval,
+    const StmtEvaluable = trait(IntBoolEvaluable, 'evaluate', {
         Assign({ scope, name, value }) {
             return scope.set(name, value.evaluate()).get(name)
         },
@@ -189,7 +180,7 @@ describe('Extensibility for the Masses', () => {
     })
 
     test('stmtEval', () => {
-        const exp = complect(stmtExpData, { evaluate: stmtEval }),
+        const exp = complect(stmtExpData, [StmtEvaluable]),
             { Lit, Add, Bool, IIf, Assign, Expr, Seq, Var } = exp
 
         const scope = new Map()
@@ -256,10 +247,9 @@ describe('Extensibility for the Masses', () => {
     })
 
     test('data extend complected', () => {
-        const intExp = complect(intExpData, { print: intPrint, evaluate: intEval })
+        const intExp = complect(intExpData, [IntPrintable, IntEvaluable])
 
-        const intBoolExpData = data({
-            [extend]: intExp[dataDecl],
+        const intBoolExpData = data(intExp, {
             Bool: { value: {} },
             IIf: { pred: {}, ifTrue: {}, ifFalse: {} }
         })
@@ -271,31 +261,28 @@ describe('Extensibility for the Masses', () => {
     })
 
     test('trait extend complected', () => {
-        const intExp = complect(intExpData, { print: intPrint, evaluate: intEval })
+        const intExp = complect(intExpData, [IntPrintable, IntEvaluable])
 
-        const intBoolExpData = data({
-            [extend]: intExp[dataDecl],
+        const IntBoolExpData = data(intExp[dataDecl], {
             Bool: { value: {} },
             IIf: { pred: {}, ifTrue: {}, ifFalse: {} }
         })
 
-        const intBoolPrint = trait(intBoolExpData, {
-            [extend]: intExp[traitDecl].print,
+        const IntBoolPrintable = trait(intExp, 'print', {
             Bool({ value }) { return value ? 'true' : 'false' },
             IIf({ pred, ifTrue, ifFalse }) {
                 return `if (${pred.print()}) { ${ifTrue.print()} } else { ${ifFalse.print()} }`
             }
         })
 
-        const intBoolEval = trait(intBoolExpData, {
-            [extend]: intExp[traitDecl].evaluate,
+        const IntBoolEvaluable = trait(intExp, 'evaluate', {
             Bool({ value }) { return value },
             IIf({ pred, ifTrue, ifFalse }) {
                 return pred.evaluate() ? ifTrue.evaluate() : ifFalse.evaluate()
             }
         })
 
-        const intBoolExp = complect(intBoolExpData, { print: intBoolPrint, evaluate: intBoolEval })
+        const intBoolExp = complect(IntBoolExpData, [IntBoolPrintable, IntBoolEvaluable])
 
         const { Lit, Add, Bool, IIf } = intBoolExp
 
@@ -315,24 +302,22 @@ describe('Extensibility for the Masses', () => {
             Foo: { value: String }
         })
 
-        const fooBaseTrait = trait(fooData, {
+        const BasePrintable = trait('print', {
             Foo({ value }) { return `Base: ${value}` }
         })
 
-        const fooOverrideTrait = trait(fooData, {
-            [extend]: fooBaseTrait,
+        const OverridePrintable = trait(BasePrintable, 'print', {
             Foo({ value }) { return `Override: ${value}` }
         })
 
-        const fooSuperTrait = trait(fooData, {
-            [extend]: fooBaseTrait,
-            Foo(self) { return `Super: ${fooBaseTrait(self)}` }
+        const SuperPrintable = trait(BasePrintable, 'print', {
+            Foo(self) { return `Super: ${BasePrintable[apply](this, self)}` }
         })
 
-        const fooOverride = complect(fooData, { foo: fooOverrideTrait })
-        const fooSuper = complect(fooData, { foo: fooSuperTrait })
+        const fooOverride = complect(fooData, [OverridePrintable])
+        const fooSuper = complect(fooData, [SuperPrintable])
 
-        expect(fooOverride.Foo('A').foo()).toBe('Override: A')
-        expect(fooSuper.Foo('A').foo()).toBe('Super: Base: A')
+        expect(fooOverride.Foo('A').print()).toBe('Override: A')
+        expect(fooSuper.Foo('A').print()).toBe('Super: Base: A')
     })
 })

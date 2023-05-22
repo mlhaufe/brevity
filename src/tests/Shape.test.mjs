@@ -6,12 +6,12 @@ describe('Shape tests', () => {
         Rectangle: { width: Number, height: Number }
     })
 
-    const area = trait(shapeData, {
+    const Areable = trait('area', {
         Circle({ radius }) { return Math.PI * radius * radius },
         Rectangle({ width, height }) { return width * height }
     })
 
-    const shape = complect(shapeData, { area }),
+    const shape = complect(shapeData, [Areable]),
         { Circle, Rectangle } = shape;
 
     test('Shape data', () => {
@@ -36,11 +36,5 @@ describe('Shape tests', () => {
 
         const rectangle = Rectangle({ width: 2, height: 3 });
         expect(rectangle.area()).toBe(6);
-    })
-
-    test('Trait with missing variant', () => {
-        expect(() => {
-            const toString = trait(shapeData, {})
-        }).toThrow("Invalid Trait declaration. Missing definition for 'Circle'")
     })
 })
