@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.12.0
+
+- Trait is not longer callable and must be complected before use.
+- Due to the above, primitive traits and partial application are no longer supported.
+- `data` and `trait` can now extend complected objects directly.
+- `Symbol(extend)` deprecated. `trait` and `data` are now overloaded to use the first argument as the extension object.
+- Parameterized data decls are used to make complected objects parameterized.
+- Pattern matching functionality is now used via a `Pattern` object.
+- updated README
+- updated dependencies
+
 ## v0.11.1
 
 - Fixed package.json module export configuration

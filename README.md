@@ -38,6 +38,225 @@ For direct use in a browser (no build step):
 </script>
 ```
 
+## Usage
+
+For the impatient, here is a quick example of how to use Brevity:
+
+```js
+// declare a data family
+const pointData = data({
+    Point2: { x: Number, y: Number },
+    Point3: { x: Number, y: Number, z: Number }
+});
+
+// declare operations on the data family
+const Printable = trait('print', {
+    Point2({ x, y }) { return `Point2(${x}, ${y})` },
+    Point3({ x, y, z }) { return `Point3(${x}, ${y}, ${z})` }
+})
+
+const Scaleable = trait('scale', {
+    Point2({ x, y }, factor) { return Point2(x * factor, y * factor) },
+    Point3({ x, y, z }, factor) { return Point3(x * factor, y * factor, z * factor) }
+})
+
+// complect the data and operations together
+const point = complect(pointData, [Printable, Scaleable])
+
+// use the complected family:
+
+const { Point2, Point3 } = point
+
+const p2 = Point2({ x: 3, y: 2 }),
+    p3 = Point3({ x: 12, y: 37, z: 54 })
+
+p2.print() // 'Point2(3, 2)'
+p3.scale(2) // Point3(24, 74, 108)
+```
+
+## Motivation
+
+The motivation for Brevity was to overcome the limitation of Object-Oriented Programming (OOP) and Functional Programming (FP) in regards to the expression problem. Additionally to eliminate the overhead of boilerplate code that is required to declare a collection of related classes and operations.
+
+### The Expression Problem
+
+#### Description
+
+The expression problem is a term used in computer science to describe a particular design problem that arises when a programming language or system provides ways to extend the system in two separate, but related, ways. The two ways in which the system can be extended are:
+
+Adding new data types: This involves defining new data types and adding operations on them.
+
+Adding new operations: This involves defining new operations that can be applied to existing data types.
+
+The expression problem arises when it is not possible to add new data types and new operations in a way that is both easy to use and efficient. In particular, it can be difficult to add new operations if the system is not designed to accommodate them, and it can be difficult to add new data types if the system does not provide sufficient support for them.
+
+#### Functional
+
+Here is an example of the problem in the functional paradigm:
+
+```ts
+// data declaration
+type Exp =
+    { tag: 'Lit', value: number } |
+    { tag: 'Add', left: Exp, right: Exp }
+
+// operations
+let evaluate = (exp: Exp) =>
+    exp.tag === 'Lit' ? exp.value :
+    evaluate(exp.left) + evaluate(exp.right)
+
+let printExp = (exp: Exp) => 
+    exp.tag === 'Lit' ? `${exp.value}` :
+    `${printExp(exp.left)} + ${printExp(exp.right)}`
+```
+
+Adding a new operation `isValue(exp)` is trivial in this paradigm. Just define a new function:
+
+```ts
+let isValue = (exp: Exp) => exp.tag === 'Lit';
+```
+
+Adding a new data type `{ tag: 'Add', left: Exp, right: Exp }` is not easy though.
+All existing operations have to be modified to support the new data type.
+
+#### Object-Oriented
+
+In the Object-oriented paradigm the dual problem exists:
+
+```ts
+abstract class Exp {
+    abstract print(): string
+    abstract evaluate(): number
+}
+
+class Lit extends Exp {
+    // data
+    constructor(readonly value: number) { super() }
+
+    //operations
+    evaluate(): number {
+        return this.value
+    }
+    print(): string {
+        return `${this.value}`
+    }
+}
+
+class Add implements Exp {
+    // data
+    constructor(readonly left: Exp, readonly right: Exp) { }
+
+    // operations
+    evaluate(): number {
+        return this.left.evaluate() + this.right.evaluate()
+    }
+    print(): string {
+        return `${this.left.print()}, + ${this.right.print()}`
+    }
+}
+```
+
+Adding a new data type: `Mul(left, right)` is easy to do in OO style, just create a new class.
+
+```ts
+class Mul implements Exp {
+    // data
+    constructor(readonly left: Exp, readonly right: Exp) { }
+
+    // operations
+    evaluate(): number {
+        return this.left.evaluate() * this.right.evaluate()
+    }
+    print(): string {
+        return `${this.left.print()} * ${this.right.print()}`
+    }
+}
+```
+
+Trying to add a new operation `Exp.isValue()` is not easy though.
+All existing classes must be modified to add the new operation
+
+#### Solutions
+
+There are several approaches to solving the expression problem,
+[From Object Algebras to Finally Tagless Interpreters](https://oleksandrmanzyuk.wordpress.com/2014/06/18/from-object-algebras-to-finally-tagless-interpreters-2/).
+
+Here is how the above would be approached with Brevity:
+
+```js
+// data declaration
+const expData = data({ 
+    Lit: { value: {} }, 
+    Add: { left: {}, right: {} }
+})
+
+// operations
+const EvalTrait = trait('evaluate', {
+    Lit({value}){ return value },
+    Add({left, right}){
+        return left.evaluate() + right.evaluate()
+    }
+})
+
+const PrintTrait = trait('print', {
+    Lit({value}) { return `${value}` },
+    Add({left, right}) {
+        return `${left.print()} + ${right.print()}`
+    }
+})
+```
+
+Usage:
+
+```js
+const exp = complect(expData, [EvalTrait, PrintTrait]),
+    {Add, Lit} = exp
+
+// 1 + 3
+const add = Add(Lit(1), Lit(3))
+
+add.evaluate() // 4
+
+add.print() // "1 + 3"
+```
+
+Adding a new data type `Mul` is as simple as extending the base data type:
+
+```js
+const mulExpData = data(exp, {
+    Mul: { left: {}, right: {} }
+})
+```
+
+To extend `evaluate` and `print` simply extend the existing traits:
+
+```js
+const EvalMulTrait = trait(exp, 'evaluate', {
+    Mul({left,right}){ return left.evaluate() * right.evaluate() }
+})
+
+const PrintMulTrait = trait(exp, 'print', {
+    Mul({left,right}){ return `${left.print()} * ${right.print()}` }
+})
+```
+
+Adding a new operation for all data declarations thus far `isValue`:
+
+```js
+const IsValueTrait = trait('isValue', {
+    Lit({value}) { return true },
+    Add({left,right}) { return false },
+    Mul({left,right}){ return false}
+})
+```
+
+Then at some point complect the data and traits together:
+
+```js
+const mulExp = complect(mulExpData, [EvalMulTrait, PrintMulTrait, IsValueTrait]),
+    {Add, Lit, Mul} = mulExp
+```
+
 ## Data
 
 ### Enumerated data
@@ -99,6 +318,8 @@ const pointData = data({
 Point2(1, '2') 
 ```
 
+Recursive forms are also supported:
+
 ```js
 // Recursive guard:
 const peanoData = data((Peano) => ({
@@ -114,6 +335,9 @@ const z = Zero,
 // TypeError: Guard mismatch on property 'pred'. Expected: TypeRecursion, got: 1
 Succ(1)
 ```
+
+The parameter is always the self reference. Since there are no addiional parameters, the declaratation `peanoData` remains
+an object. If there were additional parameters, the declaration would become a function:
 
 ```js
 // Parameterized recursive guard:
@@ -132,6 +356,8 @@ const xs = Cons(1, Cons(2, Cons(3, Nil)))
 const ys = Cons(1, Cons(2, Cons('3', Nil)))
 // TypeError: Guard mismatch on property 'head'. Expected: Number, got: "3"
 ```
+
+Note that in `ListData(Number)` it does not require the self reference as an explicit argument.
 
 ### Derived properties
 
@@ -174,7 +400,7 @@ const { position, velocity, radius, item } = disk;
 
 ### Extending Data
 
-Data declarations can be extended by utilizing the `extend` symbol:
+Data declarations can be extended by passing the base data declaration as the first argument to `data`:
 
 ```js
 const IntExp = data({ 
@@ -182,8 +408,7 @@ const IntExp = data({
     Add: { left: {}, right: {} }
 })
 
-const IntBoolExp = data({ 
-    [extend]: IntExp,
+const IntBoolExp = data(IntExp, {
     Bool: { value: {} }, 
     Iff: { pred: {}, ifTrue: {}, ifFalse: {}}  
 }),
@@ -195,14 +420,14 @@ const exp = Iff( Bool(true), Lit(1), Add(Lit(1), Lit(3)) )
 
 ### Lazy fields
 
-`data` supports lazy fields via passing a function to the instance which becomes a getter for that field:
+`data` supports lazy fields via passing a function to the instance constructor which becomes a getter for that field:
 
 ```js
-const Person = data({
+const {Employee} = data({
     Employee: {firstName: String, lastName: String, fullName: String}
 })
 
-const p = Person.Employee({
+const p = Employee({
     firstName: 'John',
     lastName: 'Doe',
     // becomes a getter
@@ -246,11 +471,10 @@ Which is what allows strict equality comparisons.
 Non-singleton variants also support strict equality comparisons:
 
 ```js
-const Point = data({ 
-    Point2: {x: Number, y: Number}, 
+const {Point2, Point3} = data({ 
+    Point2: {x: Number, y: Number},
     Point3: {x: Number, y: Number, z: Number} 
-}),
-    {Point2, Point3}
+})
 
 Point3(1,2,3) === Point3({x:1, y:2, z:3}) // true
 ```
@@ -261,11 +485,10 @@ Besides the convenience of the above, this also enables use of variant declarati
 directly like Array, Map, Set, etc.
 
 ```js
-const Point = data({ 
+const { Point2, Point3 } = data({ 
     Point2: {x: Number, y: Number}, 
     Point3: {x: Number, y: Number, z: Number} 
-}),
-    { Point2, Point3 } = Point;
+})
 
 const pArray = [Point2(1, 2), Point3(1, 2, 3)];
 
@@ -298,45 +521,42 @@ pMap.has(Point2(1, 3)) // false
 pMap.has(Point3(1, 2, 4)) // false
 ```
 
-### isDataVariant, isDataDecl
-
-`isDataVariant` and `isDataDecl` are provided for convenience:
-
-```js
-const Color = data({ Red: {}, Green: {}, Blue: {} });
-
-isDataVariant(Color.Red) // true
-
-isDataDecl(Color) // true
-```
-
 ## Traits
 
-A `trait` associates operations with data declarations and supports pattern matching.
+A `trait` defines operations for data family and supports pattern matching.
 
 ```js
-const Color = data({ Red: {}, Green: {}, Blue: {} });
+const colorData = data({ Red: {}, Green: {}, Blue: {} });
 
-const print = trait(Color, {
+const Printable = trait('print', {
     Red() { return '#FF0000' },
     Green() { return '#00FF00' },
     Blue() { return '#0000FF' }
 })
 
-print(Color.Red) // '#FF0000'
+// 'complect' combines data and traits. It will be explained later.
+const color = complect(colorData, [Printable])
+
+color.Red.print() // '#FF0000'
 ```
 
-The trait `print` is a function that can then be applied to data instances.
+Another example on a recursive structure:
 
 ```js
-const List = data({ Nil: {}, Cons: {head: {}, tail: {}} });
+const List = data((List, T) => ({ 
+    Nil: {},
+    Cons: { head: T, tail: List(T) } 
+}));
 
-const concat = trait(List, {
+const ConcatTrait = trait('concat', {
     Nil(_, ys) { return ys },
     Cons({ head, tail }, ys) {
-        return List.Cons({ head, tail: concat(tail, ys) })
+        // 'this' refers to the ultimately complected family.
+        return this.Cons({ head, tail: tail.concat(ys) })
     }
 })
+
+const { Nil, Cons } = List(Number)
 
 // [1, 2]
 const xs = Cons(1, Cons(2, Nil)),
@@ -346,22 +566,25 @@ const xs = Cons(1, Cons(2, Nil)),
     zs = concat(xs, ys);
 ```
 
+The first argument in each operation is 'self', the data instance on which the operation is invoked.
+`this` refers to the ultimately complected family.
+
 ### Wilcard `_` trait
 
 If the same operation should be applied to all variants, then the `_` token can be used:
 
 ```js
-const operation = trait(undefined, {
+const StringifyTrait = trait('stringify', {
     _: (target) => JSON.stringify(target)
 })
 ```
 
 Note that in this case a data declaration was not provided as an argument since it's irrelevant.
 
-A more practical example:
+A more practical example for a List:
 
 ```js
-const isNil = trait(List, {
+const IsNilTrait = trait('isNil', {
     _: () => false,
     Nil: () => true
 });
@@ -369,117 +592,63 @@ const isNil = trait(List, {
 
 In this case `Nil` takes priority over `_` and works as expected.
 
-If a data declaration is not provided, `_` or `[apply]` must be defined.
-
-### Primitives
-
-Traits can be defined for primitives `Number`, `String`, `Boolean`, `BigInt`:
-
-```js
-const printNumber = trait(Number, {
-    1: (n) => 'one',
-    15: (n) => 'fifteen',
-    [Infinity]: (n) => 'infinity',
-    [Number.EPSILON]: (n) => 'epsilon',
-    [Number.MAX_SAFE_INTEGER]: (n) => 'max safe integer',
-    [Number.MAX_VALUE]: (n) => 'max value',
-    [Number.MIN_VALUE]: (n) => 'min value',
-    [Number.NaN]: (n) => 'not a number',
-    [NaN]: (n) => 'not a number',
-    [Number.POSITIVE_INFINITY]: (n) => 'positive infinity',
-    [Number.NEGATIVE_INFINITY]: (n) => 'negative infinity',
-    _: (n) => n.toString()
-})
-
-printNumber(15) === 'fifteen'
-
-const fib = trait(Number, {
-    0: (n) => 0,
-    1: (n) => 1,
-    _: (n) => fib(n - 1) + fib(n - 2)
-})
-
-fib(12) === 144
-
-const printString = trait(String, {
-    '': (s) => 'empty string',
-    'hello': (s) => s,
-    _: (s) => s
-})
-
-printString('') === 'empty string'
-
-const printBoolean = trait(Boolean, {
-    true: () => 'true',
-    false: () => 'false'
-})
-
-printBoolean(true) === 'true'
-
-const printBigInt = trait(BigInt, {
-    '0n': (n) => 'zero',
-    '1n': (n) => 'one',
-    '1234567890123456789012345678901234567890n': (n) => 'a big number',
-    _: (n) => n.toString()
-})
-
-printBigInt(1234567890123456789012345678901234567890n) === 'a big number'
-```
-
 ### Nested Pattern Matching
 
 More advanced pattern matching is supported beyond simply variants and utilize `Symbol(_)`
-as a wildcard.
+as a wildcard. This is accomplished via the `Pattern` constructor:
 
 ```js
-const Expr = data({ 
+const expData = data({ 
         Num: {value: {}}, 
         Var: {name: {}}, 
         Mul: {left: {}, right: {}} 
-    }),
-    { Num, Var, Mul } = Expr
+    })
 
 // 1 * x = x
 // x * 1 = x
 // 0 * x = 0
 // x * 0 = 0
-const simplify = trait(Expr, {
+const SimplifyTrait = trait('simplify', {
     _: (self) => self,
-    Mul: [
-        [Mul(Num(1), _), ({ right }) => right],
-        [Mul(_, Num(1)), ({ left }) => left],
-        [Mul(Num(0), _), ({ left }) => left],
-        [Mul(_, Num(0)), ({ right }) => right]
-    ]
+    // Pattern takes a function that returns an array of patterns.
+    // $ is a shorthand for the ultimately complected family.
+    Mul: Pattern(($) => [
+        [$.Mul($.Num(1), _), ({ right }) => right],
+        [$.Mul(_, $.Num(1)), ({ left }) => left],
+        [$.Mul($.Num(0), _), ({ left }) => left],
+        [$.Mul(_, $.Num(0)), ({ right }) => right]
+    ])
 })
+
+const { Num, Var, Mul } = complect(expData, [SimplifyTrait])
 
 const e1 = Mul(Var('x'), Num(1))
 
-simplify(e1) === Var('x')
+e1.simplify() === Var('x')
 
 const e2 = Mul(Num(1), Var('x'))
 
-simplify(e2) === Var('x')
+e2.simplify() === Var('x')
 
 const e3 = Mul(Num(0), Var('x'))
 
-simplify(e3) === Num(0)
+e3.simplify() === Num(0)
 
 const e4 = Mul(Var('x'), Num(0))
 
-simplify(e4) === Num(0)
+e4.simplify() === Num(0)
 ```
 
 Object literals can be used as well as an alternative to using `_` :
 
 ```js
-const simplify = trait(Expr, {
+const SimplifyTrait = trait('simplify', {
     _: (self) => self,
-    Mul: [
-        [{ left: Num(1) }, ({ right }) => right],
-        [{ right: Num(1) }, ({ left }) => left],
-        [{ left: Num(0) }, ({ left }) => left],
-        [{ right: Num(0) }, ({ right }) => right]
+    Mul: Pattern(($) => [
+        [{ left: $.Num(1) }, ({ right }) => right],
+        [{ right: $.Num(1) }, ({ left }) => left],
+        [{ left: $.Num(0) }, ({ left }) => left],
+        [{ right: $.Num(0) }, ({ right }) => right]
     ]
 })
 ```
@@ -487,42 +656,41 @@ const simplify = trait(Expr, {
 A more complicated example with nested patterns:
 
 ```js
-const List = data({ Nil: {}, Cons: {head: {}, tail: {}} }),
-            { Nil, Cons } = List
+const list = data({ Nil: {}, Cons: {head: {}, tail: {}} })
 
-const tell = trait(List, {
+const TellTrait = trait('tell', {
     Nil: (self) => 'The list is empty',
-    Cons: [
-        [Cons(_, Nil), ({ head }) => 
+    Cons: Pattern(($) => [
+        [$.Cons(_, Nil), ({ head }) => 
             `The list has one element: ${head}`],
-        [Cons(_, Cons(_, Nil)), ({ head, tail }) => 
+        [$.Cons(_, $.Cons(_, Nil)), ({ head, tail }) => 
             `The list has two elements: ${head} and ${tail.head}`],
-        [Cons(_, Cons(_, _)), ({ head, tail }) => 
+        [$.Cons(_, $.Cons(_, _)), ({ head, tail }) => 
             `This list is long. The first two elements are: ${head} and ${tail.head}`]
-    ]
+    ])
 })
 ```
 
 A contrived way to test if a list contains the value `3`:
 
 ```js
-const contains3 = trait(List, {
+const Contains3Trait = trait('contains3', {
     Nil: (self) => false,
-    Cons: [
-        [Cons(3, _), (self) => true],
-        [Cons(_, _), ({ tail }) => contains3(tail)]
-    ]
+    Cons: Pattern(($) => [
+        [$.Cons(3, _), (self) => true],
+        [$.Cons(_, _), ({ tail }) => tail.contains3()]
+    ])
 })
 ```
 
 Pattern declarations have the following form:
 
 ```js
-const traitName = trait(DataDecl, {
-  VariantName: [
+const TraitName = trait('methodName', {
+  VariantName: Pattern((family) => [
     [pattern1, pattern2, ...patternN, (self, v2, ...vN) => {...}],
     [pattern1, pattern2, ...patternN, (self, v2, ...vN) => {...}]
-  ]
+  ])
 })
 ```
 
@@ -558,201 +726,124 @@ Cons(1, Cons(pattern, Nil)
 [pattern1, pattern2, ... , patternN]
 ```
 
-### Partial Application
+### Calling 'super' and the `apply` symbol
 
-Traits support [partial application](https://en.wikipedia.org/wiki/Partial_application)
-via the usage of the wildcard symbol `Symbol(_)`:
-
-```js
-const add3 = trait(Number, {
-    _: (a, b, c) => a + b + c
-})
-
-add3(1, 2, 3) === 6
-add3(_, 2, 3)(1) === 6
-add3(1, _, 3)(2) === 6
-add3(1, 2, _)(3) === 6
-add3(1, _, _)(2, 3) === 6
-add3(_, 2, _)(1, 3) === 6
-add3(_, _, 3)(1, 2) === 6
-add3(_, _, _)(1, 2, _)(3) === 6
-add3(_, _, _)(_, 2, _)(1, _)(3) === 6
-add3(_, _, _)(_, 2, _)(_, 3)(1) === 6
-```
-
-A more practical example where this can be a benefit can be seen with linked lists:
+There may be cases that you need to call the parent trait in the context of the current. This can be accomplished as follows using the `apply` symbol:
 
 ```js
-const List = data({ Nil: {}, Cons: {head: {}, tail: {}} })
-
-const { Nil, Cons } = List
-```
-
-Concatenation can be defined in terms of foldRight:
-
-```js
-const foldRight = trait(List, {
-    Nil: (self, fn, z) => z,
-    Cons: ({ head, tail }, fn, z) => fn(head, foldRight(tail, fn, z))
-})
-
-const concat = (xs, ys) => foldRight(xs, Cons, ys)
-```
-
-The only purpose `(xs, ys) => ...` has is to put the arguments into the right
-position in `foldRight`. With partial application this can be simplified as:
-
-```js
-const concat = foldRight(_, Cons, _)
-```
-
-Another example for computing the length of a list:
-
-```js
-const length = (xs) => foldRight(xs, (x, acc) => acc + 1, 0)
-```
-
-With partial application:
-
-```js
-const length = foldRight(_, (x, acc) => acc + 1, 0)
-```
-
-### Extending Traits
-
-Like the `data` declaration one `trait` can extend another via the `extend` symbol:
-
-```js
-const baseTrait = trait(FooData, {
-    Foo(){ ... }
-})
-
-const subTrait = trait(BarData, {
-    [extend]: baseTrait,
-    Bar() { ... }
+const SubTrait = trait(ParentTrait, 'fooMethod', {
+    Foo(self) { ParentTrait[apply](this, self, ...additionalArgs) }
 })
 ```
 
-`subtrait` can now be applied to both `Foo` and `Bar` instances.
+Outside of the above use case, the `apply` symbol is rarely needed.
 
-### `dataDecl` symbol
+For reference there are two forms: a static and instance form. The static form is used when the trait is not yet complected (like in the above example). The instance form is used when the trait is already associated with a family (via `complected`).
 
-```js
-const fooTrait = trait(FooData, {
-    Foo(){ ... }
-})
-```
-
-The associated data declaration `FooData` can be referenced
-via the `Symbol(dataDecl)`:
+To utilize a trait without complecting it you can do the following:
 
 ```js
-fooTrait[dataDecl] === FooData
+const traitInstance = new SomeTrait(family)
+traitInstance[apply](variant, ...additionalArgs)
 ```
 
-### Calling 'super'
-
-There may be cases that you need to call the parent trait in the context of the current. This can be accomplished as follows:
-
-```js
-const someTrait = trait(FooData, {
-    [extend]: parentTrait,
-    Foo(self) { parentTrait(self) }
-})
-```
-
-Recall that traits can be applied as functions.
+I am not aware of any use cases for this, but it is possible.
 
 ### Breaking infinite recursion with `memoFix`
 
 With the ability to define [self-referential fields](#lazy-fields), it's necessary to be able to
-define traits that won't become stuck in infinite recursion when those fields are accessed. The `memoFix`
-trait solves this problem.
+define traits that won't become stuck in infinite recursion when those fields are accessed. `memoFix` solves this problem.
 
 Given the following contrived trait you can see that it will blow the stack when called:
 
 ```js
-const omega = trait(Number, {
-    _(x) { return this._(x); }
+const numData = data({
+    Num: { n: Number }
 })
 
-omega(2) // new Error('Maximum call stack size exceeded')
+const OmegaTrait = trait('omega', {
+    Num({ n }) { return this.Num(n).omega(); }
+})
+
+const { Num } = complect(numData, [OmegaTrait])
+
+Num(2).omega() // new Error('Maximum call stack size exceeded')
 ```
 
 By utilizing `memoFix` we can replace this error with a [least-fixed-point](https://en.wikipedia.org/wiki/Least_fixed_point):
 
 ```js
-const omegaFix = trait(Number, {
-    [memoFix]: { bottom: 0 }
-    _(x) { return this._(x); }
+const OmegaFixTrait = trait('omegaFix', {
+    [memoFix]: { bottom: 'bottom' },
+    Num({ n }) { return this.Num(n).omegaFix(); }
 })
 
-omegaFix(2) === 0
+const { Num } = complect(numData, [OmegaFixTrait])
+
+Num(2).omegaFix() // 'bottom'
 ```
 
 A `bottom` value can also be a function which will be called with the respective arguments to determine what the bottom value should be:
 
 ```js
-const foo = trait(Number, {
-    _(x) {
-        return (x <= 3) ? 1 + foo(x + 1) : foo(x);
+const fooData = data({
+    Foo: { n: Number }
+})
+
+const FooFixTrait = trait('foo', {
+    [memoFix]: { bottom: ({ n }) => n ** 2 },
+    Foo({ n }) {
+        if (n <= 3)
+            return 1 + this.Foo(n + 1).foo();
+        else
+            return this.Foo(n).foo();
     }
 })
 
-foo(1) // new Error('Maximum call stack size exceeded')
+const { Foo } = complect(fooData, [FooFixTrait])
 
-const fooFix = trait(Number, {
-    [memoFix]: (x) => x ** 2
-    _(x) {
-        return (x <= 3) ? 1 + foo(x + 1) : foo(x);
-    }
-})
-
-fooFix(1) === 19
-fooFix(2) === 18
-fooFix(3) === 17
-fooFix(4) === 16
+FooFix(1).foo() === 19;
+FooFix(2).foo() === 18;
+FooFix(3).foo() === 17;
+FooFix(4).foo() === 16;
 ```
 
 The `memoFix` trait memoizes (caches) calls. If the same arguments are encountered a
 second time, then the previously computed value is returned. The least-fixed-point (bottom value) is the
-initial entry in this cache. So the added benefit of this trait is not just for tying-the-recursive-knot, but
+initial entry in this cache. So the added benefit of this is not just for tying-the-recursive-knot, but
 for improving performance:
 
 ```js
-const fib = trait(Number, {
-    _(n) {
-        return n < 2 ? n : this._(n - 1) + this._(n - 2);
+const fibData = data({
+    Fib: { n: Number }
+})
+
+const Evaluable = trait('evaluate', {
+    Fib({ n }) {
+        return n < 2 ? n : this.Fib(n - 1).evaluate() + this.Fib(n - 2).evaluate();
     }
 })
+
+const FixEvalTrait = trait('fixEval', {
+    [memoFix]: { bottom: 0 },
+    Fib({ n }) {
+        return n < 2 ? n : this.Fib(n - 1).fixEval() + this.Fib(n - 2).fixEval();
+    }
+})
+
+const { Fib } = complect(fibData, [Evaluable, FixEvalTrait])
 
 let start, end;
 
 start = performance.now();
-fib(40);
+Fib(40).evaluate();
 end = performance.now();
 const time = end - start; // ~4333ms
 
-const fibFix = trait(Number, {
-    [memoFix]: { bottom: 0 },
-    _(n) {
-        return n < 2 ? n : this._(n - 1) + this._(n - 2);
-    }
-})
-
 start = performance.now();
-fibFix(40);
+Fib(30).fixEval();
 end = performance.now();
-const memoTime = end - start; // ~5ms
-```
-
-### isTrait
-
-The `isTrait` function can be used to determine if a value is a trait:
-
-```js
-isTrait(trait(fooData, {})) === true
-isTrait({}) === false
+const memoTime = end - start; // ~0.1ms
 ```
 
 ## Complection
@@ -765,13 +856,12 @@ const pointData = data({
     Point3: { x: Number, y: Number, z: Number }
 })
 
-const printable = trait(pointData, {
+const Printable = trait('print', {
     Point2({ x, y }) { return `(${x}, ${y})` },
     Point3({ x, y, z }) { return `(${x}, ${y}, ${z})` }
 })
 
-const point = complect(pointData, { print: printable }),
-    { Point2, Point3 } = point
+const { Point2, Point3 } = complect(pointData, [printable])
 ```
 
 `complect` is a function that takes a data declaration and an object of traits. It returns an object with the data declaration's constructors as keys and the traits applied to them as values.
@@ -787,13 +877,33 @@ p1.print() // '(1, 2)'
 p2.print() // '(1, 2, 3)'
 ```
 
-### `dataDecl` and `traitDecl` symbols
-
-The `dataDecl` and `traitDecl` symbols are used to access the data declaration and trait declaration of a complected object:
+If the data declaration is parameterized, like ListData, then complect will return a function that takes the parameters and returns the complected object:
 
 ```js
-point[dataDecl] === pointData
-point[traitDecl] === { print: printable }
+const ListData = data((List, T) => ({
+    Nil: {},
+    Cons: { head: T, tail: List(T) }
+}));
+
+const ConcatTrait = trait('concat', {
+    Nil(self, ys) { return ys },
+    Cons({ head, tail }, ys) {
+        return this.Cons({ head, tail: tail.concat(ys) })
+    }
+})
+
+const IsNilTrait = trait('isNil', {
+    _: () => false,
+    Nil: () => true
+});
+
+const LengthTrait = trait('length', {
+    Nil(self) { return 0 },
+    Cons({ head, tail }) { return 1 + tail.length() }
+});
+
+const List = complect(ListData, [ConcatTrait, IsNilTrait, LengthTrait]),
+    { Nil, Cons } = List(Number);
 ```
 
 ### Extending complected objects
@@ -801,8 +911,7 @@ point[traitDecl] === { print: printable }
 A data declaration can extend a complected object:
 
 ```js
-const point4Data = data({
-    [extend]: point[dataDecl],
+const point4Data = data(pointData, {
     Point4: { x: Number, y: Number, z: Number, w: Number }
 })
 ```
@@ -810,251 +919,10 @@ const point4Data = data({
 A trait declaration can also extend a complected object:
 
 ```js
-const point4Printable = trait({
-    [extend]: point[traitDecl],
+const point4Printable = trait(point, {
     Point4({ x, y, z, w }) { return `(${x}, ${y}, ${z}, ${w})` }
 })
 ```
-
-### Referencing complected constructors from within traits
-
-When a trait is defined the complected constructors are not yet available. To reference them from within a trait a function can be used:
-
-```js
-const exprData = data({
-    Num: { value: {} },
-    Var: { name: {} },
-    Mul: { left: {}, right: {} }
-})
-
-// 1 * x = x
-// x * 1 = x
-// 0 * x = 0
-// x * 0 = 0
-const simplify = trait(exprData, (family) => ({
-    _: (self) => self,
-    Mul: [
-        [family.Mul(family.Num(1), _), ({ right }) => right],
-        [family.Mul(_, family.Num(1)), ({ left }) => left],
-        [family.Mul(family.Num(0), _), ({ left }) => left],
-        [family.Mul(_, family.Num(0)), ({ right }) => right]
-    ]
-}))
-
-const exp = complect(exprData, { simplify }),
-    { Num, Var, Mul } = exp
-```
-
-In the above, `family` refers to the ultimately complected object.
-
-You are free to use any name you'd like for this variable. Here is the same example using `$` instead of `family`:
-
-```js
-const simplify = trait(exprData, ($) => ({
-    _: (self) => self,
-    Mul: [
-        [$.Mul($.Num(1), _), ({ right }) => right],
-        [$.Mul(_, $.Num(1)), ({ left }) => left],
-        [$.Mul($.Num(0), _), ({ left }) => left],
-        [$.Mul(_, $.Num(0)), ({ right }) => right]
-    ]
-}))
-```
-
-### isComplectedVariant
-
-The `isComplectedVariant` function can be used to determine if a value is a complected variant:
-
-```js
-isComplectedVariant(point.Point2(1, 2)) === true
-```
-
-## The Expression Problem
-
-### Description
-
-The expression problem is a term used in computer science to describe a particular design problem that arises when a programming language or system provides ways to extend the system in two separate, but related, ways. The two ways in which the system can be extended are:
-
-Adding new data types: This involves defining new data types and adding operations on them.
-
-Adding new operations: This involves defining new operations that can be applied to existing data types.
-
-The expression problem arises when it is not possible to add new data types and new operations in a way that is both easy to use and efficient. In particular, it can be difficult to add new operations if the system is not designed to accommodate them, and it can be difficult to add new data types if the system does not provide sufficient support for them.
-
-### Functional
-
-Here is an example of the problem in the functional paradigm:
-
-```ts
-// data declaration
-type Exp =
-    { tag: 'Lit', value: number } |
-    { tag: 'Add', left: Exp, right: Exp }
-
-// operations
-let evaluate = (exp: Exp) =>
-    exp.tag === 'Lit' ? exp.value :
-    evaluate(exp.left) + evaluate(exp.right)
-
-let printExp = (exp: Exp) => 
-    exp.tag === 'Lit' ? `${exp.value}` :
-    `${printExp(exp.left)} + ${printExp(exp.right)}`
-```
-
-Adding a new operation `isValue(exp)` is trivial in this paradigm. Just define a new function:
-
-```ts
-let isValue = (exp: Exp) => exp.tag === 'Lit';
-```
-
-Adding a new data type `{ tag: 'Add', left: Exp, right: Exp }` is not easy though.
-All existing operations have to be modified to support the new data type.
-
-### Object-Oriented
-
-In the Object-oriented paradigm the dual problem exists:
-
-```ts
-abstract class Exp {
-    abstract print(): string
-    abstract evaluate(): number
-}
-
-class Lit extends Exp {
-    // data
-    constructor(readonly value: number) { super() }
-
-    //operations
-    evaluate(): number {
-        return this.value
-    }
-    print(): string {
-        return `${this.value}`
-    }
-}
-
-class Add implements Exp {
-    // data
-    constructor(readonly left: Exp, readonly right: Exp) { }
-
-    // operations
-    evaluate(): number {
-        return this.left.evaluate() + this.right.evaluate()
-    }
-    print(): string {
-        return `${this.left.print()}, + ${this.right.print()}`
-    }
-}
-```
-
-Adding a new data type: `Mul(left, right)` is easy to do in OO style, just create a new class.
-
-```ts
-class Mul implements Exp {
-    // data
-    constructor(readonly left: Exp, readonly right: Exp) { }
-
-    // operations
-    evaluate(): number {
-        return this.left.evaluate() * this.right.evaluate()
-    }
-    print(): string {
-        return `${this.left.print()} * ${this.right.print()}`
-    }
-}
-```
-
-Trying to add a new operation `Exp.isValue()` is not easy though.
-All existing classes must be modified to add the new operation
-
-### Solutions
-
-There are several approaches to solving the expression problem,
-[From Object Algebras to Finally Tagless Interpreters](https://oleksandrmanzyuk.wordpress.com/2014/06/18/from-object-algebras-to-finally-tagless-interpreters-2/).
-
-Here is how the above would be approached with this library:
-
-```js
-// data declaration
-const expData = data({ 
-    Lit: { value: {} }, 
-    Add: { left: {}, right: {} }
-})
-
-// operations
-const evaluate = trait(expData, {
-    Lit({value}){ return value },
-    Add({left, right}){
-        return left.evaluate() + right.evaluate()
-    }
-})
-
-const print = trait(expData, {
-    Lit({value}) { return `${value}` },
-    Add({left, right}) {
-        return `${left.print()} + ${right.print()}`
-    }
-})
-```
-
-Usage:
-
-```js
-const exp = complect(expData, {evaluate, print}),
-    {Add, Lit} = exp
-
-// 1 + 3
-const add = Add(Lit(1), Lit(3))
-
-evaluate(add) // 4
-add.evaluate() // 4
-
-print(add) // "1 + 3"
-add.print() // "1 + 3"
-```
-
-Adding a new data type `Mul` is as simple as extending the base data type:
-
-```js
-const mulExpData = data({ 
-    [extend]: exp[dataDecl],
-    Mul: { left: {}, right: {} }
-})
-```
-
-To extend `evaluate` and `print` to the new data declaration, simply extend the existing traits:
-
-```js
-const evalMul = trait(mulExpData, {
-    [extend]: exp[traitDecl].evaluate,
-    Mul({left,right}){ return left.evaluate() * right.evaluate() }
-})
-
-const printMul = trait(mulExpData, {
-    [extend]: exp[traitDecl].print,
-    Mul({left,right}){ return `${left.print()} * ${right.print()}` }
-})
-```
-
-Adding a new operation for all data declarations thus far `isValue`:
-
-```js
-const isValue = trait(mulExpData, {
-    Lit({value}) { return true },
-    Add({left,right}) { return false },
-    Mul({left,right}){ return false}
-})
-```
-
-Then at some point complect the data and traits together:
-
-```js
-const mulExp = complect(mulExpData, {evaluate: evalMul, print: printMul, isValue}),
-    {Mul} = mulExp
-```
-
-Not that complecting the data and traits together is not necessary, but it is useful for creating a single object that can be passed around. It also enables the use of traits
-as methods.
 
 ## Future Work
 
