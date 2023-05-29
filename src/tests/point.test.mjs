@@ -1,7 +1,7 @@
 import { complect, data, trait } from "../index.mjs"
 
 describe('Point tests', () => {
-    const pointData = data({
+    const PointData = data({
         Point2: { x: Number, y: Number },
         Point3: { x: Number, y: Number, z: Number }
     })
@@ -11,8 +11,8 @@ describe('Point tests', () => {
         Point3({ x, y, z }) { return `(${x}, ${y}, ${z})` }
     })
 
-    const point = complect(pointData, [Printable]),
-        { Point2, Point3 } = point
+    const Point = complect(PointData, [Printable]),
+        { Point2, Point3 } = Point()
 
     test('Point data', () => {
         const p2 = Point2({ x: 1, y: 2 });

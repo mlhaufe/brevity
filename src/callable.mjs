@@ -5,6 +5,12 @@
 
 // @returns {(...args: Parameters<Constructor<T>>) => T} - The callable class
 
+const _callHandler = {
+    apply(Target, _thisArg, argArray) {
+        return Reflect.construct(Target, argArray,)
+    }
+}
+
 /**
  * Make a class callable
  * @template T
@@ -12,16 +18,5 @@
  * @returns - The callable class
  */
 export function callable(Clazz) {
-    function Create(...args) {
-        return new Clazz(...args);
-    }
-    Object.setPrototypeOf(Create, Clazz);
-    Object.setPrototypeOf(Create.prototype, Clazz.prototype);
-    Object.defineProperties(Create, {
-        name: { value: Clazz.name },
-        length: { value: Clazz.length },
-        [Symbol.hasInstance]: { value(instance) { return instance instanceof Clazz } }
-    })
-
-    return Create;
+    return new Proxy(Clazz, _callHandler)
 }

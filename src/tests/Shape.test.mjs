@@ -1,7 +1,7 @@
 import { complect, data, trait } from "../index.mjs";
 
 describe('Shape tests', () => {
-    const shapeData = data({
+    const ShapeData = data({
         Circle: { radius: Number },
         Rectangle: { width: Number, height: Number }
     })
@@ -11,8 +11,8 @@ describe('Shape tests', () => {
         Rectangle({ width, height }) { return width * height }
     })
 
-    const shape = complect(shapeData, [Areable]),
-        { Circle, Rectangle } = shape;
+    const Shape = complect(ShapeData, [Areable]),
+        { Circle, Rectangle } = Shape();
 
     test('Shape data', () => {
         const circle = Circle({ radius: 1 });

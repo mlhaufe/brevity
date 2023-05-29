@@ -4,10 +4,10 @@ import { isObjectLiteral } from "./predicates.mjs";
  * Normalizes the arguments passed to a variant constructor to an array of values
  * @param {string[]} propNames
  * @param {any[]} args
- * @param {string} VName - The name of the variant
+ * @param {string} vName - The name of the variant
  * @returns {any[]} - The normalized arguments
  */
-export function normalizeArgs(propNames, args, VName) {
+export function normalizeArgs(propNames, args, vName) {
     if (propNames.length === 1) {
         if (args.length === 1) {
             const arg = args[0];
@@ -24,7 +24,7 @@ export function normalizeArgs(propNames, args, VName) {
 
             if (Object.keys(objArg).length !== propNames.length)
                 throw new TypeError(
-                    `Wrong number of arguments. expected: ${VName}(${propNames}) got: ${VName}(${Object.keys(objArg)})`
+                    `Wrong number of arguments. expected: ${vName}(${propNames}) got: ${vName}(${Object.keys(objArg)})`
                 );
             return propNames.map((propName) => {
                 if (!(propName in objArg))
@@ -34,7 +34,7 @@ export function normalizeArgs(propNames, args, VName) {
         } else if (args.length === propNames.length) {
             return [...args]
         } else {
-            throw new TypeError(`Wrong number of arguments. expected: ${VName}(${propNames}), got: ${VName}(${args})`);
+            throw new TypeError(`Wrong number of arguments. expected: ${vName}(${propNames}), got: ${vName}(${args})`);
         }
     }
 }

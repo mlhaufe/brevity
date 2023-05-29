@@ -1,13 +1,18 @@
 import { complect, data, trait, _, Pattern } from "../index.mjs";
 
 describe('List tests', () => {
-    const ListData = data((List, T) => ({
+    const ListData = data((T) => ({
         Nil: {},
-        Cons: { head: T, tail: List(T) }
+        Cons: { head: T, tail: ListData(T) }
     }));
 
     test('List data', () => {
-        const { Nil, Cons } = ListData(Number);
+        const List = complect(ListData),
+            { Nil, Cons } = List(Number);
+
+        expect(() =>
+            Cons('1', Nil)
+        ).toThrow();
 
         expect(() => {
             Cons(1, Cons(2, Cons(3, Nil)));

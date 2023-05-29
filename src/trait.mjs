@@ -1,8 +1,7 @@
-import { traitDecls } from "./symbols.mjs"
+import { dataDecl, traitDecls } from "./symbols.mjs"
 import { isObjectLiteral } from "./predicates.mjs";
 import { BoxedMultiKeyMap } from "./BoxedMultiKeyMap.mjs";
 import { Pattern } from "./Pattern.mjs";
-import { Complected } from "./complect.mjs";
 
 export const memoFix = Symbol('memoFix'),
     apply = Symbol('apply')
@@ -65,7 +64,7 @@ export class Trait {
  *
  * @overload
  * Defines a trait
- * @param {typeof Trait | typeof Complected} BaseTrait - The base trait to extend
+ * @param {Constructor<Trait>} BaseTrait - The base trait to extend
  * @param {string} methodName - The method name
  * @param {Cases} cases
  * @returns {typeof Trait}
@@ -79,11 +78,11 @@ export const trait = function (BaseTrait, methodName, cases) {
         BaseTrait = Trait
     }
 
-    if (BaseTrait.prototype instanceof Complected) {
+    if (BaseTrait.prototype[dataDecl]) {
         BaseTrait = BaseTrait.prototype[traitDecls].find(traitDecl => traitDecl.name === methodName);
         if (!BaseTrait)
             throw new TypeError(`Trait '${methodName}' not found in Complected`);
-    } else if (BaseTrait instanceof Complected) {
+    } else if (BaseTrait[dataDecl]) {
         BaseTrait = BaseTrait[traitDecls].find(traitDecl => traitDecl.name === methodName);
         if (!BaseTrait)
             throw new TypeError(`Trait '${methodName}' not found in Complected`);
