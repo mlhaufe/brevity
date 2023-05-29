@@ -2,7 +2,7 @@ import { complect, data, trait, _, Pattern } from "../index.mjs";
 
 describe('Pattern matching', () => {
     test('Simplify expression', () => {
-        const exprData = data({
+        const ExprData = data({
             Num: { value: {} },
             Var: { name: {} },
             Mul: { left: {}, right: {} }
@@ -32,8 +32,8 @@ describe('Pattern matching', () => {
             ])
         })
 
-        const expr = complect(exprData, [Simplifyable1, Simplifyable2]),
-            { Num, Var, Mul } = expr
+        const Expr = complect(ExprData, [Simplifyable1, Simplifyable2])(),
+            { Num, Var, Mul } = Expr
 
         const e1 = Mul(Var('x'), Num(1))
 
@@ -57,7 +57,7 @@ describe('Pattern matching', () => {
     })
 
     test('Notification', () => {
-        const notificationData = data({
+        const NotificationData = data({
             Email: { sender: {}, title: {}, body: {} },
             SMS: { caller: {}, message: {} },
             VoiceRecording: { contactName: {}, link: {} }
@@ -69,8 +69,8 @@ describe('Pattern matching', () => {
             VoiceRecording: ({ contactName, link }) => `You received a voice recording from ${contactName}! Click the link to hear it: ${link}`
         })
 
-        const notification = complect(notificationData, [Showable]),
-            { Email, SMS, VoiceRecording } = notification
+        const Notification = complect(NotificationData, [Showable])(),
+            { Email, SMS, VoiceRecording } = Notification
 
         const sms = SMS('000-0000', 'Call me when you get a chance'),
             email = Email('Dad@example.com', 'Re: Dinner', 'Did you get my email?'),
@@ -82,7 +82,7 @@ describe('Pattern matching', () => {
     })
 
     test('List', () => {
-        const ListData = data((List, T) => ({ Nil: {}, Cons: { head: T, tail: List(T) } }))
+        const ListData = data((T) => ({ Nil: {}, Cons: { head: T, tail: ListData(T) } }))
 
         const LengthTrait = trait('length', {
             Nil: (self) => 0,

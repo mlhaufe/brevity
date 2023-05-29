@@ -1,13 +1,33 @@
+import { BaseVariant } from "../data.mjs";
 import { complect, data, trait } from "../index.mjs";
 
 describe('Peano tests', () => {
-    const peanoData = data((Peano) => ({
+    const PeanoData = data(() => ({
         Zero: {},
-        Succ: { pred: Peano }
+        Succ: { pred: PeanoData }
     }));
 
+    test('Peano data', () => {
+        const Peano = PeanoData(),
+            { Zero, Succ } = Peano
+
+        const zero = Zero,
+            one = Succ(zero),
+            two = Succ(one);
+
+        expect(zero).toBe(Zero);
+        expect(one.pred).toBe(zero);
+        expect(two.pred).toBe(one);
+
+        expect(zero).toBeInstanceOf(PeanoData[BaseVariant])
+        expect(one).toBeInstanceOf(PeanoData[BaseVariant])
+
+        expect(() => Succ(1)).toThrow();
+    })
+
     test('Guard test', () => {
-        const { Zero, Succ } = peanoData;
+        const Peano = complect(PeanoData)(),
+            { Zero, Succ } = Peano;
 
         expect(Zero).toBeDefined();
         expect(Succ).toBeDefined();
@@ -19,6 +39,8 @@ describe('Peano tests', () => {
         expect(z).toBeDefined();
         expect(one).toBeDefined();
         expect(two).toBeDefined();
+        expect(z).toBeInstanceOf(PeanoData[BaseVariant])
+        expect(one).toBeInstanceOf(PeanoData[BaseVariant])
 
         expect(z.pred).toBeUndefined();
         expect(one.pred).toBe(z);
@@ -32,8 +54,8 @@ describe('Peano tests', () => {
         Succ({ pred }) { return 1 + pred.value() }
     })
 
-    const peano = complect(peanoData, [ValueTrait]),
-        { Zero, Succ } = peano;
+    const Peano = complect(PeanoData, [ValueTrait]),
+        { Zero, Succ } = Peano();
 
     test('Peano data', () => {
         const zero = Zero,

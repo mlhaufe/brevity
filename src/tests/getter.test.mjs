@@ -1,11 +1,12 @@
-import { data } from "../index.mjs"
+import { complect, data } from "../index.mjs"
 
 describe('Getter field tests', () => {
     test('data with computed property names', () => {
-        const employeeData = data({
+        const EmployeeData = data({
             Employee: { firstName: {}, lastName: {}, fullName: {} }
-        }),
-            { Employee } = employeeData
+        })
+
+        const { Employee } = complect(EmployeeData)()
 
         const p = Employee({
             firstName: 'John',
@@ -17,13 +18,13 @@ describe('Getter field tests', () => {
     })
 
     test('data with self-referential computed property names', () => {
-        const langData = data({
+        const LangData = data({
             Alt: { left: {}, right: {} },
             Cat: { first: {}, second: {} },
             Char: { value: {} },
             Empty: {},
         }),
-            { Alt, Empty, Cat, Char } = langData
+            { Alt, Empty, Cat, Char } = complect(LangData)()
 
         // balanced parentheses grammar
         // S = S ( S ) ∪ ε

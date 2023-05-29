@@ -1,9 +1,9 @@
 import { complect, data, trait, _ } from "../index.mjs"
 
 describe('Tree Tests', () => {
-    const TreeData = data((Tree, T) => ({
+    const TreeData = data((T) => ({
         Leaf: { value: T },
-        Branch: { left: Tree(T), right: Tree(T) }
+        Branch: { left: TreeData(T), right: TreeData(T) }
     }));
 
     const Printable = trait('print', {

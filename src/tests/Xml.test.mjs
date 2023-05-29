@@ -1,7 +1,7 @@
 import { data, trait, complect } from "../index.mjs"
 
 describe('Simplified Xml Tests', () => {
-    const xmlData = data({
+    const XmlData = data({
         Attr: { name: String, value: String },
         Element: { name: String, attrs: {}, children: {} },
         Text: { text: String }
@@ -22,8 +22,8 @@ describe('Simplified Xml Tests', () => {
         _: ({ name }) => name
     })
 
-    const xml = complect(xmlData, [Printable, NodeNameTrait]),
-        { Attr, Element, Text } = xml;
+    const Xml = complect(XmlData, [Printable, NodeNameTrait]),
+        { Attr, Element, Text } = Xml();
 
     // <html lang="en">
     //   <head>

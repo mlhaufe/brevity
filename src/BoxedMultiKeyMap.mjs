@@ -48,6 +48,8 @@ export class BoxedMultiKeyMap {
      * map.get(1, 2, 3); // 4
      */
     get(...keys) {
+        if (keys.length < 1)
+            throw new TypeError('Must provide at least one key');
         const lastMap = keys.reduce((map, key) => {
             if (map === undefined)
                 return undefined;
@@ -57,8 +59,9 @@ export class BoxedMultiKeyMap {
 
         if (lastMap === undefined)
             return undefined;
+        const result = lastMap.get(this.#boxKey(keys[keys.length - 1]));
 
-        return lastMap.get(this.#boxKey(keys[keys.length - 1]));
+        return result instanceof WeakMap ? undefined : result;
     }
 
     /**
@@ -72,6 +75,8 @@ export class BoxedMultiKeyMap {
      * map.get(1, 2, 3); // 4
      */
     set(...keysAndValue) {
+        if (keysAndValue.length < 2)
+            throw new TypeError('Must provide at least one key and a value');
         const keys = keysAndValue.slice(0, -1),
             value = keysAndValue[keysAndValue.length - 1];
 
@@ -101,17 +106,16 @@ export class BoxedMultiKeyMap {
      * map.get(1); // undefined
      */
     delete(...keys) {
+        if (keys.length < 1)
+            throw new TypeError('Must provide at least one key');
+        if (!this.has(...keys))
+            throw new TypeError('No value exists for the given keys');
         const lastMap = keys.reduce((map, key) => {
             if (map === undefined)
                 return undefined;
             const objKey = this.#boxKey(key);
-            if (!map.has(objKey))
-                return undefined;
             return map.get(objKey);
         }, this.#map);
-
-        if (lastMap === undefined)
-            return;
 
         lastMap.delete(this.#boxKey(keys[keys.length - 1]));
     }
@@ -128,6 +132,8 @@ export class BoxedMultiKeyMap {
      * map.has(1, 2, 3, 4); // false
      */
     has(...keys) {
+        if (keys.length < 1)
+            throw new TypeError('Must provide at least one key');
         const lastMap = keys.reduce((map, key) => {
             if (map === undefined)
                 return undefined;

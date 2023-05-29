@@ -1,7 +1,7 @@
 import { complect, data, trait } from "../index.mjs"
 
 describe('Bool tests', () => {
-    const boolData = data({ False: {}, True: {} })
+    const BoolData = data({ False: {}, True: {} })
 
     test('Bool traits', () => {
         const Andable = trait('and', {
@@ -19,7 +19,8 @@ describe('Bool tests', () => {
             True() { return this.False }
         })
 
-        const { False: f, True: t } = complect(boolData, [Andable, Orable, Notable])
+        const Bool = complect(BoolData, [Andable, Orable, Notable]),
+            { False: f, True: t } = Bool()
 
         expect(f.and(f)).toBe(f)
         expect(f.and(t)).toBe(f)

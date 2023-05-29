@@ -1,8 +1,8 @@
-import { data } from "../index.mjs"
+import { complect, data } from "../index.mjs"
 
 describe('Derived field tests', () => {
     test('Employee with derived field', () => {
-        const { Employee } = data({
+        const EmployeeData = data({
             Employee: {
                 firstName: String,
                 lastName: String,
@@ -12,6 +12,8 @@ describe('Derived field tests', () => {
                 }
             }
         })
+
+        const { Employee } = complect(EmployeeData)()
 
         const johnDoe = Employee({
             firstName: 'John',
@@ -30,7 +32,7 @@ describe('Derived field tests', () => {
     })
 
     test('Bad derived field', () => {
-        const { Employee } = data({
+        const EmployeeData = data({
             Employee: {
                 firstName: String,
                 lastName: String,
@@ -40,6 +42,8 @@ describe('Derived field tests', () => {
                 }
             }
         })
+
+        const { Employee } = complect(EmployeeData)()
 
         const johnDoe = Employee({
             firstName: 'John',

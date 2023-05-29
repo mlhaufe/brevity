@@ -3,24 +3,26 @@ import {
     isCamelCase, isCapitalized, isConstructor, isObjectLiteral,
     isPrimitive, satisfiesPrimitive
 } from "./predicates.mjs";
-import { Complected } from "./complect.mjs";
 import { _, dataDecl, dataVariant } from "./symbols.mjs";
 import { normalizeArgs } from "./normalizeArgs.mjs";
 import { callable } from "./callable.mjs";
 
 export const BaseVariant = Symbol('BaseVariant')
 
+const typeArgs = Symbol('typeArgs'),
+    init = Symbol('init')
+
 export class Data {
-    static [BaseVariant] = class {
-        *[Symbol.iterator]() { for (let k in this) yield this[k] }
+    static [BaseVariant] = class IterableVariant {
+        *[Symbol.iterator]() {
+            for (let k in this) {
+                const v = this[k]
+                if (typeof v !== 'function')
+                    yield this[k]
+            }
+        }
     }
 }
-
-const TypeRecursion = callable(class {
-    constructor(...args) {
-        this.args = args
-    }
-})
 
 function assignProps(obj, propNames, args) {
     Object.defineProperties(obj,
@@ -51,18 +53,18 @@ function guardCheck(Factory, args, props) {
             // TODO: { guard: {}, get(){} }
             return
         } else if (isConstructor(guard)) {
-            if (guard === TypeRecursion) { // singleton types
+            if (guard === Data) { // singleton types
                 const isVariant = value instanceof Data[BaseVariant],
-                    isComplected = value instanceof Complected
+                    isComplected = value[dataDecl]
                 if (!isVariant && !isComplected)
-                    throw new TypeError(errMsg('TypeRecursion', JSON.stringify(value)))
+                    throw new TypeError(errMsg('Data', JSON.stringify(value)))
                 if (isVariant && !(value instanceof Factory[BaseVariant]))
-                    throw new TypeError(errMsg('TypeRecursion', JSON.stringify(value)))
+                    throw new TypeError(errMsg('Data', JSON.stringify(value)))
                 if (isComplected && !(value[dataVariant] instanceof Factory[BaseVariant]))
-                    throw new TypeError(errMsg('TypeRecursion', JSON.stringify(value)))
-            } else if (guard instanceof TypeRecursion) { // parameterized types
+                    throw new TypeError(errMsg('Data', JSON.stringify(value)))
+            } else if (guard instanceof Data) { // parameterized types
                 if (!(value instanceof Factory[BaseVariant]))
-                    throw new TypeError(errMsg('TypeRecursion', JSON.stringify(value)))
+                    throw new TypeError(errMsg('Data', JSON.stringify(value)))
                 // TODO: utilize args
             } else if (isPrimitive(value)) {
                 if (!satisfiesPrimitive(value, guard))
@@ -77,7 +79,7 @@ function guardCheck(Factory, args, props) {
             if (typeof guard === 'function' && !(value instanceof guard))
                 throw new TypeError(errMsg(guard.name, JSON.stringify(value)))
 
-            if (guard instanceof Data && !(value instanceof Factory))
+            if (guard instanceof Data && !(value instanceof Factory[BaseVariant]))
                 throw new TypeError(errMsg(guard, JSON.stringify(value)))
         }
     })
@@ -103,36 +105,17 @@ export function data(BaseData, dataDec) {
         BaseData = Data
     }
 
-    if (BaseData instanceof Complected)
+    if (BaseData[dataDecl])
         BaseData = BaseData[dataDecl]
-    else if (BaseData.prototype instanceof Complected)
-        BaseData = BaseData.prototype[dataDecl]
 
-    // TODO: can the function form be moved into the Factory constructor?
-    let dataDef
-    if (typeof dataDec === 'function') {
-        if (dataDec.length > 1) {
-            const dataCons = (...typeParams) => {
-                return data(dataDec(TypeRecursion, ...typeParams))
-            }
-            Object.defineProperty(dataCons, 'length', { value: dataDec.length - 1 })
-            return dataCons
-        } else {
-            dataDef = dataDec(TypeRecursion)
-        }
-    } else {
-        dataDef = dataDec
-    }
-
-    if (!isObjectLiteral(dataDef))
-        throw new TypeError('Invalid data declaration. Object literal expected')
     if (isConstructor(BaseData) && !(BaseData.prototype instanceof Data) && BaseData !== Data)
         throw new TypeError('Invalid Base reference. A Data declaration was expected')
 
-    const Factory = callable(class extends BaseData {
-        static [BaseVariant] = class extends BaseData[BaseVariant] { }
+    const memo = new BoxedMultiKeyMap();
+    const Factory = callable(class Factory extends BaseData {
+        static [BaseVariant] = class VariantBase extends BaseData[BaseVariant] { };
 
-        static {
+        [init](dataDef) {
             for (let [vName, props] of Object.entries(dataDef)) {
                 if (!isCapitalized(vName))
                     throw new TypeError(`variant name must be capitalized: ${vName}`);
@@ -146,9 +129,9 @@ export function data(BaseData, dataDec) {
                     return true
                 }),
                     memo = new BoxedMultiKeyMap(),
-                    Self = this
+                    Self = this.constructor
 
-                const Variant = callable(class extends this[BaseVariant] {
+                const Variant = callable(class extends Self[BaseVariant] {
                     static {
                         Object.defineProperties(this, {
                             name: { value: vName },
@@ -181,19 +164,34 @@ export function data(BaseData, dataDec) {
                     }
                     constructor(...args) {
                         super()
-                        const normalizedArgs = normalizeArgs(propNames, args, vName),
-                            cached = memo.get(...normalizedArgs);
-                        if (cached)
-                            return cached;
+                        const normalizedArgs = normalizeArgs(propNames, args, vName)
+                        if (memo.has(this.constructor, ...normalizedArgs))
+                            return memo.get(this.constructor, ...normalizedArgs);
                         guardCheck(Self, normalizedArgs, props)
                         assignProps(this, propNames, normalizedArgs)
                         Object.freeze(this)
-                        memo.set(...[...normalizedArgs, this])
+                        memo.set(this.constructor, ...normalizedArgs, this)
                     }
                 })
 
                 this[vName] = propNames.length === 0 ? Variant() : Variant
             }
+        }
+
+        [typeArgs] = []
+
+        constructor(...args) {
+            super(...args)
+            if (memo.has(this.constructor, ...args))
+                return memo.get(this.constructor, ...args)
+            memo.set(this.constructor, ...args, this)
+            this[typeArgs] = args
+            if (isObjectLiteral(dataDec))
+                this[init](dataDec)
+            else if (typeof dataDec === 'function')
+                this[init](dataDec(...args))
+            else
+                throw new TypeError('Invalid data declaration. Expected an object literal or a function')
         }
     })
 

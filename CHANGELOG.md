@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.13.0
+
+- Bugfix of memoization edge-cases
+- Fixed issue of callable features not being inheritable
+- `data`, `trait`, and `complect` now consistently return callable constructors instead of objects/constructors ([#64](https://github.com/mlhaufe/brevity/issues/64))
+- `Complected` is no longer exported and has been eliminated
+- Updated README
+
 ## v0.12.0
 
 - Trait is not longer callable and must be complected before use.

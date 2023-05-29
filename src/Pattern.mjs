@@ -1,8 +1,7 @@
 import { callable } from "./callable.mjs";
-import { Complected } from "./complect.mjs";
-import { Data } from "./data.mjs";
+import { Data, BaseVariant } from "./data.mjs";
 import { isConstructor, isObjectLiteral, isPrimitive } from "./predicates.mjs";
-import { _ } from "./symbols.mjs";
+import { _, dataDecl } from "./symbols.mjs";
 
 /**
  * A Primitive value
@@ -32,7 +31,7 @@ import { _ } from "./symbols.mjs";
 const isPattern = (p) => {
     return isPrimitive(p) || isObjectLiteral(p)
         || Array.isArray(p) || isConstructor(p) || p === _
-        || p instanceof Data || p instanceof Complected
+        || p instanceof Data[BaseVariant] || p[dataDecl]
 }
 
 const satisfiesPrimitive = (Cons, value) => {
@@ -51,11 +50,8 @@ const unify = (p, a) => {
         return true
     } else if (isPrimitive(p)) {
         return p === a
-    } else if (p instanceof Data || p instanceof Complected) {
-        if (!(a instanceof Data) && !(a instanceof Complected))
-            return false
-        // TODO: need a dataDecl comparison and not just a name comparison
-        if (p.constructor.name !== a.constructor.name)
+    } else if (p instanceof Data[BaseVariant]) {
+        if (!(a instanceof p.constructor))
             return false
         for (const [k, v] of Object.entries(p)) {
             if (!(k in a))

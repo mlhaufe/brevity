@@ -2,23 +2,7 @@ import { BaseVariant } from "../data.mjs";
 import { complect, data, trait } from "../index.mjs"
 
 describe('Color tests', () => {
-    const rgbData = data({ Red: {}, Green: {}, Blue: {} });
-
-    test('rgbData', () => {
-        expect(rgbData).toBeDefined();
-        expect(rgbData.Red).toBeDefined();
-        expect(rgbData.Green).toBeDefined();
-        expect(rgbData.Blue).toBeDefined();
-
-        const { Red, Green, Blue } = rgbData;
-
-        expect(Red).toBeInstanceOf(rgbData[BaseVariant]);
-        expect(Green).toBeInstanceOf(rgbData[BaseVariant]);
-        expect(Blue).toBeInstanceOf(rgbData[BaseVariant]);
-        expect(Red).not.toBe(Green);
-        expect(Red).not.toBe(Blue);
-        expect(Green).not.toBe(Blue);
-    })
+    const RgbData = data({ Red: {}, Green: {}, Blue: {} });
 
     const RgbPrintable = trait('print', {
         Red() { return '#FF0000' },
@@ -27,18 +11,22 @@ describe('Color tests', () => {
     })
 
     test('rgbColor', () => {
-        const color = complect(rgbData, [RgbPrintable]),
-            { Red, Green, Blue } = color;
+        const Color = complect(RgbData, [RgbPrintable]),
+            { Red, Green, Blue } = Color();
 
         expect(Red).toBeDefined();
         expect(Green).toBeDefined();
         expect(Blue).toBeDefined();
+        expect(Red).toBeInstanceOf(RgbData[BaseVariant])
+        expect(Green).toBeInstanceOf(RgbData[BaseVariant])
+        expect(Blue).toBeInstanceOf(RgbData[BaseVariant])
+
         expect(Red.print()).toBe('#FF0000');
         expect(Green.print()).toBe('#00FF00');
         expect(Blue.print()).toBe('#0000FF');
     })
 
-    const rgbCmykColor = data(rgbData, {
+    const RgbCmykColor = data(RgbData, {
         Cyan: {},
         Magenta: {},
         Yellow: {},
@@ -53,8 +41,8 @@ describe('Color tests', () => {
     })
 
     test('CmykColor', () => {
-        const color = complect(rgbCmykColor, [RgbCmykPrintable]),
-            { Cyan, Magenta, Yellow, Black, Red, Green, Blue } = color;
+        const Color = complect(RgbCmykColor, [RgbCmykPrintable]),
+            { Cyan, Magenta, Yellow, Black, Red, Green, Blue } = Color();
 
         expect(Cyan).toBeDefined();
         expect(Magenta).toBeDefined();

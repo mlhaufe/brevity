@@ -21,7 +21,7 @@ describe('Fibonacci trait', () => {
         ])
     })
 
-    const { Fib } = complect(FibData, [Evaluable, PatternEvaluable])
+    const { Fib } = complect(FibData, [Evaluable, PatternEvaluable])()
 
     test('Wildcard only', () => {
         expect(Fib).toBeDefined()

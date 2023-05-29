@@ -1,20 +1,8 @@
 import { complect, data, trait } from "../index.mjs";
 
 describe('Equality tests', () => {
-    test('data singleton equality', () => {
-        const colorData = data({ Red: {}, Green: {}, Blue: {} }),
-            { Red, Green, Blue } = colorData;
-
-        expect(Red).toBe(Red);
-        expect(Red).toBe(colorData.Red);
-        expect(Green).toBe(Green);
-        expect(Green).toBe(colorData.Green);
-        expect(Blue).toBe(Blue);
-        expect(Blue).toBe(colorData.Blue);
-    })
-
     test('complected equality', () => {
-        const colorData = data({ Red: {}, Green: {}, Blue: {} })
+        const ColorData = data({ Red: {}, Green: {}, Blue: {} })
 
         const Printable = trait('print', {
             Red: () => 'Red',
@@ -22,23 +10,23 @@ describe('Equality tests', () => {
             Blue: () => 'Blue'
         })
 
-        const color = complect(colorData, [Printable]),
-            { Red, Green, Blue } = color;
+        const Color = complect(ColorData, [Printable])(),
+            { Red, Green, Blue } = Color;
 
         expect(Red).toBe(Red);
-        expect(Red).toBe(color.Red);
+        expect(Red).toBe(Color.Red);
         expect(Green).toBe(Green);
-        expect(Green).toBe(color.Green);
+        expect(Green).toBe(Color.Green);
         expect(Blue).toBe(Blue);
-        expect(Blue).toBe(color.Blue);
+        expect(Blue).toBe(Color.Blue);
     })
 
     test('Point equality', () => {
-        const pointData = data({
+        const PointData = data({
             Point2: { x: {}, y: {} },
             Point3: { x: {}, y: {}, z: {} }
         }),
-            { Point2, Point3 } = pointData;
+            { Point2, Point3 } = new PointData();
 
         const p2 = Point2({ x: 1, y: 2 }),
             p3 = Point3({ x: 1, y: 2, z: 3 });
@@ -56,7 +44,7 @@ describe('Equality tests', () => {
     })
 
     test('complected point equality', () => {
-        const pointData = data({
+        const PointData = data({
             Point2: { x: {}, y: {} },
             Point3: { x: {}, y: {}, z: {} }
         })
@@ -66,8 +54,8 @@ describe('Equality tests', () => {
             Point3: ({ x, y, z }) => `Point3(${x}, ${y}, ${z})`
         })
 
-        const point = complect(pointData, [Printable]),
-            { Point2, Point3 } = point;
+        const Point = complect(PointData, [Printable]),
+            { Point2, Point3 } = Point();
 
         const p2 = Point2({ x: 1, y: 2 }),
             p3 = Point3({ x: 1, y: 2, z: 3 });
@@ -85,11 +73,11 @@ describe('Equality tests', () => {
     })
 
     test('data arithmetic equality', () => {
-        const expData = data({
+        const ExpData = data({
             Lit: { value: {} },
             Add: { left: {}, right: {} }
         }),
-            { Add, Lit } = expData
+            { Add, Lit } = complect(ExpData)()
 
         // 1 + (2 + 3)
         const exp1 = Add(
@@ -131,8 +119,8 @@ describe('Equality tests', () => {
     })
 
     test('data peano equality', () => {
-        const peanoData = data({ Zero: {}, Succ: { pred: {} } }),
-            { Zero, Succ } = peanoData,
+        const PeanoData = data({ Zero: {}, Succ: { pred: {} } }),
+            { Zero, Succ } = complect(PeanoData)(),
             zero = Zero,
             one = Succ({ pred: zero }),
             two = Succ({ pred: one });
@@ -149,8 +137,8 @@ describe('Equality tests', () => {
     })
 
     test('Recursive data equality', () => {
-        const listData = data({ Nil: {}, Cons: { head: {}, tail: {} } }),
-            { Cons, Nil } = listData;
+        const ListData = data({ Nil: {}, Cons: { head: {}, tail: {} } }),
+            { Cons, Nil } = complect(ListData)();
 
         const list1 = Cons(1, Cons(2, Cons(3, Nil))),
             list2 = Cons(1, Cons(2, Cons(3, Nil))),
@@ -162,11 +150,11 @@ describe('Equality tests', () => {
     })
 
     test('Array membership', () => {
-        const pointData = data({
+        const PointData = data({
             Point2: { x: {}, y: {} },
             Point3: { x: {}, y: {}, z: {} }
         }),
-            { Point2, Point3 } = pointData;
+            { Point2, Point3 } = complect(PointData)();
 
         const ps = [Point2(1, 2), Point3(1, 2, 3)];
 
@@ -179,11 +167,11 @@ describe('Equality tests', () => {
     })
 
     test('Set membership', () => {
-        const pointData = data({
+        const PointData = data({
             Point2: { x: {}, y: {} },
             Point3: { x: {}, y: {}, z: {} }
         }),
-            { Point2, Point3 } = pointData;
+            { Point2, Point3 } = complect(PointData)();
 
         const ps = new Set([Point2(1, 2), Point3(1, 2, 3)]);
 
@@ -196,11 +184,11 @@ describe('Equality tests', () => {
     })
 
     test('Map membership', () => {
-        const pointData = data({
+        const PointData = data({
             Point2: { x: {}, y: {} },
             Point3: { x: {}, y: {}, z: {} }
         }),
-            { Point2, Point3 } = pointData;
+            { Point2, Point3 } = complect(PointData)();
 
         const ps = new Map([
             [Point2(1, 2), 1],

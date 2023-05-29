@@ -3,69 +3,84 @@ import { apply, Trait } from "./trait.mjs";
 import { dataDecl, dataVariant, traitDecls } from "./symbols.mjs";
 import { Data } from "./data.mjs";
 import { callable } from "./callable.mjs";
+import { isConstructor } from "./predicates.mjs";
+import { normalizeArgs } from "./normalizeArgs.mjs";
 
-export class Complected {
-    *[Symbol.iterator]() { for (let k in this) yield this[k] }
-}
+/**
+ * @template T
+ * @typedef {import("./symbols.mjs").Constructor<T>} Constructor
+ */
 
 /**
  * Complects a data declaration with traits
- * @param {*} dataDef
- * @param {*} traits
+ * @param {Constructor<Data>} DataCons
+ * @param {(Constructor<Trait>)[]} Traits
  * @returns {*}
  */
-export function complect(dataDef, traits) {
-    if (!(dataDef instanceof Data) && typeof dataDef !== 'function')
-        throw new TypeError('Expected a data declaration or a function')
-    if (!Array.isArray(traits) || !traits.every(t => t.prototype instanceof Trait))
+export function complect(DataCons, Traits = []) {
+    if (!isConstructor(DataCons) && DataCons.prototype instanceof Data)
+        throw new TypeError('Invalid dataDef. A Data declaration was expected');
+    if (!Array.isArray(Traits) || !Traits.every(T => isConstructor(T) && T.prototype instanceof Trait))
         throw new TypeError('Array of traits expected');
-    if (dataDef.length > 0)
-        return (...args) => complect(dataDef(...args), traits)
 
-    class _Complected extends Complected {
-        get [dataDecl]() { return dataDef }
-        get [traitDecls]() { return traits }
+    const memo = new BoxedMultiKeyMap();
+    return Object.freeze(callable(class _Complected extends DataCons {
+        get [dataDecl]() { return DataCons }
+        get [traitDecls]() { return Traits };
 
-        static {
-            const family = this.prototype
-            for (let consName in dataDef) {
-                const DataCons = dataDef[consName],
-                    memo = new BoxedMultiKeyMap()
-                const ConsComplected = callable(class extends _Complected {
+        constructor(...args) {
+            super(...args)
+            if (memo.has(this.constructor, ...args))
+                return memo.get(this.constructor, ...args)
+            memo.set(this.constructor, ...args, this)
+            const family = this
+            const _traitProxyHandler = {
+                get(target, prop) {
+                    // search Traits for the matching method name
+                    for (let TraitCons of Traits) {
+                        const methodName = TraitCons.name
+                        if (prop === methodName) {
+                            const trait = new TraitCons(family)
+                            function method(...args) { return trait[apply](this, ...args) }
+                            Object.defineProperty(method, 'name', { value: methodName })
+                            return method
+                        }
+                    }
+                    return Reflect.get(target, prop)
+                }
+            }
+
+            for (let consName in family) {
+                const Cons = family[consName],
+                    VariantCons = /** @type {Constructor<Data>} */ (typeof Cons === 'function' ? Cons : Cons.constructor)
+                const ConsComplected = callable(class extends VariantCons {
                     static {
                         Object.defineProperties(this, {
                             name: { value: consName },
-                            length: { value: typeof DataCons === 'function' ? DataCons.length : 0 }
+                            length: { value: VariantCons.length }
                         })
-                        const proto = this.prototype
-                        for (let TraitCons of traits) {
-                            const methodName = TraitCons.name
-                            if (proto[methodName])
-                                throw new TypeError(`Invalid traitDecl. Duplicate method name: '${methodName}'`);
-                            const t = new TraitCons(family)
-                            Object.defineProperty(proto, methodName, {
-                                enumerable: false,
-                                value(...args) { return t[apply](this, ...args) }
-                            })
-                        }
                     }
+
                     constructor(...args) {
-                        super()
-                        const dataInstance = typeof DataCons === 'function' ? DataCons(...args) : DataCons,
-                            cached = memo.get(dataInstance);
+                        super(...args)
+                        const propNames = Object.keys(this),
+                            vName = this.constructor.name,
+                            // TODO: associate with super[normalizedArgs] for caching?
+                            normalizedArgs = normalizeArgs(propNames, args, vName),
+                            cached = memo.get(this.constructor, ...normalizedArgs)
                         if (cached)
                             return cached;
-                        Object.assign(this, dataInstance, { [dataVariant]: dataInstance })
-                        Object.freeze(this)
-                        memo.set(dataInstance, this)
+                        const proxy = new Proxy(this, _traitProxyHandler)
+                        memo.set(this.constructor, ...normalizedArgs, proxy)
+                        return proxy
                     }
+
+                    get [dataVariant]() { return VariantCons }
                 })
 
                 family[consName] = ConsComplected.length === 0 ? ConsComplected() : ConsComplected
             }
-            Object.freeze(family)
-        }
-    }
-
-    return Object.freeze(new _Complected())
+            //Object.freeze(family)
+        };
+    }))
 }

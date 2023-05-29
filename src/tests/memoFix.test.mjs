@@ -2,7 +2,7 @@ import { complect, data, memoFix, trait } from '../index.mjs'
 
 describe('least fixed point', () => {
     test('returning bottom on infinite recursion', () => {
-        const numData = data({
+        const NumData = data({
             Num: { n: Number }
         })
 
@@ -15,7 +15,7 @@ describe('least fixed point', () => {
             Num({ n }) { return this.Num(n).omegaFix(); }
         })
 
-        const { Num } = complect(numData, [OmegaTrait, OmegaFixTrait])
+        const { Num } = complect(NumData, [OmegaTrait, OmegaFixTrait])()
 
         expect(() =>
             Num(2).omega()
@@ -25,7 +25,7 @@ describe('least fixed point', () => {
     })
 
     test('memo performance', () => {
-        const fibData = data({
+        const FibData = data({
             Fib: { n: Number }
         })
 
@@ -42,17 +42,17 @@ describe('least fixed point', () => {
             }
         })
 
-        const { Fib } = complect(fibData, [Evaluable, FixEvalTrait])
+        const { Fib } = complect(FibData, [Evaluable, FixEvalTrait])()
 
         let start, end;
 
         start = performance.now();
-        Fib(30).evaluate();
+        Fib(20).evaluate();
         end = performance.now();
         const time = end - start;
 
         start = performance.now();
-        Fib(30).fixEval();
+        Fib(20).fixEval();
         end = performance.now();
         const memoTime = end - start;
 
@@ -60,7 +60,7 @@ describe('least fixed point', () => {
     })
 
     test('computed bottom', () => {
-        const fooData = data({
+        const FooData = data({
             Foo: { n: Number }
         })
 
@@ -72,7 +72,7 @@ describe('least fixed point', () => {
                     return this.Foo(n).foo();
             }
         })
-        const { Foo } = complect(fooData, [FooTrait])
+        const { Foo } = complect(FooData, [FooTrait])()
 
         expect(() => Foo(1).foo()).toThrowError(new Error('Maximum call stack size exceeded'));
 
@@ -86,7 +86,7 @@ describe('least fixed point', () => {
             }
         })
 
-        const { Foo: FooFix } = complect(fooData, [FooFixTrait])
+        const { Foo: FooFix } = complect(FooData, [FooFixTrait])()
 
         expect(FooFix(1).foo()).toBe(19);
         expect(FooFix(2).foo()).toBe(18);
